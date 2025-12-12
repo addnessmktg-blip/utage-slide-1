@@ -588,6 +588,71 @@ CSSは必ずカスタムHTML内の`<style>`タグに含めること。
 }
 ```
 
+### パーティクル（浮遊する光の粒子）
+```css
+.particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #10B981;
+  border-radius: 50%;
+  opacity: 0;
+  animation: particleFloat 4s ease-in-out infinite;
+  box-shadow: 0 0 10px #10B981;
+}
+
+@keyframes particleFloat {
+  0% { bottom: -10px; opacity: 0; }
+  10% { opacity: 0.7; }
+  90% { opacity: 0.7; }
+  100% { bottom: 100%; opacity: 0; }
+}
+```
+
+### 左右からのスライドイン
+```css
+@keyframes fadeInLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeInRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+```
+
+### プログレスバー（伸びていく）
+```css
+.score-bar-fill {
+  width: 0;
+  animation: barFill 2s ease-out 1.8s forwards;
+}
+
+@keyframes barFill {
+  from { width: 0; }
+  to { width: 100%; }
+}
+```
+
+### バッジのパルス
+```css
+.badge {
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+```
+
+### コードエディタ風UI
+プロンプトやコード比較を見せる時に効果的：
+- ヘッダーに3つの丸（赤・黄・緑）
+- シンタックスハイライト（色分け）
+- 暗い背景 + モノスペースフォント
+
 ## インタラクティブ要素の活用
 
 視聴者が「参加している」感覚を与える：
