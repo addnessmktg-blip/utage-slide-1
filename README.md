@@ -376,9 +376,8 @@ CSSは必ずカスタムHTML内の`<style>`タグに含めること。
    - テンプレートリテラル → 文字列結合
 
 2. **フルスクリーン制御**
-   - 通常時：`height: 100vh` + `overflow: hidden`（スクロール禁止）
    - フルスクリーン時：`.is-fullscreen`クラスで`position: fixed`
-   - ⚠️ `min-height: 100vh` は使用禁止（はみ出しの原因）
+   - コンテンツ量に応じてパターンA/Bを選択（詳細は「レイアウト設計」セクション参照）
 
 3. **レスポンシブ対応必須**
    ```css
@@ -403,50 +402,99 @@ CSSは必ずカスタムHTML内の`<style>`タグに含めること。
 
 ---
 
-# 🚫 スクロール不要レイアウト（超重要・必読）
+# 📐 レイアウト設計（超重要・必読）
 
-## ❌ よくある問題
+## 2つのパターンから選ぶ
 
-「全画面表示なのにスクロールしないと全体が見えない」
-→ PC・スマホ両方で頻発する致命的な問題
+コンテンツ量に応じて、以下のどちらかを選択してください。
 
-## ✅ 絶対に守るルール
+---
 
-### 1. 高さは `100vh` に収める（スクロール禁止）
+## パターンA: 1画面固定（スクロールなし）
+
+コンテンツが少なく、1画面に収まる場合はこちら。
 
 ```css
-/* ===== 基本設定 ===== */
 .slide-container {
   height: 100vh;           /* 固定高さ */
   max-height: 100vh;       /* はみ出し禁止 */
   overflow: hidden;        /* スクロール無効化 */
   display: flex;
   flex-direction: column;
-  padding: 20px;
+  padding: min(3vh, 20px);
+  box-sizing: border-box;
+}
+```
+
+**使う場面**：
+- シンプルなメッセージスライド
+- 画像メインのページ
+- タイトルスライド
+
+---
+
+## パターンB: スクロール可能（コンテンツ多め）
+
+コンテンツが多く、1画面に収まらない場合はこちら。
+**⚠️ スクロールが確実に動作するよう設定すること！**
+
+```css
+.slide-container {
+  min-height: 100vh;       /* 最低高さ */
+  height: auto;            /* コンテンツに応じて伸びる */
+  overflow-y: auto;        /* スクロール有効化 */
+  overflow-x: hidden;      /* 横スクロールは禁止 */
+  -webkit-overflow-scrolling: touch;  /* iOS対応 */
+  display: flex;
+  flex-direction: column;
+  padding: min(3vh, 20px);
   box-sizing: border-box;
 }
 
-/* ❌ NG - スクロールが発生する */
-.slide-container {
-  min-height: 100vh;       /* これだと超える可能性あり */
-  overflow-y: auto;        /* スクロール許可はNG */
+/* フルスクリーン時もスクロール可能に */
+.slide-container.is-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  min-height: 100vh;
+  height: auto;
+  max-height: none;        /* 高さ制限なし */
+  overflow-y: auto;        /* スクロール有効 */
+  -webkit-overflow-scrolling: touch;
+  z-index: 9999;
 }
 ```
 
-### 2. コンテンツは `flex: 1` + `overflow: hidden` で制御
+**使う場面**：
+- ステップが多いページ
+- 説明文が長いページ
+- 図解＋テキストが多いページ
+
+---
+
+## ❌ よくあるNG例
 
 ```css
-.content-wrapper {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;  /* 縦方向中央 */
-  overflow: hidden;         /* はみ出し防止 */
-  min-height: 0;            /* flex子要素の縮小を許可 */
+/* ❌ NG - スクロールできない */
+.slide-container {
+  height: 100vh;
+  overflow: hidden;  /* コンテンツが多いのにスクロール禁止 */
+}
+
+/* ❌ NG - フルスクリーン時にスクロールできない */
+.slide-container.is-fullscreen {
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;  /* ここでスクロール禁止してる */
 }
 ```
 
-### 3. フォントサイズは `clamp()` または `vw/vh` 単位で可変に
+---
+
+## ✅ 共通ルール（どちらのパターンでも守る）
+
+### 1. フォントサイズは `clamp()` または `vw/vh` 単位で可変に
 
 ```css
 /* 画面サイズに応じて自動調整 */
@@ -464,7 +512,7 @@ CSSは必ずカスタムHTML内の`<style>`タグに含めること。
 }
 ```
 
-### 4. 要素間の余白も可変に
+### 2. 要素間の余白も可変に
 
 ```css
 .content-wrapper {
@@ -473,7 +521,7 @@ CSSは必ずカスタムHTML内の`<style>`タグに含めること。
 }
 ```
 
-### 5. 画像・キャラクターのサイズも制限
+### 3. 画像・キャラクターのサイズも制限
 
 ```css
 .character-img {
@@ -487,7 +535,7 @@ CSSは必ずカスタムHTML内の`<style>`タグに含めること。
 }
 ```
 
-### 6. ナビゲーションボタンは最下部に固定
+### 4. ナビゲーションボタンは最下部に固定
 
 ```css
 .nav-buttons {
@@ -570,9 +618,16 @@ CSSは必ずカスタムHTML内の`<style>`タグに含めること。
 
 ## ⚠️ チェックリスト（コード生成前に必ず確認）
 
+### パターンA（1画面固定）の場合：
 - [ ] `.slide-container` に `height: 100vh` と `overflow: hidden` があるか？
-- [ ] `min-height: 100vh` を使っていないか？（使用禁止）
-- [ ] `overflow-y: auto` を使っていないか？（使用禁止）
+- [ ] `.is-fullscreen` にも `overflow: hidden` があるか？
+
+### パターンB（スクロール可能）の場合：
+- [ ] `.slide-container` に `min-height: 100vh` と `overflow-y: auto` があるか？
+- [ ] `.is-fullscreen` に `max-height: none` と `overflow-y: auto` があるか？
+- [ ] `-webkit-overflow-scrolling: touch` があるか？（iOS対応）
+
+### 共通チェック：
 - [ ] フォントサイズに `clamp()` または `vw/vh` を使っているか？
 - [ ] 余白（gap, padding）に `min()` を使っているか？
 - [ ] 画像に `max-height: ○○vh` を設定しているか？
