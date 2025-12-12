@@ -676,6 +676,249 @@ CSSは必ずカスタムHTML内の`<style>`タグに含めること。
 
 ---
 
+# 🎬 特殊演出パターン（上級）
+
+ここでは、インパクトの強い特殊演出を紹介します。
+タイトルページや重要な転換点で使用すると効果的。
+
+## フィルムストリップ効果
+
+映画のフィルムを模したレトロなデザイン。導入やブランディングに最適。
+
+```css
+.film-strip {
+  display: flex;
+  height: 200px;
+  background: #1a1a1a;
+  border-top: 15px solid #333;
+  border-bottom: 15px solid #333;
+  position: relative;
+}
+
+/* フィルムの穴 */
+.film-strip::before,
+.film-strip::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 10px;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 15px,
+    #000 15px,
+    #000 25px
+  );
+}
+
+.film-strip::before { top: 2px; }
+.film-strip::after { bottom: 2px; }
+
+/* 横スクロールアニメーション */
+@keyframes filmScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+```
+
+## 3D浮遊タイル
+
+要素が3D空間で浮いているような効果。選択肢やカード表示に。
+
+```css
+.floating-tile {
+  transform-style: preserve-3d;
+  perspective: 1000px;
+  animation: tileFloat 4s ease-in-out infinite;
+}
+
+@keyframes tileFloat {
+  0%, 100% {
+    transform: translateY(0) rotateX(0deg) rotateY(0deg);
+  }
+  25% {
+    transform: translateY(-10px) rotateX(2deg) rotateY(-2deg);
+  }
+  75% {
+    transform: translateY(-5px) rotateX(-2deg) rotateY(2deg);
+  }
+}
+
+/* ホバーで飛び出す */
+.tile-3d:hover {
+  transform: translateZ(30px) scale(1.05);
+  box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+}
+```
+
+## ネオングロー効果
+
+CTAボタンや強調要素に。未来感・クラブ感を演出。
+
+```css
+.neon-glow {
+  color: #fff;
+  text-shadow:
+    0 0 10px #0ff,
+    0 0 20px #0ff,
+    0 0 40px #0ff,
+    0 0 80px #0ff;
+  animation: neonFlicker 1.5s infinite alternate;
+}
+
+@keyframes neonFlicker {
+  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+    text-shadow:
+      0 0 10px #0ff,
+      0 0 20px #0ff,
+      0 0 40px #0ff;
+  }
+  20%, 24%, 55% {
+    text-shadow: none;
+  }
+}
+
+/* ネオンボーダー */
+.neon-border {
+  border: 2px solid #0ff;
+  box-shadow:
+    0 0 10px #0ff,
+    inset 0 0 10px rgba(0,255,255,0.1);
+  animation: neonPulse 2s ease-in-out infinite;
+}
+
+@keyframes neonPulse {
+  0%, 100% { box-shadow: 0 0 10px #0ff, inset 0 0 10px rgba(0,255,255,0.1); }
+  50% { box-shadow: 0 0 25px #0ff, inset 0 0 20px rgba(0,255,255,0.2); }
+}
+```
+
+## CRT/グリッチ効果
+
+デジタル・ハッカー・SF感を演出。テクノロジー系コンテンツに。
+
+```css
+/* スキャンライン */
+.crt-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0.1) 0px,
+    rgba(0,0,0,0.1) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+}
+
+/* グリッチアニメーション */
+@keyframes glitch {
+  0%, 90%, 100% { transform: translate(0); }
+  91% { transform: translate(-5px, 2px); }
+  92% { transform: translate(5px, -2px); }
+  93% { transform: translate(-3px, 1px); }
+}
+
+.glitch-text {
+  animation: glitch 3s infinite;
+}
+```
+
+## コードエディタUI
+
+プロンプトやコード比較を見せる時に効果的。
+
+```css
+.code-editor {
+  background: #1e1e1e;
+  border-radius: 12px;
+  overflow: hidden;
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.code-editor-header {
+  background: #323232;
+  padding: 10px 15px;
+  display: flex;
+  gap: 8px;
+}
+
+/* macOSスタイルのボタン */
+.code-editor-header::before {
+  content: '● ● ●';
+  font-size: 10px;
+  letter-spacing: 5px;
+  background: linear-gradient(90deg, #ff5f56, #ffbd2e, #27c93f);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.code-editor-body {
+  padding: 20px;
+  color: #d4d4d4;
+  line-height: 1.6;
+}
+
+/* シンタックスハイライト */
+.syntax-keyword { color: #569cd6; }
+.syntax-string { color: #ce9178; }
+.syntax-comment { color: #6a9955; }
+.syntax-variable { color: #9cdcfe; }
+```
+
+## パーティクル背景（複数粒子）
+
+祝賀感・達成感を演出。成功画面やまとめに。
+
+```css
+.particle-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* 複数のパーティクルを異なる速度で */
+.particle:nth-child(1) { left: 10%; animation: rise 4s ease-in infinite; background: #10B981; }
+.particle:nth-child(2) { left: 25%; animation: rise 5s ease-in infinite 0.5s; background: #6366F1; }
+.particle:nth-child(3) { left: 40%; animation: rise 4.5s ease-in infinite 1s; background: #EC4899; }
+.particle:nth-child(4) { left: 55%; animation: rise 5.5s ease-in infinite 1.5s; background: #F59E0B; }
+.particle:nth-child(5) { left: 70%; animation: rise 4s ease-in infinite 2s; background: #10B981; }
+.particle:nth-child(6) { left: 85%; animation: rise 5s ease-in infinite 2.5s; background: #6366F1; }
+
+@keyframes rise {
+  0% { bottom: -10%; opacity: 0; transform: scale(0.5); }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { bottom: 110%; opacity: 0; transform: scale(1.2); }
+}
+```
+
+## 使い分けの目安
+
+| パターン | 用途 | 向いているシーン |
+|----------|------|-----------------|
+| フィルムストリップ | タイトル、導入 | レトロ、映画館、ノスタルジー |
+| 3D浮遊タイル | 選択肢、カード | 高級感、没入感 |
+| ネオングロー | CTA、強調 | 未来的、クラブ、インパクト |
+| CRT/グリッチ | テクノロジー系 | デジタル、ハッカー、SF |
+| コードエディタ | プロンプト、コード | 開発者向け、AI解説 |
+| パーティクル | 成功、まとめ | 祝賀感、達成感 |
+
+---
+
 # 💬 対話のトーン
 
 - 簡潔に、要点を押さえて回答
