@@ -455,6 +455,369 @@ CSSは必ずカスタムHTML内の`<style>`タグに含めること。
 
 ---
 
+# 📋 ベーステンプレート（コピペ用）
+
+以下はモバイル対応済みの基本テンプレート。新しいページを作る時はこれをベースにする。
+
+## HTML基本構造
+
+```html
+<div id="slide-wrapper" class="slide-container">
+  <!-- 背景グロー -->
+  <div class="bg-glow glow-1"></div>
+  <div class="bg-glow glow-2"></div>
+
+  <!-- メインコンテンツ -->
+  <div class="content-wrapper">
+    <!-- ページタイトル -->
+    <div class="page-title">
+      <span class="title-icon">🎯</span>
+      <span class="title-text">ページタイトル</span>
+    </div>
+
+    <!-- コンテンツをここに追加 -->
+    <div class="main-content">
+      <!-- カード、図解、テキストなど -->
+    </div>
+
+    <!-- キャラクター（必要に応じて） -->
+    <div class="character-area">
+      <img src="【ペンギン画像URL】" alt="ペンギン" class="penguin-img">
+      <div class="speech-bubble">
+        <span>セリフをここに</span>
+      </div>
+    </div>
+
+    <!-- ナビゲーション（content-wrapper内に配置！） -->
+    <div class="nav-buttons">
+      <a href="【前のページURL】" class="nav-btn nav-prev">
+        <span class="nav-arrow">←</span>
+        <span class="nav-label">前へ</span>
+      </a>
+      <a href="【次のページURL】" class="nav-btn nav-next">
+        <span class="nav-label">次へ</span>
+        <span class="nav-arrow">→</span>
+      </a>
+    </div>
+  </div>
+</div>
+```
+
+## CSS基本スタイル（モバイル対応済み）
+
+```css
+<style>
+/* ===== ベーススタイル（モバイルスクロール対応） ===== */
+.slide-container {
+  min-height: 100vh;
+  height: auto;
+  background: linear-gradient(135deg, #E0F7FA 0%, #B2DFDB 50%, #80CBC4 100%);
+  position: relative;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 40px 20px;
+  box-sizing: border-box;
+}
+
+.slide-container.is-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  min-height: 100vh;
+  height: auto;
+  max-height: none;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  z-index: 9999;
+}
+
+/* ===== 背景グロー ===== */
+.bg-glow {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.glow-1 {
+  width: 400px;
+  height: 400px;
+  background: #4DD0E1;
+  top: -100px;
+  left: -100px;
+  animation: glowPulse 6s ease-in-out infinite;
+}
+
+.glow-2 {
+  width: 350px;
+  height: 350px;
+  background: #81C784;
+  bottom: -80px;
+  right: -80px;
+  animation: glowPulse 8s ease-in-out infinite 2s;
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.1); }
+}
+
+/* ===== コンテンツラッパー ===== */
+.content-wrapper {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 20px;
+}
+
+/* ===== ページタイトル ===== */
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 30px;
+  opacity: 0;
+  animation: fadeInDown 0.8s ease-out 0.2s forwards;
+  flex-wrap: wrap;
+  justify-content: center;
+  text-align: center;
+}
+
+.title-icon {
+  font-size: 2rem;
+}
+
+.title-text {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #00695C;
+  text-shadow: 2px 2px 0 rgba(255,255,255,0.5);
+}
+
+/* ===== アニメーション ===== */
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeInRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ===== キャラクターエリア ===== */
+.character-area {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+  opacity: 0;
+  animation: fadeInUp 0.8s ease-out 1.5s forwards;
+}
+
+.penguin-img {
+  width: 100px;
+  height: auto;
+  filter: drop-shadow(0 5px 15px rgba(0,0,0,0.2));
+}
+
+.speech-bubble {
+  background: white;
+  padding: 12px 20px;
+  border-radius: 16px;
+  position: relative;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  font-size: 0.95rem;
+  color: #004D40;
+  line-height: 1.5;
+}
+
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 8px solid transparent;
+  border-right-color: white;
+}
+
+/* ===== ナビゲーションボタン（カード幅に揃える） ===== */
+.nav-buttons {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  opacity: 0;
+  animation: fadeInUp 0.8s ease-out 2s forwards;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  background: linear-gradient(135deg, #26A69A, #00897B);
+  color: white;
+  text-decoration: none;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 15px rgba(0, 77, 64, 0.3);
+  transition: all 0.3s ease;
+}
+
+.nav-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 25px rgba(0, 77, 64, 0.4);
+}
+
+.nav-next {
+  background: linear-gradient(135deg, #00BFA5, #00897B);
+}
+
+.nav-arrow {
+  font-size: 1.1rem;
+}
+
+/* ===== レスポンシブ（タブレット） ===== */
+@media (max-width: 768px) {
+  .slide-container {
+    padding: 25px 15px;
+  }
+
+  .title-text {
+    font-size: 1.5rem;
+  }
+
+  .character-area {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .penguin-img {
+    width: 80px;
+  }
+
+  .speech-bubble::before {
+    left: 50%;
+    top: -12px;
+    transform: translateX(-50%);
+    border: 8px solid transparent;
+    border-bottom-color: white;
+    border-right-color: transparent;
+  }
+
+  .nav-btn {
+    padding: 12px 20px;
+    font-size: 0.85rem;
+  }
+}
+
+/* ===== レスポンシブ（小型スマホ） ===== */
+@media (max-width: 380px) {
+  .slide-container {
+    padding: 20px 12px;
+  }
+
+  .title-text {
+    font-size: 1.3rem;
+  }
+
+  .nav-btn {
+    padding: 10px 16px;
+    font-size: 0.8rem;
+  }
+}
+
+/* ===== 横向きスマホ ===== */
+@media (max-height: 500px) and (orientation: landscape) {
+  .slide-container {
+    padding: 15px;
+  }
+
+  .page-title {
+    margin-bottom: 10px;
+  }
+
+  .title-text {
+    font-size: 1.2rem;
+  }
+
+  .character-area {
+    display: none;
+  }
+}
+</style>
+```
+
+## JS（共通・変更不要）
+
+```html
+<script>
+(function() {
+  var isEditMode = (
+    window.location.href.indexOf('/edit') !== -1 ||
+    window.location.href.indexOf('/admin') !== -1 ||
+    window.location.href.indexOf('preview=') !== -1 ||
+    document.querySelector('.editor-container') ||
+    document.querySelector('#editor') ||
+    document.querySelector('[data-edit-mode]') ||
+    window.parent !== window
+  );
+
+  if (isEditMode) {
+    return;
+  }
+
+  var slide = document.getElementById('slide-wrapper');
+  if (slide) {
+    slide.classList.add('is-fullscreen');
+  }
+
+  var hideSelectors = [
+    '.btn-toolbar', '#next_btn', 'nav[aria-label="breadcrumb"]',
+    'h4.mb-4', 'header > nav', 'footer', '.sidebar', '#sidebar',
+    '.col-3', '.col-md-3', '.col-lg-3'
+  ];
+
+  function hideElements() {
+    hideSelectors.forEach(function(sel) {
+      document.querySelectorAll(sel).forEach(function(el) {
+        if (!el.closest('#slide-wrapper')) {
+          el.style.display = 'none';
+        }
+      });
+    });
+  }
+
+  hideElements();
+  setInterval(hideElements, 500);
+})();
+</script>
+```
+
+---
+
 # コーディング規則
 
 1. **ES5記法を使用**（互換性のため）
