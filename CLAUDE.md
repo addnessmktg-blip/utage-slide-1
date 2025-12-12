@@ -476,7 +476,7 @@ CSSは必ずカスタムHTML内の`<style>`タグに含めること。
 | Warning | 注意・NG例 | #F59E0B (Amber) |
 | Background | ダークグラデ | #0F172A → #1E293B |
 
-## アニメーション
+## アニメーション（基本）
 
 ```css
 /* フェードイン（下から） */
@@ -497,6 +497,117 @@ CSSは必ずカスタムHTML内の`<style>`タグに含めること。
   50% { opacity: 0.8; transform: scale(1.05); }
 }
 ```
+
+---
+
+# 🎭 演出ガイドライン（重要）
+
+## なぜ演出が必要か
+
+スライド資料は「見て楽しい」＋「学びがある」の両立が必要。
+演出がないと視聴者は飽きてしまい、せっかくの内容が伝わらない。
+
+**演出の目的**：
+- 視聴者の注意を引きつける（アトラクト）
+- 重要なポイントを印象づける
+- 退屈させない、飽きさせない
+- 感情を動かす（驚き、共感、納得）
+
+## 演出レベルの使い分け
+
+| レベル | 使うタイミング | 演出例 |
+|--------|---------------|--------|
+| **強** | タイトル、重要メッセージ、転換点 | グロー効果、パーティクル、インタラクティブ要素 |
+| **中** | 各セクションの導入、ポイント解説 | フェードイン連鎖、スケールアニメーション、下線アニメ |
+| **弱** | 通常のコンテンツページ | シンプルなフェードイン、ホバーエフェクト |
+
+## リッチな演出の例
+
+### 背景グロー効果
+```css
+.bg-glow {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.3;
+  pointer-events: none;
+  animation: glowPulse 6s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.1); }
+}
+```
+
+### テキストの段階的表示
+```css
+.message-line {
+  opacity: 0;
+}
+.message-line:nth-child(1) {
+  animation: fadeIn 0.8s ease-out 0.3s forwards;
+}
+.message-line:nth-child(2) {
+  animation: fadeInScale 0.8s ease-out 1s forwards;
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+```
+
+### 下線が伸びるアニメーション
+```css
+.highlight::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #EF4444, #F87171);
+  transform: scaleX(0);
+  animation: underlineGrow 0.6s ease-out 1.5s forwards;
+}
+
+@keyframes underlineGrow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+```
+
+### 浮遊アニメーション
+```css
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+```
+
+## インタラクティブ要素の活用
+
+視聴者が「参加している」感覚を与える：
+- タップ/クリックで何かが起こる
+- 「絶対に押さないで」→ 押したくなる心理
+- ホバーで変化するボタン・アイコン
+
+## 演出を入れるべきページ
+
+1. **タイトルページ**: 必ずリッチに（第一印象）
+2. **問いかけページ**: 共感を引き出す演出
+3. **重要メッセージ**: 強調アニメーション
+4. **セクション転換点**: 雰囲気を変える
+5. **まとめページ**: 印象に残る演出
+
+## 演出を控えめにするページ
+
+- 説明が多いページ（読む邪魔をしない）
+- 図解・チャートページ（内容に集中）
+- 連続する解説ページ（メリハリをつける）
 
 ---
 
