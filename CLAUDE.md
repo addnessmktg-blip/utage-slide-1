@@ -798,7 +798,7 @@ CSSは必ずカスタムHTML内の`<style>`タグに含めること。
 </style>
 ```
 
-## JS（共通・変更不要）
+## JS（共通・スクロール強制対応版）
 
 ```html
 <script>
@@ -821,6 +821,12 @@ CSSは必ずカスタムHTML内の`<style>`タグに含めること。
   if (slide) {
     slide.classList.add('is-fullscreen');
   }
+
+  // スクロール強制（モバイル対応必須）
+  document.documentElement.style.overflow = 'auto';
+  document.body.style.overflow = 'auto';
+  document.documentElement.style.height = 'auto';
+  document.body.style.height = 'auto';
 
   var hideSelectors = [
     '.btn-toolbar', '#next_btn', 'nav[aria-label="breadcrumb"]',
@@ -869,16 +875,20 @@ CSSは必ずカスタムHTML内の`<style>`タグに含めること。
    @media (max-height: 500px) and (orientation: landscape) { }
    ```
 
-4. **モバイルスクロール対応（超重要）**
+4. **モバイルスクロール対応（超重要・絶対厳守）**
 
    スマホで全コンテンツが表示されない・スクロールできない問題を防ぐ。
+   **このルールを破ると、ユーザーはナビゲーションボタンにアクセスできず、先に進めなくなる。**
 
    ```css
-   /* ✅ 正しい実装 */
+   /* ✅ 正しい実装（!importantで強制） */
    .slide-container {
-     min-height: 100vh;        /* 最小高さのみ指定 */
-     overflow-y: auto;         /* スクロール許可 */
-     -webkit-overflow-scrolling: touch; /* iOS慣性スクロール */
+     min-height: 100vh;
+     height: auto !important;           /* 固定高さを防ぐ */
+     max-height: none !important;       /* 最大高さ制限を防ぐ */
+     overflow-y: auto !important;       /* スクロール強制 */
+     overflow-x: hidden;
+     -webkit-overflow-scrolling: touch;
    }
 
    .slide-container.is-fullscreen {
@@ -886,9 +896,12 @@ CSSは必ずカスタムHTML内の`<style>`タグに含めること。
      top: 0;
      left: 0;
      width: 100vw;
-     min-height: 100vh;        /* heightではなくmin-height */
-     height: auto;             /* 高さ自動 */
-     overflow-y: auto;         /* スクロール許可 */
+     min-height: 100vh;
+     height: auto !important;
+     max-height: none !important;
+     overflow-y: auto !important;
+     -webkit-overflow-scrolling: touch;
+     z-index: 9999;
    }
 
    /* ❌ 絶対にやってはいけない */
@@ -897,6 +910,21 @@ CSSは必ずカスタムHTML内の`<style>`タグに含めること。
      overflow: hidden;         /* はみ出し非表示 → 見えなくなる */
    }
    ```
+
+   **JavaScriptでもスクロールを強制（必須）**：
+   ```javascript
+   // フルスクリーン適用後に追加
+   document.documentElement.style.overflow = 'auto';
+   document.body.style.overflow = 'auto';
+   document.documentElement.style.height = 'auto';
+   document.body.style.height = 'auto';
+   ```
+
+   **コンテンツ量の目安**：
+   - カード要素は**1ページ最大2〜3個**
+   - 効果カードなど横並び要素は**モバイルで縦並びに変更**
+   - キャラクター画像は**モバイルで60〜70px**に縮小
+   - フォントサイズは**モバイルで0.8〜0.85rem**を基準
 
    **チェックリスト**：
    - [ ] `height: 100vh` ではなく `min-height: 100vh` を使う
