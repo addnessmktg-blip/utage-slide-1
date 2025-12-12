@@ -239,7 +239,7 @@ UTAGEというプラットフォーム上で、プロフェッショナルなス
 |---|---|---|
 | カスタムCSS | **使わない（空欄）** | 編集画面にも適用されてしまう |
 | カスタムHTML | HTML + CSS（`<style>`タグ内）| `<script>`タグは無効化される |
-| カスタムJS | JavaScriptコードのみ | `<script>`タグ不要 |
+| カスタムJS | **`<script>`タグで囲んだJavaScript** | ⚠️ `<script>`タグ必須！ないと動かない |
 
 ## ❌ 絶対にやってはいけないこと
 
@@ -249,11 +249,28 @@ UTAGEというプラットフォーム上で、プロフェッショナルなス
 2. カスタムCSSを使用する
    → 編集画面も影響を受けて保存できなくなる
 
-3. カスタムJSに`<script>`タグを入れる
-   → 二重タグでエラーになる
-
-4. `<br>`タグに`display: inline`を設定
+3. `<br>`タグに`display: inline`を設定
    → 改行として機能しなくなる（`display: block`を使う）
+
+## ⚠️ カスタムJS の `<script>` タグについて（超重要）
+
+**カスタムJSには必ず `<script>` と `</script>` で囲むこと！**
+
+```javascript
+// ❌ NG - 動かない
+(function() {
+  // コード
+})();
+
+// ✅ OK - 正しい書き方
+<script>
+(function() {
+  // コード
+})();
+</script>
+```
+
+これを忘れると演出が一切反映されません。**100%必須**です。
 
 ---
 
@@ -294,9 +311,10 @@ CSSは必ずカスタムHTML内の`<style>`タグに含めること。
 
 ## カスタムJS
 
-（`<script>`タグなしでJavaScriptのみ）
+（**必ず`<script>`タグで囲む**）
 
-```javascript
+```html
+<script>
 (function() {
   // 編集モード判定
   var isEditMode = (
@@ -339,6 +357,7 @@ CSSは必ずカスタムHTML内の`<style>`タグに含めること。
   hideElements();
   setInterval(hideElements, 500);
 })();
+</script>
 ```
 
 ---
@@ -357,29 +376,207 @@ CSSは必ずカスタムHTML内の`<style>`タグに含めること。
    - テンプレートリテラル → 文字列結合
 
 2. **フルスクリーン制御**
-   - 通常時：`min-height: 100vh`
+   - 通常時：`height: 100vh` + `overflow: hidden`（スクロール禁止）
    - フルスクリーン時：`.is-fullscreen`クラスで`position: fixed`
+   - ⚠️ `min-height: 100vh` は使用禁止（はみ出しの原因）
 
 3. **レスポンシブ対応必須**
    ```css
    /* タブレット */
    @media (max-width: 768px) { }
-   
+
    /* 小型スマホ */
    @media (max-width: 480px) { }
-   
+
    /* 横向きスマホ */
    @media (max-height: 500px) and (orientation: landscape) { }
    ```
 
 4. **動画埋め込み**
    ```html
-   <iframe 
-     src="https://utage-system.com/video/XXXXX?autoplay=1&muted=1&loop=1&controls=0&playsinline=1" 
-     allow="autoplay; fullscreen" 
+   <iframe
+     src="https://utage-system.com/video/XXXXX?autoplay=1&muted=1&loop=1&controls=0&playsinline=1"
+     allow="autoplay; fullscreen"
      allowfullscreen>
    </iframe>
    ```
+
+---
+
+# 🚫 スクロール不要レイアウト（超重要・必読）
+
+## ❌ よくある問題
+
+「全画面表示なのにスクロールしないと全体が見えない」
+→ PC・スマホ両方で頻発する致命的な問題
+
+## ✅ 絶対に守るルール
+
+### 1. 高さは `100vh` に収める（スクロール禁止）
+
+```css
+/* ===== 基本設定 ===== */
+.slide-container {
+  height: 100vh;           /* 固定高さ */
+  max-height: 100vh;       /* はみ出し禁止 */
+  overflow: hidden;        /* スクロール無効化 */
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* ❌ NG - スクロールが発生する */
+.slide-container {
+  min-height: 100vh;       /* これだと超える可能性あり */
+  overflow-y: auto;        /* スクロール許可はNG */
+}
+```
+
+### 2. コンテンツは `flex: 1` + `overflow: hidden` で制御
+
+```css
+.content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;  /* 縦方向中央 */
+  overflow: hidden;         /* はみ出し防止 */
+  min-height: 0;            /* flex子要素の縮小を許可 */
+}
+```
+
+### 3. フォントサイズは `clamp()` または `vw/vh` 単位で可変に
+
+```css
+/* 画面サイズに応じて自動調整 */
+.title {
+  font-size: clamp(1rem, 4vw, 2rem);  /* 最小1rem〜最大2rem */
+}
+
+.description {
+  font-size: clamp(0.75rem, 2.5vw, 1rem);
+}
+
+/* または vh 単位 */
+.title {
+  font-size: min(5vh, 2rem);
+}
+```
+
+### 4. 要素間の余白も可変に
+
+```css
+.content-wrapper {
+  gap: min(3vh, 20px);      /* 画面が小さいと余白も縮小 */
+  padding: min(4vh, 30px);
+}
+```
+
+### 5. 画像・キャラクターのサイズも制限
+
+```css
+.character-img {
+  max-height: 15vh;         /* 画面高さの15%まで */
+  width: auto;
+}
+
+/* または */
+.character-img {
+  height: clamp(50px, 12vh, 100px);
+}
+```
+
+### 6. ナビゲーションボタンは最下部に固定
+
+```css
+.nav-buttons {
+  margin-top: auto;         /* 常に最下部へ */
+  flex-shrink: 0;           /* 縮小させない */
+  padding: 10px 0;
+}
+```
+
+## 📱 レスポンシブで特に注意
+
+```css
+/* スマホ縦画面（高さが重要） */
+@media (max-height: 700px) {
+  .title { font-size: clamp(0.9rem, 3.5vw, 1.5rem); }
+  .step-item { padding: 8px 10px; }
+  .character-img { max-height: 10vh; }
+}
+
+/* 横向きスマホ（高さが極端に小さい） */
+@media (max-height: 500px) and (orientation: landscape) {
+  .slide-container { padding: 10px; }
+  .title { font-size: 1rem; }
+  .character-area { display: none; }  /* キャラは非表示 */
+}
+
+/* 小型スマホ */
+@media (max-width: 380px) {
+  .content-wrapper { gap: min(2vh, 10px); }
+}
+```
+
+## 🔧 テンプレートCSS（これをベースにする）
+
+```css
+.slide-container {
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: min(4vh, 30px) min(4vw, 20px);
+  box-sizing: border-box;
+}
+
+.content-wrapper {
+  flex: 1;
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: min(2.5vh, 20px);
+  overflow: hidden;
+  min-height: 0;
+}
+
+.page-title {
+  font-size: clamp(1.2rem, 4vw, 1.8rem);
+  flex-shrink: 0;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: min(1.5vh, 12px);
+  overflow: hidden;
+  min-height: 0;
+}
+
+.nav-buttons {
+  width: 100%;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+```
+
+## ⚠️ チェックリスト（コード生成前に必ず確認）
+
+- [ ] `.slide-container` に `height: 100vh` と `overflow: hidden` があるか？
+- [ ] `min-height: 100vh` を使っていないか？（使用禁止）
+- [ ] `overflow-y: auto` を使っていないか？（使用禁止）
+- [ ] フォントサイズに `clamp()` または `vw/vh` を使っているか？
+- [ ] 余白（gap, padding）に `min()` を使っているか？
+- [ ] 画像に `max-height: ○○vh` を設定しているか？
+- [ ] ナビゲーションに `margin-top: auto` があるか？
 
 ---
 

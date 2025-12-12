@@ -79,8 +79,7 @@
 
     <!-- ポイント -->
     <div class="point-box">
-      💡 <strong>ポイント：</strong>理由は「3つ」がベスト！<br>
-      2つだと弱い、4つ以上だと覚えられない
+      💡 <strong>ポイント：</strong>理由は「3つ」がベスト！2つだと弱い、4つ以上だと覚えられない
     </div>
 
     <!-- キャラクター -->
@@ -106,26 +105,17 @@
 </div>
 
 <style>
-/* ===== リセット ===== */
-html, body {
-  height: auto !important;
-  overflow: auto !important;
-}
-
-/* ===== ベーススタイル ===== */
+/* ===== ベーススタイル（スクロール禁止） ===== */
 .slide-container {
-  min-height: 100vh;
-  height: auto !important;
-  max-height: none !important;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
   background: linear-gradient(135deg, #E0F7FA 0%, #B2EBF2 50%, #80DEEA 100%);
   position: relative;
-  overflow-y: auto !important;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 30px 15px;
+  padding: min(3vh, 20px) min(4vw, 20px);
   box-sizing: border-box;
 }
 
@@ -134,11 +124,9 @@ html, body {
   top: 0;
   left: 0;
   width: 100vw;
-  min-height: 100vh;
-  height: auto !important;
-  max-height: none !important;
-  overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
   z-index: 9999;
 }
 
@@ -153,16 +141,16 @@ html, body {
 }
 
 .glow-1 {
-  width: 300px;
-  height: 300px;
+  width: min(300px, 40vw);
+  height: min(300px, 40vw);
   background: #4DD0E1;
   top: -80px;
   left: -80px;
 }
 
 .glow-2 {
-  width: 250px;
-  height: 250px;
+  width: min(250px, 35vw);
+  height: min(250px, 35vw);
   background: #26A69A;
   bottom: -60px;
   right: -60px;
@@ -174,27 +162,32 @@ html, body {
   z-index: 10;
   width: 100%;
   max-width: 800px;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  justify-content: center;
+  gap: min(2vh, 15px);
+  overflow: hidden;
+  min-height: 0;
 }
 
 /* ===== ページタイトル ===== */
 .page-title {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: min(1.5vw, 10px);
   text-align: center;
+  flex-shrink: 0;
   animation: fadeIn 0.6s ease-out;
 }
 
 .title-icon {
-  font-size: 1.8rem;
+  font-size: clamp(1.2rem, 4vw, 1.8rem);
 }
 
 .title-text {
-  font-size: 1.5rem;
+  font-size: clamp(1.1rem, 4vw, 1.5rem);
   font-weight: 800;
   color: #00695C;
 }
@@ -205,15 +198,16 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 20px;
+  gap: min(3vw, 20px);
   animation: fadeIn 0.6s ease-out 0.2s both;
+  flex-shrink: 0;
 }
 
 .pyramid {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: min(0.8vh, 6px);
 }
 
 .pyramid-level {
@@ -226,46 +220,45 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 14px 20px;
+  gap: min(1vw, 8px);
+  padding: min(1.5vh, 12px) min(2vw, 18px);
   border-radius: 8px;
   color: white;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: clamp(0.8rem, 2.5vw, 1rem);
   box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-  position: relative;
 }
 
 /* 頂点 - 小さい */
 .level-1 .pyramid-block {
   background: linear-gradient(135deg, #FF7043, #E64A19);
-  min-width: 140px;
+  min-width: clamp(100px, 25vw, 140px);
 }
 
 /* 中間 - 中くらい */
 .level-2 .pyramid-block {
   background: linear-gradient(135deg, #42A5F5, #1E88E5);
-  min-width: 200px;
+  min-width: clamp(140px, 35vw, 200px);
 }
 
 /* 底辺 - 大きい */
 .level-3 .pyramid-block {
   background: linear-gradient(135deg, #66BB6A, #43A047);
-  min-width: 260px;
+  min-width: clamp(180px, 45vw, 260px);
 }
 
 .level-icon {
-  font-size: 1.2rem;
+  font-size: clamp(0.9rem, 3vw, 1.2rem);
 }
 
 .level-label {
-  font-size: 1rem;
+  font-size: clamp(0.75rem, 2.5vw, 1rem);
 }
 
 .level-desc {
-  font-size: 0.75rem;
+  font-size: clamp(0.6rem, 2vw, 0.75rem);
   color: #546E7A;
-  margin-top: 4px;
+  margin-top: min(0.5vh, 4px);
   text-align: center;
 }
 
@@ -274,17 +267,17 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: min(0.5vh, 4px);
 }
 
 .annotation-arrow {
-  font-size: 2rem;
+  font-size: clamp(1.5rem, 4vw, 2rem);
   color: #00897B;
   animation: bounceArrow 1s ease-in-out infinite;
 }
 
 .annotation-text {
-  font-size: 0.75rem;
+  font-size: clamp(0.6rem, 2vw, 0.75rem);
   color: #00695C;
   text-align: center;
   font-weight: 600;
@@ -298,10 +291,10 @@ html, body {
 
 /* ===== ステップタイトル ===== */
 .steps-title {
-  font-size: 1.1rem;
+  font-size: clamp(0.85rem, 3vw, 1.1rem);
   font-weight: 700;
   color: #00695C;
-  margin-top: 10px;
+  flex-shrink: 0;
   animation: fadeIn 0.5s ease-out 0.3s both;
 }
 
@@ -310,18 +303,22 @@ html, body {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: min(1vh, 8px);
+  flex-shrink: 1;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .step-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: min(2vw, 12px);
   background: white;
-  border-radius: 12px;
-  padding: 12px 14px;
+  border-radius: 10px;
+  padding: min(1.2vh, 10px) min(2vw, 14px);
   box-shadow: 0 3px 12px rgba(0,0,0,0.08);
   animation: fadeIn 0.5s ease-out both;
+  flex-shrink: 0;
 }
 
 .step-item:nth-child(1) { animation-delay: 0.4s; border-left: 4px solid #FF7043; }
@@ -329,8 +326,8 @@ html, body {
 .step-item:nth-child(3) { animation-delay: 0.6s; border-left: 4px solid #66BB6A; }
 
 .step-num {
-  width: 32px;
-  height: 32px;
+  width: clamp(24px, 5vw, 32px);
+  height: clamp(24px, 5vw, 32px);
   background: linear-gradient(135deg, #FF7043, #E64A19);
   color: white;
   border-radius: 50%;
@@ -338,7 +335,7 @@ html, body {
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: clamp(0.7rem, 2vw, 0.9rem);
   flex-shrink: 0;
 }
 
@@ -352,30 +349,32 @@ html, body {
 
 .step-content {
   flex: 1;
+  min-width: 0;
 }
 
 .step-title {
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: clamp(0.75rem, 2.5vw, 0.95rem);
   color: #00695C;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 
 .step-desc {
-  font-size: 0.8rem;
+  font-size: clamp(0.65rem, 2vw, 0.8rem);
   color: #546E7A;
 }
 
 /* ===== ポイントボックス ===== */
 .point-box {
   background: linear-gradient(135deg, #FFF8E1, #FFECB3);
-  border-radius: 12px;
-  padding: 14px 18px;
+  border-radius: 10px;
+  padding: min(1.2vh, 12px) min(2vw, 16px);
   width: 100%;
   border-left: 4px solid #FFC107;
-  font-size: 0.85rem;
+  font-size: clamp(0.7rem, 2.2vw, 0.85rem);
   color: #5D4037;
-  line-height: 1.5;
+  line-height: 1.4;
+  flex-shrink: 0;
   animation: fadeIn 0.6s ease-out 0.7s both;
 }
 
@@ -387,24 +386,25 @@ html, body {
 .character-area {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: min(2vw, 12px);
+  flex-shrink: 0;
   animation: fadeIn 0.6s ease-out 0.8s both;
 }
 
 .penguin-img {
-  width: 65px;
-  height: auto;
+  max-height: min(10vh, 65px);
+  width: auto;
   flex-shrink: 0;
 }
 
 .speech-bubble {
   background: white;
-  padding: 10px 14px;
-  border-radius: 12px;
+  padding: min(1vh, 10px) min(2vw, 14px);
+  border-radius: 10px;
   box-shadow: 0 3px 12px rgba(0,0,0,0.1);
-  font-size: 0.85rem;
+  font-size: clamp(0.7rem, 2.2vw, 0.85rem);
   color: #00695C;
-  line-height: 1.5;
+  line-height: 1.4;
   position: relative;
 }
 
@@ -427,21 +427,22 @@ html, body {
   width: 100%;
   display: flex;
   justify-content: space-between;
-  margin-top: 10px;
+  margin-top: auto;
+  flex-shrink: 0;
   animation: fadeIn 0.6s ease-out 0.9s both;
 }
 
 .nav-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 12px 20px;
+  gap: min(1vw, 6px);
+  padding: min(1.2vh, 10px) min(3vw, 18px);
   background: linear-gradient(135deg, #26A69A, #00897B);
   color: white;
   text-decoration: none;
   border-radius: 25px;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: clamp(0.75rem, 2.5vw, 0.9rem);
   box-shadow: 0 4px 12px rgba(0, 77, 64, 0.3);
   transition: transform 0.2s, box-shadow 0.2s;
 }
@@ -456,7 +457,7 @@ html, body {
 }
 
 .nav-arrow {
-  font-size: 1rem;
+  font-size: clamp(0.8rem, 2.5vw, 1rem);
 }
 
 /* ===== アニメーション ===== */
@@ -467,22 +468,14 @@ html, body {
 
 /* ===== レスポンシブ ===== */
 @media (max-width: 768px) {
-  .slide-container {
-    padding: 20px 12px;
-  }
-
-  .title-text {
-    font-size: 1.3rem;
-  }
-
   .pyramid-container {
     flex-direction: column;
-    gap: 15px;
+    gap: min(1.5vh, 12px);
   }
 
   .pyramid-annotation {
     flex-direction: row;
-    gap: 8px;
+    gap: min(1vw, 8px);
   }
 
   .annotation-arrow {
@@ -493,19 +486,6 @@ html, body {
   @keyframes bounceArrowMobile {
     0%, 100% { transform: rotate(90deg) translateY(0); }
     50% { transform: rotate(90deg) translateY(-5px); }
-  }
-
-  .pyramid-block {
-    padding: 12px 16px;
-    font-size: 0.9rem;
-  }
-
-  .level-1 .pyramid-block { min-width: 120px; }
-  .level-2 .pyramid-block { min-width: 170px; }
-  .level-3 .pyramid-block { min-width: 220px; }
-
-  .step-item {
-    padding: 10px 12px;
   }
 
   .character-area {
@@ -521,38 +501,39 @@ html, body {
     border-bottom-color: white;
     border-right-color: transparent;
   }
+}
 
-  .nav-btn {
-    padding: 10px 16px;
-    font-size: 0.85rem;
+/* 高さが小さい画面 */
+@media (max-height: 700px) {
+  .content-wrapper {
+    gap: min(1.5vh, 10px);
+  }
+
+  .step-item {
+    padding: min(1vh, 8px) min(2vw, 12px);
+  }
+
+  .penguin-img {
+    max-height: min(8vh, 50px);
   }
 }
 
-@media (max-width: 380px) {
-  .title-text {
-    font-size: 1.1rem;
+/* 横向きスマホ */
+@media (max-height: 500px) and (orientation: landscape) {
+  .slide-container {
+    padding: min(2vh, 10px) min(3vw, 15px);
   }
 
-  .pyramid-block {
-    padding: 10px 12px;
-    font-size: 0.85rem;
+  .content-wrapper {
+    gap: min(1vh, 8px);
   }
 
-  .level-1 .pyramid-block { min-width: 100px; }
-  .level-2 .pyramid-block { min-width: 140px; }
-  .level-3 .pyramid-block { min-width: 180px; }
-
-  .step-title {
-    font-size: 0.85rem;
+  .character-area {
+    display: none;
   }
 
-  .step-desc {
-    font-size: 0.75rem;
-  }
-
-  .nav-btn {
-    padding: 8px 12px;
-    font-size: 0.8rem;
+  .point-box {
+    padding: min(1vh, 8px) min(2vw, 12px);
   }
 }
 </style>
