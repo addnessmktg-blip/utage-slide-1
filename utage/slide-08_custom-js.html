@@ -1,0 +1,41 @@
+<script>
+(function() {
+  var isEditMode = (
+    window.location.href.indexOf('/edit') !== -1 ||
+    window.location.href.indexOf('/admin') !== -1 ||
+    window.location.href.indexOf('preview=') !== -1 ||
+    document.querySelector('.editor-container') ||
+    document.querySelector('#editor') ||
+    document.querySelector('[data-edit-mode]') ||
+    window.parent !== window
+  );
+
+  if (isEditMode) {
+    return;
+  }
+
+  var slide = document.getElementById('slide-wrapper');
+  if (slide) {
+    slide.classList.add('is-fullscreen');
+  }
+
+  var hideSelectors = [
+    '.btn-toolbar', '#next_btn', 'nav[aria-label="breadcrumb"]',
+    'h4.mb-4', 'header > nav', 'footer', '.sidebar', '#sidebar',
+    '.col-3', '.col-md-3', '.col-lg-3'
+  ];
+
+  function hideElements() {
+    hideSelectors.forEach(function(sel) {
+      document.querySelectorAll(sel).forEach(function(el) {
+        if (!el.closest('#slide-wrapper')) {
+          el.style.display = 'none';
+        }
+      });
+    });
+  }
+
+  hideElements();
+  setInterval(hideElements, 500);
+})();
+</script>

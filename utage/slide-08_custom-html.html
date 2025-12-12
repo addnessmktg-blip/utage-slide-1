@@ -1,0 +1,518 @@
+<div id="slide-wrapper" class="slide-container">
+  <!-- 背景グロー -->
+  <div class="bg-glow glow-1"></div>
+  <div class="bg-glow glow-2"></div>
+
+  <!-- メインコンテンツ -->
+  <div class="content-wrapper">
+    <!-- ページタイトル -->
+    <div class="page-title">
+      <span class="title-icon">🔧</span>
+      <span class="title-text">ピラミッドの作り方</span>
+    </div>
+
+    <!-- ピラミッド図解 -->
+    <div class="pyramid-container">
+      <div class="pyramid">
+        <!-- 頂点：結論 -->
+        <div class="pyramid-level level-1">
+          <div class="pyramid-block">
+            <span class="level-icon">🎯</span>
+            <span class="level-label">結論</span>
+          </div>
+          <div class="level-desc">一番伝えたいこと</div>
+        </div>
+
+        <!-- 中間：理由 -->
+        <div class="pyramid-level level-2">
+          <div class="pyramid-block">
+            <span class="level-icon">🌳</span>
+            <span class="level-label">理由×3</span>
+          </div>
+          <div class="level-desc">なぜそう言える？根拠を3つ</div>
+        </div>
+
+        <!-- 底辺：データ -->
+        <div class="pyramid-level level-3">
+          <div class="pyramid-block">
+            <span class="level-icon">📊</span>
+            <span class="level-label">データ・事実</span>
+          </div>
+          <div class="level-desc">各理由を数値や事実で裏付け</div>
+        </div>
+      </div>
+
+      <!-- 矢印アノテーション -->
+      <div class="pyramid-annotation">
+        <div class="annotation-arrow">↑</div>
+        <div class="annotation-text">話す順番<br>（上から下へ伝える）</div>
+      </div>
+    </div>
+
+    <!-- 3ステップ（作り方） -->
+    <div class="steps-title">📝 作り方の手順</div>
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">結論を決める</div>
+          <div class="step-desc">「一番伝えたいこと」を一文で書く</div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">理由を3つ挙げる</div>
+          <div class="step-desc">なぜそう言える？根拠を3つに絞る</div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">データで補強</div>
+          <div class="step-desc">各理由を事実や数値で裏付ける</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ポイント -->
+    <div class="point-box">
+      💡 <strong>ポイント：</strong>理由は「3つ」がベスト！2つだと弱い、4つ以上だと覚えられない
+    </div>
+
+    <!-- キャラクター -->
+    <div class="character-area">
+      <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/029vYoogGLZhD7Afpyu4pGieSyfeJeni3L3bXA1e.png" alt="ひらめきペンギン" class="penguin-img">
+      <div class="speech-bubble">
+        <span>ピラミッドは<br><strong>上から話す</strong>のがコツ！</span>
+      </div>
+    </div>
+
+    <!-- ナビゲーション -->
+    <div class="nav-buttons">
+      <a href="https://school.addness.co.jp/members/Z17XSst4uPQ5/course/pA7pLdEpMt6K/lesson/OPc1LMGu8xrp" class="nav-btn nav-prev">
+        <span class="nav-arrow">←</span>
+        <span class="nav-label">前へ</span>
+      </a>
+      <a href="https://school.addness.co.jp/members/Z17XSst4uPQ5/course/pA7pLdEpMt6K/lesson/6P51NaIqQWNw" class="nav-btn nav-next">
+        <span class="nav-label">次へ</span>
+        <span class="nav-arrow">→</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ===== 強制スクロール有効化 ===== */
+html, body {
+  height: auto !important;
+  min-height: 100% !important;
+  overflow: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* ===== スライドコンテナ（常にスクロール可能） ===== */
+.slide-container {
+  min-height: 100vh;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  background: linear-gradient(135deg, #E0F7FA 0%, #B2EBF2 50%, #80DEEA 100%);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 25px 20px 30px;
+  box-sizing: border-box;
+}
+
+/* フルスクリーン時もスクロール可能 */
+.slide-container.is-fullscreen {
+  position: relative !important;
+  width: 100%;
+  min-height: 100vh;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  z-index: 10;
+}
+
+/* ===== 背景グロー ===== */
+.bg-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glow-1 {
+  width: min(300px, 40vw);
+  height: min(300px, 40vw);
+  background: #4DD0E1;
+  top: -80px;
+  left: -80px;
+}
+
+.glow-2 {
+  width: min(250px, 35vw);
+  height: min(250px, 35vw);
+  background: #26A69A;
+  bottom: -60px;
+  right: -60px;
+}
+
+/* ===== コンテンツラッパー ===== */
+.content-wrapper {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+/* ===== ページタイトル ===== */
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  animation: fadeIn 0.6s ease-out;
+}
+
+.title-icon {
+  font-size: clamp(1.4rem, 5vw, 2rem);
+}
+
+.title-text {
+  font-size: clamp(1.2rem, 5vw, 1.6rem);
+  font-weight: 800;
+  color: #00695C;
+}
+
+/* ===== ピラミッド図解 ===== */
+.pyramid-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  animation: fadeIn 0.6s ease-out 0.2s both;
+}
+
+.pyramid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.pyramid-level {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pyramid-block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 22px;
+  border-radius: 10px;
+  color: white;
+  font-weight: 700;
+  font-size: clamp(0.85rem, 3vw, 1.1rem);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+/* 頂点 - 小さい */
+.level-1 .pyramid-block {
+  background: linear-gradient(135deg, #FF7043, #E64A19);
+  min-width: clamp(110px, 28vw, 150px);
+}
+
+/* 中間 - 中くらい */
+.level-2 .pyramid-block {
+  background: linear-gradient(135deg, #42A5F5, #1E88E5);
+  min-width: clamp(150px, 38vw, 210px);
+}
+
+/* 底辺 - 大きい */
+.level-3 .pyramid-block {
+  background: linear-gradient(135deg, #66BB6A, #43A047);
+  min-width: clamp(190px, 48vw, 270px);
+}
+
+.level-icon {
+  font-size: clamp(1rem, 3.5vw, 1.3rem);
+}
+
+.level-label {
+  font-size: clamp(0.8rem, 3vw, 1.1rem);
+}
+
+.level-desc {
+  font-size: clamp(0.65rem, 2.2vw, 0.8rem);
+  color: #546E7A;
+  margin-top: 5px;
+  text-align: center;
+}
+
+/* 矢印アノテーション */
+.pyramid-annotation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.annotation-arrow {
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+  color: #00897B;
+  animation: bounceArrow 1s ease-in-out infinite;
+}
+
+.annotation-text {
+  font-size: clamp(0.65rem, 2.2vw, 0.8rem);
+  color: #00695C;
+  text-align: center;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+@keyframes bounceArrow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* ===== ステップタイトル ===== */
+.steps-title {
+  font-size: clamp(0.95rem, 3.5vw, 1.2rem);
+  font-weight: 700;
+  color: #00695C;
+  animation: fadeIn 0.5s ease-out 0.3s both;
+}
+
+/* ===== ステップリスト ===== */
+.step-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: white;
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  animation: fadeIn 0.5s ease-out both;
+}
+
+.step-item:nth-child(1) { animation-delay: 0.4s; border-left: 5px solid #FF7043; }
+.step-item:nth-child(2) { animation-delay: 0.5s; border-left: 5px solid #42A5F5; }
+.step-item:nth-child(3) { animation-delay: 0.6s; border-left: 5px solid #66BB6A; }
+
+.step-num {
+  width: clamp(28px, 7vw, 38px);
+  height: clamp(28px, 7vw, 38px);
+  background: linear-gradient(135deg, #FF7043, #E64A19);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: clamp(0.8rem, 2.5vw, 1rem);
+  flex-shrink: 0;
+}
+
+.step-item:nth-child(2) .step-num {
+  background: linear-gradient(135deg, #42A5F5, #1E88E5);
+}
+
+.step-item:nth-child(3) .step-num {
+  background: linear-gradient(135deg, #66BB6A, #43A047);
+}
+
+.step-content {
+  flex: 1;
+}
+
+.step-title {
+  font-weight: 700;
+  font-size: clamp(0.85rem, 3vw, 1.05rem);
+  color: #00695C;
+  margin-bottom: 3px;
+}
+
+.step-desc {
+  font-size: clamp(0.75rem, 2.5vw, 0.9rem);
+  color: #546E7A;
+}
+
+/* ===== ポイントボックス ===== */
+.point-box {
+  background: linear-gradient(135deg, #FFF8E1, #FFECB3);
+  border-radius: 12px;
+  padding: 16px 20px;
+  width: 100%;
+  border-left: 5px solid #FFC107;
+  font-size: clamp(0.8rem, 2.8vw, 0.95rem);
+  color: #5D4037;
+  line-height: 1.5;
+  animation: fadeIn 0.6s ease-out 0.7s both;
+}
+
+.point-box strong {
+  color: #F57C00;
+}
+
+/* ===== キャラクターエリア ===== */
+.character-area {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  animation: fadeIn 0.6s ease-out 0.8s both;
+}
+
+.penguin-img {
+  max-height: 80px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.speech-bubble {
+  background: white;
+  padding: 12px 16px;
+  border-radius: 14px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  font-size: clamp(0.8rem, 2.8vw, 0.95rem);
+  color: #00695C;
+  line-height: 1.5;
+  position: relative;
+}
+
+.speech-bubble strong {
+  color: #E64A19;
+}
+
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 8px solid transparent;
+  border-right-color: white;
+}
+
+/* ===== ナビゲーションボタン ===== */
+.nav-buttons {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding-top: 15px;
+  animation: fadeIn 0.6s ease-out 0.9s both;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  background: linear-gradient(135deg, #26A69A, #00897B);
+  color: white;
+  text-decoration: none;
+  border-radius: 30px;
+  font-weight: 600;
+  font-size: clamp(0.85rem, 3vw, 1rem);
+  box-shadow: 0 4px 15px rgba(0, 77, 64, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.nav-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 77, 64, 0.4);
+}
+
+.nav-next {
+  background: linear-gradient(135deg, #00BFA5, #00897B);
+}
+
+.nav-arrow {
+  font-size: clamp(0.9rem, 3vw, 1.1rem);
+}
+
+/* ===== アニメーション ===== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== レスポンシブ ===== */
+@media (max-width: 768px) {
+  .slide-container {
+    padding: 20px 15px 25px;
+  }
+
+  .pyramid-container {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .pyramid-annotation {
+    flex-direction: row;
+    gap: 10px;
+  }
+
+  .annotation-arrow {
+    transform: rotate(90deg);
+    animation: bounceArrowMobile 1s ease-in-out infinite;
+  }
+
+  @keyframes bounceArrowMobile {
+    0%, 100% { transform: rotate(90deg) translateY(0); }
+    50% { transform: rotate(90deg) translateY(-6px); }
+  }
+
+  .character-area {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .speech-bubble::before {
+    left: 50%;
+    top: -12px;
+    transform: translateX(-50%);
+    border: 8px solid transparent;
+    border-bottom-color: white;
+    border-right-color: transparent;
+  }
+}
+
+/* 小型スマホ */
+@media (max-width: 380px) {
+  .content-wrapper {
+    gap: 14px;
+  }
+
+  .step-item {
+    padding: 12px 14px;
+  }
+
+  .nav-btn {
+    padding: 10px 16px;
+  }
+}
+</style>
