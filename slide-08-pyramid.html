@@ -105,38 +105,43 @@
 </div>
 
 <style>
-/* ===== パターンB: スクロール可能 ===== */
+/* ===== 強制スクロール有効化 ===== */
+html, body {
+  height: auto !important;
+  min-height: 100% !important;
+  overflow: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* ===== スライドコンテナ（常にスクロール可能） ===== */
 .slide-container {
   min-height: 100vh;
-  height: auto;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
   background: linear-gradient(135deg, #E0F7FA 0%, #B2EBF2 50%, #80DEEA 100%);
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: min(3vh, 25px) min(4vw, 20px);
+  padding: 25px 20px 30px;
   box-sizing: border-box;
 }
 
+/* フルスクリーン時もスクロール可能 */
 .slide-container.is-fullscreen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
+  position: relative !important;
+  width: 100%;
   min-height: 100vh;
-  height: auto;
-  max-height: none;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  z-index: 9999;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  z-index: 10;
 }
 
 /* ===== 背景グロー ===== */
 .bg-glow {
-  position: fixed;
+  position: absolute;
   border-radius: 50%;
   filter: blur(100px);
   opacity: 0.3;
@@ -169,14 +174,14 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: min(2.5vh, 18px);
+  gap: 18px;
 }
 
 /* ===== ページタイトル ===== */
 .page-title {
   display: flex;
   align-items: center;
-  gap: min(1.5vw, 10px);
+  gap: 10px;
   text-align: center;
   animation: fadeIn 0.6s ease-out;
 }
@@ -197,7 +202,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: min(4vw, 25px);
+  gap: 20px;
   animation: fadeIn 0.6s ease-out 0.2s both;
 }
 
@@ -205,7 +210,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: min(1vh, 8px);
+  gap: 8px;
 }
 
 .pyramid-level {
@@ -218,8 +223,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: min(1.5vw, 10px);
-  padding: min(2vh, 14px) min(3vw, 22px);
+  gap: 10px;
+  padding: 14px 22px;
   border-radius: 10px;
   color: white;
   font-weight: 700;
@@ -256,7 +261,7 @@
 .level-desc {
   font-size: clamp(0.65rem, 2.2vw, 0.8rem);
   color: #546E7A;
-  margin-top: min(0.5vh, 5px);
+  margin-top: 5px;
   text-align: center;
 }
 
@@ -265,7 +270,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: min(0.5vh, 5px);
+  gap: 5px;
 }
 
 .annotation-arrow {
@@ -300,16 +305,16 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: min(1.5vh, 12px);
+  gap: 12px;
 }
 
 .step-item {
   display: flex;
   align-items: center;
-  gap: min(3vw, 15px);
+  gap: 15px;
   background: white;
   border-radius: 12px;
-  padding: min(2vh, 14px) min(3vw, 18px);
+  padding: 14px 18px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.08);
   animation: fadeIn 0.5s ease-out both;
 }
@@ -360,7 +365,7 @@
 .point-box {
   background: linear-gradient(135deg, #FFF8E1, #FFECB3);
   border-radius: 12px;
-  padding: min(2vh, 16px) min(3vw, 20px);
+  padding: 16px 20px;
   width: 100%;
   border-left: 5px solid #FFC107;
   font-size: clamp(0.8rem, 2.8vw, 0.95rem);
@@ -377,19 +382,19 @@
 .character-area {
   display: flex;
   align-items: center;
-  gap: min(3vw, 15px);
+  gap: 15px;
   animation: fadeIn 0.6s ease-out 0.8s both;
 }
 
 .penguin-img {
-  max-height: min(12vh, 80px);
+  max-height: 80px;
   width: auto;
   flex-shrink: 0;
 }
 
 .speech-bubble {
   background: white;
-  padding: min(1.5vh, 12px) min(2.5vw, 16px);
+  padding: 12px 16px;
   border-radius: 14px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
   font-size: clamp(0.8rem, 2.8vw, 0.95rem);
@@ -417,16 +422,15 @@
   width: 100%;
   display: flex;
   justify-content: space-between;
-  margin-top: auto;
-  padding-top: min(2vh, 15px);
+  padding-top: 15px;
   animation: fadeIn 0.6s ease-out 0.9s both;
 }
 
 .nav-btn {
   display: flex;
   align-items: center;
-  gap: min(1.5vw, 8px);
-  padding: min(1.5vh, 12px) min(4vw, 22px);
+  gap: 8px;
+  padding: 12px 22px;
   background: linear-gradient(135deg, #26A69A, #00897B);
   color: white;
   text-decoration: none;
@@ -458,14 +462,18 @@
 
 /* ===== レスポンシブ ===== */
 @media (max-width: 768px) {
+  .slide-container {
+    padding: 20px 15px 25px;
+  }
+
   .pyramid-container {
     flex-direction: column;
-    gap: min(2vh, 15px);
+    gap: 15px;
   }
 
   .pyramid-annotation {
     flex-direction: row;
-    gap: min(2vw, 10px);
+    gap: 10px;
   }
 
   .annotation-arrow {
@@ -496,7 +504,15 @@
 /* 小型スマホ */
 @media (max-width: 380px) {
   .content-wrapper {
-    gap: min(2vh, 12px);
+    gap: 14px;
+  }
+
+  .step-item {
+    padding: 12px 14px;
+  }
+
+  .nav-btn {
+    padding: 10px 16px;
   }
 }
 </style>
