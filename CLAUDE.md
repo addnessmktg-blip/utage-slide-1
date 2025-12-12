@@ -246,6 +246,31 @@ UTAGEというプラットフォーム上で、プロフェッショナルなス
 - デザインの統一感が出るのでおすすめ
 - **「前へ」「次へ」の両方を設置**（1ページ目は「次へ」のみ、最終ページは「前へ」のみ）
 
+### ナビゲーションボタンの配置ルール（重要）
+
+ボタンは **コンテンツ領域の左右端に揃える**こと。中央寄せで並べると見栄えが悪い。
+
+```css
+/* ✅ 良い例：コンテンツ幅いっぱいに左右配置 */
+.nav-buttons {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* ❌ 悪い例：中央に固定配置 */
+.nav-buttons {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+}
+```
+
+**配置のポイント**：
+- `content-wrapper`内に配置し、カードと同じ幅で左右に配置
+- `justify-content: space-between`で両端揃え
+- `position: fixed`は避ける（コンテンツとの整合性が取れなくなる）
+
 ---
 
 ## STEP 8: 前準備の依頼（コード生成前に必須）
