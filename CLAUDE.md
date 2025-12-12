@@ -478,7 +478,42 @@ CSSは必ずカスタムHTML内の`<style>`タグに含めること。
    @media (max-height: 500px) and (orientation: landscape) { }
    ```
 
-4. **動画埋め込み**
+4. **モバイルスクロール対応（超重要）**
+
+   スマホで全コンテンツが表示されない・スクロールできない問題を防ぐ。
+
+   ```css
+   /* ✅ 正しい実装 */
+   .slide-container {
+     min-height: 100vh;        /* 最小高さのみ指定 */
+     overflow-y: auto;         /* スクロール許可 */
+     -webkit-overflow-scrolling: touch; /* iOS慣性スクロール */
+   }
+
+   .slide-container.is-fullscreen {
+     position: fixed;
+     top: 0;
+     left: 0;
+     width: 100vw;
+     min-height: 100vh;        /* heightではなくmin-height */
+     height: auto;             /* 高さ自動 */
+     overflow-y: auto;         /* スクロール許可 */
+   }
+
+   /* ❌ 絶対にやってはいけない */
+   .slide-container.is-fullscreen {
+     height: 100vh;            /* 固定高さ → スクロール不可 */
+     overflow: hidden;         /* はみ出し非表示 → 見えなくなる */
+   }
+   ```
+
+   **チェックリスト**：
+   - [ ] `height: 100vh` ではなく `min-height: 100vh` を使う
+   - [ ] `overflow: hidden` を使わない（`overflow-y: auto`）
+   - [ ] スマホ実機 or デベロッパーツールで必ず確認
+   - [ ] 縦長コンテンツでもスクロールで全部見えるか確認
+
+5. **動画埋め込み**
    ```html
    <iframe
      src="https://utage-system.com/video/XXXXX?autoplay=1&muted=1&loop=1&controls=0&playsinline=1"
