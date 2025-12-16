@@ -1,0 +1,49 @@
+<script>
+// 次のスライドにスクロール
+function scrollToNext(currentSlide) {
+  var nextSlide = document.getElementById('slide-' + (currentSlide + 1));
+  if (nextSlide) {
+    nextSlide.scrollIntoView({ behavior: 'smooth' });
+  }
+}
+
+// キーボード操作対応（下矢印、スペース、Enter）
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowDown' || e.key === ' ' || e.key === 'Enter') {
+    e.preventDefault();
+    var sections = document.querySelectorAll('.slide-section');
+    var currentSection = null;
+    var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+    for (var i = 0; i < sections.length; i++) {
+      var rect = sections[i].getBoundingClientRect();
+      if (rect.top >= -100 && rect.top < window.innerHeight / 2) {
+        currentSection = i;
+        break;
+      }
+    }
+
+    if (currentSection !== null && currentSection < sections.length - 1) {
+      sections[currentSection + 1].scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+
+  if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    var sections = document.querySelectorAll('.slide-section');
+    var currentSection = null;
+
+    for (var i = 0; i < sections.length; i++) {
+      var rect = sections[i].getBoundingClientRect();
+      if (rect.top >= -100 && rect.top < window.innerHeight / 2) {
+        currentSection = i;
+        break;
+      }
+    }
+
+    if (currentSection !== null && currentSection > 0) {
+      sections[currentSection - 1].scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+});
+</script>
