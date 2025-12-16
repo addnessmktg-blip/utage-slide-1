@@ -1408,7 +1408,7 @@
     <div class="slide-section final-section" id="slide-25">
       <!-- 背景動画 -->
       <div class="final-video-bg">
-        <iframe src="https://utage-system.com/video/m8u907ngO3jY?autoplay=1&loop=1&muted=1&controls=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        <iframe id="bg-video-iframe" src="https://utage-system.com/video/m8u907ngO3jY?autoplay=1&muted=1&controls=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
       </div>
       <!-- 装飾 -->
       <div class="deco-circle large"></div>
@@ -1422,5 +1422,17 @@
     </div>
 
   </div>
+
+  <script>
+    // 背景動画を3秒ごとにリロードしてループさせる
+    setInterval(function() {
+      var iframe = document.getElementById('bg-video-iframe');
+      if (iframe) {
+        var src = iframe.src;
+        iframe.src = '';
+        iframe.src = src;
+      }
+    }, 3000);
+  </script>
 </body>
 </html>
