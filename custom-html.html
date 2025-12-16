@@ -46,6 +46,98 @@
       overflow-y: auto !important;
     }
 
+    /* ===== パーティクル背景 ===== */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ===== プログレスインジケーター ===== */
+    .progress-indicator {
+      position: fixed;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .progress-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255, 215, 0, 0.2);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .progress-dot.active {
+      background: #FFD700;
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+      transform: scale(1.3);
+    }
+
+    .progress-number {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      font-size: 0.9rem;
+      color: rgba(255, 215, 0, 0.7);
+      z-index: 1000;
+    }
+
+    /* ===== イエスマン浮遊ワード ===== */
+    .floating-words {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .floating-words.visible {
+      opacity: 1;
+    }
+
+    .floating-word {
+      position: absolute;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: rgba(255, 215, 0, 0.15);
+      animation: floatWord 8s ease-in-out infinite;
+      white-space: nowrap;
+    }
+
+    @keyframes floatWord {
+      0%, 100% {
+        transform: translateY(0) rotate(-5deg);
+        opacity: 0;
+      }
+      10% {
+        opacity: 0.3;
+      }
+      50% {
+        transform: translateY(-100px) rotate(5deg);
+        opacity: 0.2;
+      }
+      90% {
+        opacity: 0.3;
+      }
+    }
+
     /* セクション共通 */
     .slide-section {
       min-height: 100vh;
@@ -54,13 +146,27 @@
       justify-content: center;
       align-items: center;
       padding: 60px 20px;
-      background-color: #0a0a0a;
       position: relative;
+      z-index: 10;
+      transition: background 0.8s ease;
+    }
+
+    /* グラデーション背景バリエーション */
+    .slide-section:nth-child(odd) {
+      background: linear-gradient(135deg, rgba(10, 10, 10, 0.95) 0%, rgba(20, 20, 30, 0.95) 100%);
+    }
+
+    .slide-section:nth-child(even) {
+      background: linear-gradient(135deg, rgba(15, 15, 20, 0.95) 0%, rgba(10, 10, 10, 0.95) 100%);
+    }
+
+    .slide-section.highlight-section {
+      background: linear-gradient(135deg, rgba(30, 25, 0, 0.95) 0%, rgba(10, 10, 10, 0.95) 100%);
     }
 
     /* タイトルセクション */
     .title-section {
-      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+      background: radial-gradient(ellipse at center, rgba(40, 35, 0, 0.3) 0%, rgba(10, 10, 10, 0.95) 70%) !important;
       text-align: center;
     }
 
@@ -71,12 +177,35 @@
       text-shadow: 0 0 60px rgba(255, 215, 0, 0.5);
       margin-bottom: 20px;
       letter-spacing: 0.1em;
+      animation: titlePulse 3s ease-in-out infinite;
+    }
+
+    @keyframes titlePulse {
+      0%, 100% {
+        text-shadow: 0 0 60px rgba(255, 215, 0, 0.5);
+      }
+      50% {
+        text-shadow: 0 0 100px rgba(255, 215, 0, 0.8), 0 0 150px rgba(255, 215, 0, 0.4);
+      }
     }
 
     .subtitle {
       font-size: clamp(1rem, 3vw, 1.5rem);
       color: #888;
       font-weight: 300;
+      opacity: 0;
+      animation: fadeInUp 1s ease 0.5s forwards;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     /* コンテンツセクション共通 */
@@ -92,6 +221,14 @@
       font-weight: 700;
       letter-spacing: 0.3em;
       margin-bottom: 20px;
+      opacity: 0;
+      transform: translateX(-20px);
+      transition: all 0.6s ease;
+    }
+
+    .slide-section.in-view .section-number {
+      opacity: 1;
+      transform: translateX(0);
     }
 
     .section-title {
@@ -99,16 +236,48 @@
       font-weight: 700;
       margin-bottom: 40px;
       color: #fff;
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.8s ease 0.2s;
+    }
+
+    .slide-section.in-view .section-title {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     .section-title .highlight {
       color: #FFD700;
+      position: relative;
+    }
+
+    .section-title .highlight::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 0;
+      height: 3px;
+      background: #FFD700;
+      transition: width 0.8s ease 0.8s;
+    }
+
+    .slide-section.in-view .section-title .highlight::after {
+      width: 100%;
     }
 
     .section-text {
       font-size: clamp(1rem, 2.5vw, 1.3rem);
       color: #ccc;
       margin-bottom: 30px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.6s ease 0.4s;
+    }
+
+    .slide-section.in-view .section-text {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     .section-text-large {
@@ -125,10 +294,37 @@
       text-align: center;
       margin: 40px 0;
       color: #fff;
+      opacity: 0;
+      transform: scale(0.8);
+      transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .slide-section.in-view .impact-text {
+      opacity: 1;
+      transform: scale(1);
     }
 
     .impact-text .highlight {
       color: #FFD700;
+      display: inline-block;
+      animation: none;
+    }
+
+    .slide-section.in-view .impact-text .highlight {
+      animation: highlightPop 0.6s ease 0.5s both;
+    }
+
+    @keyframes highlightPop {
+      0% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.2);
+        text-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+      }
+      100% {
+        transform: scale(1);
+      }
     }
 
     /* アジェンダ */
@@ -143,6 +339,19 @@
       align-items: center;
       padding: 20px 0;
       border-bottom: 1px solid #222;
+      opacity: 0;
+      transform: translateX(-30px);
+      transition: all 0.5s ease;
+    }
+
+    .slide-section.in-view .agenda-item:nth-child(1) { transition-delay: 0.2s; }
+    .slide-section.in-view .agenda-item:nth-child(2) { transition-delay: 0.4s; }
+    .slide-section.in-view .agenda-item:nth-child(3) { transition-delay: 0.6s; }
+    .slide-section.in-view .agenda-item:nth-child(4) { transition-delay: 0.8s; }
+
+    .slide-section.in-view .agenda-item {
+      opacity: 1;
+      transform: translateX(0);
     }
 
     .agenda-number {
@@ -160,16 +369,37 @@
 
     /* チャット風UI */
     .chat-container {
-      background: #1a1a1a;
+      background: rgba(26, 26, 26, 0.8);
+      backdrop-filter: blur(10px);
       border-radius: 16px;
       padding: 30px;
       margin: 30px 0;
       border: 1px solid #333;
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.6s ease 0.3s;
+    }
+
+    .slide-section.in-view .chat-container {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     .chat-message {
       display: flex;
       margin-bottom: 20px;
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+
+    .chat-message.user {
+      transform: translateX(20px);
+    }
+
+    .chat-message.visible {
+      opacity: 1;
+      transform: translateX(0);
+      transition: all 0.5s ease;
     }
 
     .chat-message:last-child {
@@ -202,6 +432,24 @@
       background: #333;
       color: #fff;
       margin-right: 12px;
+      position: relative;
+    }
+
+    .chat-message.ai .chat-avatar::after {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: #4ade80;
+      border-radius: 50%;
+      bottom: 0;
+      right: 0;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
     }
 
     .chat-bubble {
@@ -209,6 +457,7 @@
       padding: 15px 20px;
       border-radius: 16px;
       font-size: 1rem;
+      position: relative;
     }
 
     .chat-message.user .chat-bubble {
@@ -223,13 +472,49 @@
       border-bottom-left-radius: 4px;
     }
 
+    /* タイピングアニメーション */
+    .typing-indicator {
+      display: inline-flex;
+      gap: 4px;
+      padding: 10px 0;
+    }
+
+    .typing-indicator span {
+      width: 8px;
+      height: 8px;
+      background: #888;
+      border-radius: 50%;
+      animation: typingBounce 1.4s ease-in-out infinite;
+    }
+
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typingBounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-8px); }
+    }
+
+    .typed-text {
+      overflow: hidden;
+      white-space: pre-wrap;
+    }
+
     /* 警告ボックス */
     .warning-box {
-      background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%);
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0.05) 100%);
       border-left: 4px solid #FFD700;
       padding: 25px 30px;
       margin: 30px 0;
       border-radius: 0 12px 12px 0;
+      opacity: 0;
+      transform: translateX(-20px);
+      transition: all 0.6s ease 0.6s;
+    }
+
+    .slide-section.in-view .warning-box {
+      opacity: 1;
+      transform: translateX(0);
     }
 
     .warning-box p {
@@ -240,16 +525,32 @@
     .warning-box .emoji {
       font-size: 1.5rem;
       margin-right: 10px;
+      animation: shake 0.5s ease 1s;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: rotate(0); }
+      25% { transform: rotate(-10deg); }
+      75% { transform: rotate(10deg); }
     }
 
     /* ポイントボックス */
     .point-box {
-      background: #1a1a1a;
+      background: rgba(26, 26, 26, 0.8);
+      backdrop-filter: blur(10px);
       border: 2px solid #FFD700;
       border-radius: 16px;
       padding: 40px;
       margin: 30px 0;
       text-align: center;
+      opacity: 0;
+      transform: scale(0.9);
+      transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.3s;
+    }
+
+    .slide-section.in-view .point-box {
+      opacity: 1;
+      transform: scale(1);
     }
 
     .point-box .text {
@@ -259,12 +560,39 @@
 
     /* プロンプト例 */
     .prompt-large {
-      background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
+      background: linear-gradient(135deg, rgba(26, 26, 26, 0.9) 0%, rgba(15, 15, 15, 0.9) 100%);
+      backdrop-filter: blur(10px);
       border: 1px solid #333;
       border-radius: 16px;
       padding: 50px 40px;
       margin: 30px 0;
       text-align: center;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.6s ease 0.2s;
+    }
+
+    .slide-section.in-view .prompt-large {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .prompt-large::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.1), transparent);
+      animation: shimmer 3s infinite 1s;
+    }
+
+    @keyframes shimmer {
+      0% { left: -100%; }
+      100% { left: 100%; }
     }
 
     .prompt-large .label {
@@ -285,6 +613,29 @@
       color: #FFD700;
     }
 
+    /* AI回答例 */
+    .ai-response-example {
+      margin-top: 30px;
+      padding-top: 30px;
+      border-top: 1px solid #333;
+      text-align: left;
+    }
+
+    .ai-response-example .label {
+      font-size: 0.8rem;
+      color: #888;
+      margin-bottom: 15px;
+    }
+
+    .ai-response-example .response {
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 20px;
+      font-size: 1rem;
+      color: #ccc;
+      line-height: 1.8;
+    }
+
     /* 比較表示 */
     .comparison {
       display: grid;
@@ -302,6 +653,9 @@
     .comparison-box {
       padding: 30px;
       border-radius: 12px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.6s ease;
     }
 
     .comparison-box.bad {
@@ -312,6 +666,18 @@
     .comparison-box.good {
       background: rgba(255, 215, 0, 0.1);
       border: 1px solid rgba(255, 215, 0, 0.3);
+    }
+
+    .slide-section.in-view .comparison-box:nth-child(1) {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: 0.3s;
+    }
+
+    .slide-section.in-view .comparison-box:nth-child(2) {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: 0.5s;
     }
 
     .comparison-box .label {
@@ -345,10 +711,18 @@
     .three-point-item {
       display: flex;
       align-items: center;
-      background: #1a1a1a;
+      background: rgba(26, 26, 26, 0.8);
+      backdrop-filter: blur(10px);
       border-radius: 12px;
       padding: 25px 30px;
+      opacity: 0;
+      transform: translateX(-30px);
+      transition: all 0.5s ease;
     }
+
+    .slide-section.in-view .three-point-item:nth-child(1) { transition-delay: 0.3s; opacity: 1; transform: translateX(0); }
+    .slide-section.in-view .three-point-item:nth-child(2) { transition-delay: 0.5s; opacity: 1; transform: translateX(0); }
+    .slide-section.in-view .three-point-item:nth-child(3) { transition-delay: 0.7s; opacity: 1; transform: translateX(0); }
 
     .three-point-item .num {
       font-size: 2rem;
@@ -364,7 +738,7 @@
 
     /* 最終セクション */
     .final-section {
-      background: linear-gradient(135deg, #1a1a00 0%, #0a0a0a 100%);
+      background: radial-gradient(ellipse at center, rgba(50, 45, 0, 0.3) 0%, rgba(10, 10, 10, 0.95) 70%) !important;
       text-align: center;
     }
 
@@ -373,11 +747,25 @@
       font-weight: 700;
       color: #FFD700;
       margin-bottom: 30px;
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.8s ease;
+    }
+
+    .slide-section.in-view .final-message {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     .final-sub {
       font-size: 1.2rem;
       color: #888;
+      opacity: 0;
+      transition: all 0.8s ease 0.3s;
+    }
+
+    .slide-section.in-view .final-sub {
+      opacity: 1;
     }
 
     /* 次へ矢印 */
@@ -389,18 +777,19 @@
       cursor: pointer;
       animation: slideArrowBounce 2s infinite;
       z-index: 100;
+      opacity: 0.7;
+      transition: opacity 0.3s;
+    }
+
+    .next-arrow:hover {
+      opacity: 1;
     }
 
     .next-arrow svg {
       width: 40px;
       height: 40px;
       fill: #FFD700;
-      opacity: 0.7;
-      transition: opacity 0.3s;
-    }
-
-    .next-arrow:hover svg {
-      opacity: 1;
+      filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5));
     }
 
     @keyframes slideArrowBounce {
@@ -419,13 +808,51 @@
     .slide-section:last-child .next-arrow {
       display: none;
     }
+
+    /* スマホ対応 */
+    @media (max-width: 768px) {
+      .progress-indicator {
+        right: 10px;
+        gap: 6px;
+      }
+
+      .progress-dot {
+        width: 8px;
+        height: 8px;
+      }
+
+      .floating-word {
+        font-size: 1rem;
+      }
+    }
   </style>
 </head>
 <body>
   <div id="ai-yesman-slide" class="slide-wrapper">
 
+    <!-- パーティクル背景 -->
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- プログレスインジケーター -->
+    <div class="progress-indicator" id="progress-indicator"></div>
+    <div class="progress-number" id="progress-number">1 / 25</div>
+
+    <!-- イエスマン浮遊ワード -->
+    <div class="floating-words" id="floating-words">
+      <div class="floating-word" style="top: 10%; left: 10%; animation-delay: 0s;">素晴らしい！</div>
+      <div class="floating-word" style="top: 20%; left: 80%; animation-delay: -2s;">いいですね！</div>
+      <div class="floating-word" style="top: 40%; left: 5%; animation-delay: -4s;">完璧です！</div>
+      <div class="floating-word" style="top: 60%; left: 85%; animation-delay: -1s;">最高です！</div>
+      <div class="floating-word" style="top: 80%; left: 15%; animation-delay: -3s;">その通り！</div>
+      <div class="floating-word" style="top: 30%; left: 70%; animation-delay: -5s;">賛成です！</div>
+      <div class="floating-word" style="top: 70%; left: 60%; animation-delay: -2.5s;">良いアイデア！</div>
+      <div class="floating-word" style="top: 15%; left: 40%; animation-delay: -4.5s;">同意します！</div>
+      <div class="floating-word" style="top: 50%; left: 25%; animation-delay: -1.5s;">素敵！</div>
+      <div class="floating-word" style="top: 85%; left: 50%; animation-delay: -3.5s;">問題ありません！</div>
+    </div>
+
     <!-- 1. タイトル -->
-    <div class="slide-section title-section" id="slide-1">
+    <div class="slide-section title-section in-view" id="slide-1" data-show-floating="true">
       <h1 class="main-title">AIはイエスマン</h1>
       <p class="subtitle">〜 盲点を突かせる技術 〜</p>
       <div class="next-arrow" onclick="scrollToNext(1)">
@@ -467,7 +894,7 @@
       <div class="content-section" style="text-align: center;">
         <p class="section-number">01</p>
         <p class="impact-text">AIは<span class="highlight">便利</span>。</p>
-        <p class="section-text-large" style="color: #666;">
+        <p class="section-text-large section-text" style="color: #666;">
           企画のアイデア出し、文章作成、リサーチ...<br>
           なんでも手伝ってくれる。
         </p>
@@ -488,13 +915,15 @@
     </div>
 
     <!-- 5. AIはなんでも肯定する -->
-    <div class="slide-section" id="slide-5">
+    <div class="slide-section highlight-section" id="slide-5" data-show-floating="true">
       <div class="content-section">
         <p class="section-number">02</p>
         <h2 class="section-title">AIは、<span class="highlight">なんでも肯定する</span></h2>
         <p class="section-text">
           あなたが何を言っても、基本的に「いいですね！」と返ってくる。<br>
-          これが、AIの本質。
+          これが、AIの本質。<br><br>
+          <strong>試してみてください。</strong><br>
+          どんな企画を見せても、AIは褒めてくれます。
         </p>
       </div>
       <div class="next-arrow" onclick="scrollToNext(5)">
@@ -503,7 +932,7 @@
     </div>
 
     <!-- 6. 例：褒めて -->
-    <div class="slide-section" id="slide-6">
+    <div class="slide-section" id="slide-6" data-show-floating="true" data-typing="true">
       <div class="content-section">
         <p class="section-number">EXAMPLE</p>
         <h2 class="section-title">例えば、こう聞くと...</h2>
@@ -512,13 +941,15 @@
             <div class="chat-avatar">You</div>
             <div class="chat-bubble">この企画、どう思う？褒めて！</div>
           </div>
-          <div class="chat-message ai">
+          <div class="chat-message ai" data-typing-target="true">
             <div class="chat-avatar">AI</div>
-            <div class="chat-bubble">素晴らしい企画ですね！ターゲット設定も明確で、市場のニーズをしっかり捉えています！</div>
+            <div class="chat-bubble">
+              <span class="typed-text" data-full-text="素晴らしい企画ですね！ターゲット設定も明確で、市場のニーズをしっかり捉えています。特に、競合との差別化ポイントが明確で、実現可能性も高いと思います！"></span>
+            </div>
           </div>
         </div>
         <div class="warning-box">
-          <p><span class="emoji">⚠️</span>これ、本当に良い企画かどうかは分からない。</p>
+          <p><span class="emoji">⚠️</span>これ、本当に良い企画かどうかは分からない。<br>AIは「褒めて」と言われたから褒めただけ。</p>
         </div>
       </div>
       <div class="next-arrow" onclick="scrollToNext(6)">
@@ -530,11 +961,12 @@
     <div class="slide-section" id="slide-7">
       <div class="content-section" style="text-align: center;">
         <p class="section-number">03</p>
-        <p class="section-text-large">
+        <p class="section-text-large impact-text" style="font-size: clamp(1.5rem, 4vw, 2.5rem);">
           「じゃあ、<span class="highlight">批判的に考えて</span>って<br>言えばいいんじゃない？」
         </p>
         <p class="section-text" style="color: #666; margin-top: 40px;">
-          ...と思いますよね。
+          ...と思いますよね。<br>
+          実際、多くの人がこれを試します。
         </p>
       </div>
       <div class="next-arrow" onclick="scrollToNext(7)">
@@ -543,7 +975,7 @@
     </div>
 
     <!-- 8. 批判的にもイエスマン -->
-    <div class="slide-section" id="slide-8">
+    <div class="slide-section" id="slide-8" data-typing="true">
       <div class="content-section">
         <p class="section-number">EXAMPLE</p>
         <h2 class="section-title">「批判的に考えて」と言うと...</h2>
@@ -552,11 +984,16 @@
             <div class="chat-avatar">You</div>
             <div class="chat-bubble">この企画、批判的な視点で見てくれる？</div>
           </div>
-          <div class="chat-message ai">
+          <div class="chat-message ai" data-typing-target="true">
             <div class="chat-avatar">AI</div>
-            <div class="chat-bubble">分かりました。批判的に見ますね。<br><br>ターゲット層がやや広いかもしれません。また、競合との差別化ポイントをもう少し明確にすると良いでしょう。</div>
+            <div class="chat-bubble">
+              <span class="typed-text" data-full-text="分かりました。批判的に見ますね。ターゲット層がやや広いかもしれません。また、競合との差別化ポイントをもう少し明確にすると良いでしょう。予算配分についても再検討の余地があるかもしれません。"></span>
+            </div>
           </div>
         </div>
+        <p class="section-text" style="margin-top: 20px; text-align: center; color: #888;">
+          一見、ちゃんと批判してくれてるように見える...
+        </p>
       </div>
       <div class="next-arrow" onclick="scrollToNext(8)">
         <svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
@@ -564,13 +1001,13 @@
     </div>
 
     <!-- 9. 一見良さそうだけど -->
-    <div class="slide-section" id="slide-9">
+    <div class="slide-section highlight-section" id="slide-9">
       <div class="content-section" style="text-align: center;">
-        <p class="section-text-large">
-          一見、ちゃんと批判してくれてるように見える。
-        </p>
-        <p class="impact-text" style="margin-top: 40px;">
+        <p class="impact-text">
           でも、これも<span class="highlight">イエスマン</span>。
+        </p>
+        <p class="section-text" style="margin-top: 30px;">
+          なぜなら...
         </p>
       </div>
       <div class="next-arrow" onclick="scrollToNext(9)">
@@ -588,8 +1025,9 @@
         </div>
         <p class="section-text">
           AIは、あなたの指示に忠実に応える。<br>
-          「批判して」と言われれば批判する。<br>
-          でもそれは、<strong>あなたが想定した範囲内の批判</strong>でしかない。
+          「批判して」と言われれば批判する。<br><br>
+          でもそれは、<strong>あなたが想定した範囲内の批判</strong>でしかない。<br>
+          あなたが気づいていない視点からのツッコミは入らない。
         </p>
       </div>
       <div class="next-arrow" onclick="scrollToNext(10)">
@@ -598,12 +1036,16 @@
     </div>
 
     <!-- 11. AIの本質 -->
-    <div class="slide-section" id="slide-11">
+    <div class="slide-section highlight-section" id="slide-11">
       <div class="content-section" style="text-align: center;">
         <p class="section-number">POINT</p>
         <p class="impact-text">
           AIは<span class="highlight">指示に従う</span>。<br>
           <span style="font-size: 0.6em; color: #888;">それ以上でも、それ以下でもない。</span>
+        </p>
+        <p class="section-text" style="margin-top: 40px;">
+          優秀すぎるがゆえに、<br>
+          あなたの指示の「外側」には出てこない。
         </p>
       </div>
       <div class="next-arrow" onclick="scrollToNext(11)">
@@ -621,14 +1063,16 @@
             <p class="label">✗ AIができないこと</p>
             <p class="content">
               あなたが<strong>想定していない視点</strong>から<br>
-              自発的にツッコミを入れる
+              自発的にツッコミを入れる<br><br>
+              <small style="color: #888;">→ 指示されていないことはしない</small>
             </p>
           </div>
           <div class="comparison-box good">
             <p class="label">◯ AIができること</p>
             <p class="content">
               あなたが<strong>指示したこと</strong>に対して<br>
-              忠実に答える
+              忠実に、完璧に答える<br><br>
+              <small style="color: #888;">→ 指示されたことは完璧にこなす</small>
             </p>
           </div>
         </div>
@@ -641,12 +1085,14 @@
     <!-- 13. 優秀な部下 -->
     <div class="slide-section" id="slide-13">
       <div class="content-section" style="text-align: center;">
-        <p class="section-text-large">
+        <p class="impact-text" style="font-size: clamp(1.5rem, 4vw, 2.5rem);">
           AIは<span class="highlight">優秀な部下</span>のようなもの。
         </p>
         <p class="section-text" style="margin-top: 30px;">
           言われたことは完璧にやる。<br>
-          でも、<strong>言われてないことは指摘しない。</strong>
+          でも、<strong>言われてないことは指摘しない。</strong><br><br>
+          上司（あなた）の指示を疑わない。<br>
+          それが「良い部下」だから。
         </p>
       </div>
       <div class="next-arrow" onclick="scrollToNext(13)">
@@ -655,10 +1101,13 @@
     </div>
 
     <!-- 14. じゃあどうするか -->
-    <div class="slide-section" id="slide-14">
+    <div class="slide-section highlight-section" id="slide-14">
       <div class="content-section" style="text-align: center;">
         <p class="section-number">05</p>
         <p class="impact-text">じゃあ、<span class="highlight">どうするか？</span></p>
+        <p class="section-text" style="margin-top: 20px;">
+          答えはシンプル。
+        </p>
       </div>
       <div class="next-arrow" onclick="scrollToNext(14)">
         <svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
@@ -670,8 +1119,10 @@
       <div class="content-section">
         <h2 class="section-title">「<span class="highlight">何を検証するか</span>」を<br>具体的に指示する</h2>
         <p class="section-text">
-          「批判的に」ではなく、<br>
-          <strong>どんな角度から検証してほしいか</strong>を明確に伝える。
+          「批判的に」という曖昧な指示ではなく、<br>
+          <strong>どんな角度から検証してほしいか</strong>を明確に伝える。<br><br>
+          具体的な「検証ポイント」を指定することで、<br>
+          AIは自分の盲点を突いてくれるようになる。
         </p>
       </div>
       <div class="next-arrow" onclick="scrollToNext(15)">
@@ -685,10 +1136,16 @@
         <div class="prompt-large">
           <p class="label">PROMPT 01 / 失敗シナリオ</p>
           <p class="text">「この企画が<strong>失敗する</strong>としたら、<br>どんな理由が考えられる？」</p>
+          <div class="ai-response-example">
+            <p class="label">→ AIはこう返す</p>
+            <div class="response">
+              失敗の可能性として、以下が考えられます：<br>
+              1. ターゲットの購買タイミングと施策時期のズレ<br>
+              2. 競合の類似キャンペーンとの差別化不足<br>
+              3. 予算に対するリーチ数の見積もりが甘い可能性...
+            </div>
+          </div>
         </div>
-        <p class="section-text" style="text-align: center; color: #888;">
-          → 成功前提ではなく、失敗の可能性を洗い出させる
-        </p>
       </div>
       <div class="next-arrow" onclick="scrollToNext(16)">
         <svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
@@ -701,10 +1158,16 @@
         <div class="prompt-large">
           <p class="label">PROMPT 02 / ターゲット外視点</p>
           <p class="text">「<strong>ターゲット外</strong>の人がこれを見たら、<br>どう感じると思う？」</p>
+          <div class="ai-response-example">
+            <p class="label">→ AIはこう返す</p>
+            <div class="response">
+              ターゲット外の層から見ると：<br>
+              ・専門用語が多く、何のサービスか分かりにくい<br>
+              ・価格帯が見えず、自分向けか判断できない<br>
+              ・「若者向け」という印象が強く、中高年は敬遠しそう...
+            </div>
+          </div>
         </div>
-        <p class="section-text" style="text-align: center; color: #888;">
-          → 想定外の層からの見え方を確認する
-        </p>
       </div>
       <div class="next-arrow" onclick="scrollToNext(17)">
         <svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
@@ -717,10 +1180,16 @@
         <div class="prompt-large">
           <p class="label">PROMPT 03 / 競合視点</p>
           <p class="text">「<strong>競合</strong>がこの企画を見たら、<br>何て言うと思う？」</p>
+          <div class="ai-response-example">
+            <p class="label">→ AIはこう返す</p>
+            <div class="response">
+              競合の立場から見ると：<br>
+              ・「うちでも同じことできるな」と思われる可能性<br>
+              ・価格競争に持ち込まれるリスク<br>
+              ・差別化ポイントが技術的に模倣しやすい...
+            </div>
+          </div>
         </div>
-        <p class="section-text" style="text-align: center; color: #888;">
-          → 第三者（競合）の目線で弱点を探る
-        </p>
       </div>
       <div class="next-arrow" onclick="scrollToNext(18)">
         <svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
@@ -733,10 +1202,16 @@
         <div class="prompt-large">
           <p class="label">PROMPT 04 / 前提を疑う</p>
           <p class="text">「この企画の<strong>前提が間違っている</strong><br>可能性はある？」</p>
+          <div class="ai-response-example">
+            <p class="label">→ AIはこう返す</p>
+            <div class="response">
+              以下の前提に疑問があります：<br>
+              ・「ターゲットはSNSを見ている」という前提<br>
+              ・「価格が安ければ売れる」という前提<br>
+              ・「認知さえ取れれば購入につながる」という前提...
+            </div>
+          </div>
         </div>
-        <p class="section-text" style="text-align: center; color: #888;">
-          → 土台から疑わせる
-        </p>
       </div>
       <div class="next-arrow" onclick="scrollToNext(19)">
         <svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
@@ -749,10 +1224,17 @@
         <div class="prompt-large">
           <p class="label">PROMPT 05 / 見落とし</p>
           <p class="text">「私が<strong>見落としている視点</strong>が<br>あるとしたら何？」</p>
+          <div class="ai-response-example">
+            <p class="label">→ AIはこう返す</p>
+            <div class="response">
+              見落としている可能性がある視点：<br>
+              ・法規制やコンプライアンスの観点<br>
+              ・社内リソースの制約（実行可能性）<br>
+              ・季節性や市場トレンドの変化<br>
+              ・既存顧客への影響...
+            </div>
+          </div>
         </div>
-        <p class="section-text" style="text-align: center; color: #888;">
-          → 自分の盲点を直接聞く
-        </p>
       </div>
       <div class="next-arrow" onclick="scrollToNext(20)">
         <svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
@@ -760,13 +1242,15 @@
     </div>
 
     <!-- 21. 一発で終わらない -->
-    <div class="slide-section" id="slide-21">
+    <div class="slide-section highlight-section" id="slide-21">
       <div class="content-section" style="text-align: center;">
         <p class="section-number">06</p>
         <p class="impact-text">そして、<span class="highlight">一発で終わらない</span></p>
         <p class="section-text">
           AIとの対話は<strong>キャッチボール</strong>。<br>
-          一度聞いて終わりじゃない。
+          一度聞いて終わりじゃない。<br><br>
+          深掘りを繰り返すことで、<br>
+          本当に価値のある気づきが出てくる。
         </p>
       </div>
       <div class="next-arrow" onclick="scrollToNext(21)">
@@ -775,7 +1259,7 @@
     </div>
 
     <!-- 22. 対話例 -->
-    <div class="slide-section" id="slide-22">
+    <div class="slide-section" id="slide-22" data-typing="true">
       <div class="content-section">
         <p class="section-number">EXAMPLE</p>
         <h2 class="section-title">対話を<span class="highlight">繰り返す</span></h2>
@@ -784,17 +1268,21 @@
             <div class="chat-avatar">You</div>
             <div class="chat-bubble">この企画が失敗するとしたら？</div>
           </div>
-          <div class="chat-message ai">
+          <div class="chat-message ai" data-typing-target="true">
             <div class="chat-avatar">AI</div>
-            <div class="chat-bubble">ターゲットの購買タイミングとズレている可能性があります。</div>
+            <div class="chat-bubble">
+              <span class="typed-text" data-full-text="ターゲットの購買タイミングとズレている可能性があります。"></span>
+            </div>
           </div>
           <div class="chat-message user">
             <div class="chat-avatar">You</div>
-            <div class="chat-bubble">それ、もう少し詳しく</div>
+            <div class="chat-bubble">それ、もう少し詳しく教えて</div>
           </div>
-          <div class="chat-message ai">
+          <div class="chat-message ai" data-typing-target="true">
             <div class="chat-avatar">AI</div>
-            <div class="chat-bubble">この商品カテゴリは年末に需要が集中しますが、企画は春の実施予定ですよね...</div>
+            <div class="chat-bubble">
+              <span class="typed-text" data-full-text="この商品カテゴリは年末に需要が集中しますが、企画は春の実施予定ですよね。また、ボーナス時期との兼ね合いも..."></span>
+            </div>
           </div>
           <div class="chat-message user">
             <div class="chat-avatar">You</div>
@@ -810,11 +1298,15 @@
     <!-- 23. 繰り返すことで -->
     <div class="slide-section" id="slide-23">
       <div class="content-section" style="text-align: center;">
-        <p class="section-text-large">
-          このやり取りを<span class="highlight">何度も繰り返す</span>ことで、
+        <p class="section-text-large section-text">
+          このやり取りを<span class="highlight" style="color: #FFD700;">何度も繰り返す</span>ことで、
         </p>
         <p class="impact-text" style="margin-top: 30px;">
           自分では<span class="highlight">気づけなかった視点</span>が<br>見えてくる。
+        </p>
+        <p class="section-text" style="margin-top: 40px; color: #888;">
+          3回、5回、10回...<br>
+          深掘りするほど、盲点が見つかる。
         </p>
       </div>
       <div class="next-arrow" onclick="scrollToNext(23)">

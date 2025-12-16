@@ -12,7 +12,7 @@
   );
 
   if (isEditMode) {
-    console.log('編集モード: フルスクリーン無効');
+    console.log('編集モード: アニメーション無効');
     return;
   }
 
@@ -46,6 +46,266 @@
   hideElements();
   setInterval(hideElements, 500);
 
+  // ===== パーティクルシステム =====
+  var canvas = document.getElementById('particle-canvas');
+  var ctx = canvas ? canvas.getContext('2d') : null;
+  var particles = [];
+  var particleCount = 50;
+
+  function resizeCanvas() {
+    if (canvas) {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+  }
+
+  function Particle() {
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height;
+    this.vx = (Math.random() - 0.5) * 0.5;
+    this.vy = (Math.random() - 0.5) * 0.5;
+    this.radius = Math.random() * 2 + 1;
+    this.opacity = Math.random() * 0.5 + 0.1;
+    this.color = Math.random() > 0.7 ? '#FFD700' : '#ffffff';
+  }
+
+  Particle.prototype.update = function() {
+    this.x += this.vx;
+    this.y += this.vy;
+
+    if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+    if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+  };
+
+  Particle.prototype.draw = function() {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    ctx.fillStyle = this.color;
+    ctx.globalAlpha = this.opacity;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  };
+
+  function initParticles() {
+    particles = [];
+    for (var i = 0; i < particleCount; i++) {
+      particles.push(new Particle());
+    }
+  }
+
+  function animateParticles() {
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    particles.forEach(function(p) {
+      p.update();
+      p.draw();
+    });
+
+    // 近いパーティクル間に線を描画
+    for (var i = 0; i < particles.length; i++) {
+      for (var j = i + 1; j < particles.length; j++) {
+        var dx = particles[i].x - particles[j].x;
+        var dy = particles[i].y - particles[j].y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < 150) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = 'rgba(255, 215, 0, ' + (0.1 * (1 - dist / 150)) + ')';
+          ctx.stroke();
+        }
+      }
+    }
+
+    requestAnimationFrame(animateParticles);
+  }
+
+  if (canvas && ctx) {
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    initParticles();
+    animateParticles();
+  }
+
+  // ===== プログレスインジケーター =====
+  var progressIndicator = document.getElementById('progress-indicator');
+  var sections = document.querySelectorAll('.slide-section');
+  var totalSections = sections.length;
+
+  function createProgressDots() {
+    if (!progressIndicator) return;
+    progressIndicator.innerHTML = '';
+
+    for (var i = 0; i < totalSections; i++) {
+      var dot = document.createElement('div');
+      dot.className = 'progress-dot';
+      dot.setAttribute('data-section', i + 1);
+      (function(index) {
+        dot.addEventListener('click', function() {
+          var targetSection = document.getElementById('slide-' + (index + 1));
+          if (targetSection) {
+            targetSection.scrollIntoView({ behavior: 'smooth' });
+          }
+        });
+      })(i);
+      progressIndicator.appendChild(dot);
+    }
+  }
+
+  function updateProgress(currentIndex) {
+    var dots = document.querySelectorAll('.progress-dot');
+    dots.forEach(function(dot, i) {
+      if (i === currentIndex) {
+        dot.classList.add('active');
+      } else {
+        dot.classList.remove('active');
+      }
+    });
+
+    // ページ番号表示
+    var numberEl = document.querySelector('.progress-number');
+    if (!numberEl) {
+      numberEl = document.createElement('div');
+      numberEl.className = 'progress-number';
+      document.body.appendChild(numberEl);
+    }
+    numberEl.textContent = (currentIndex + 1) + ' / ' + totalSections;
+  }
+
+  createProgressDots();
+
+  // ===== フローティングワード制御 =====
+  var floatingWords = document.getElementById('floating-words');
+
+  function setFloatingWordsVisible(visible) {
+    if (floatingWords) {
+      if (visible) {
+        floatingWords.classList.add('visible');
+      } else {
+        floatingWords.classList.remove('visible');
+      }
+    }
+  }
+
+  // ===== タイピングアニメーション =====
+  var typedSections = new Set();
+
+  function typeText(element, text, callback) {
+    var i = 0;
+    element.textContent = '';
+    element.style.visibility = 'visible';
+
+    function type() {
+      if (i < text.length) {
+        element.textContent += text.charAt(i);
+        i++;
+        setTimeout(type, 25 + Math.random() * 15);
+      } else if (callback) {
+        callback();
+      }
+    }
+    type();
+  }
+
+  function triggerTypingAnimation(section) {
+    var sectionId = section.id;
+    if (typedSections.has(sectionId)) return;
+    typedSections.add(sectionId);
+
+    // data-full-text属性を持つspan要素を探す
+    var typedTextSpans = section.querySelectorAll('.typed-text[data-full-text]');
+    var delay = 0;
+
+    typedTextSpans.forEach(function(span) {
+      var fullText = span.getAttribute('data-full-text');
+      span.textContent = '';
+
+      setTimeout(function() {
+        typeText(span, fullText);
+      }, delay);
+
+      delay += fullText.length * 30 + 800;
+    });
+  }
+
+  // ===== Intersection Observer でセクション監視 =====
+  var currentSectionIndex = 0;
+
+  var observerOptions = {
+    root: null,
+    rootMargin: '-20% 0px -20% 0px',
+    threshold: 0.3
+  };
+
+  var sectionObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      var section = entry.target;
+
+      if (entry.isIntersecting) {
+        section.classList.add('in-view');
+
+        // 現在のセクションインデックスを取得
+        var index = Array.from(sections).indexOf(section);
+        if (index !== -1) {
+          currentSectionIndex = index;
+          updateProgress(currentSectionIndex);
+        }
+
+        // フローティングワード表示制御
+        var showFloating = section.getAttribute('data-show-floating') === 'true';
+        setFloatingWordsVisible(showFloating);
+
+        // タイピングアニメーション
+        var hasTyping = section.getAttribute('data-typing') === 'true';
+        if (hasTyping) {
+          setTimeout(function() {
+            triggerTypingAnimation(section);
+          }, 500);
+        }
+      }
+    });
+  }, observerOptions);
+
+  sections.forEach(function(section) {
+    sectionObserver.observe(section);
+  });
+
+  // 初期状態で最初のセクションをin-viewに
+  if (sections.length > 0) {
+    sections[0].classList.add('in-view');
+    updateProgress(0);
+  }
+
+  // ===== キーボード操作対応 =====
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowDown' || e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      if (currentSectionIndex < sections.length - 1) {
+        sections[currentSectionIndex + 1].scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (currentSectionIndex > 0) {
+        sections[currentSectionIndex - 1].scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    // Home/Endキー対応
+    if (e.key === 'Home') {
+      e.preventDefault();
+      sections[0].scrollIntoView({ behavior: 'smooth' });
+    }
+
+    if (e.key === 'End') {
+      e.preventDefault();
+      sections[sections.length - 1].scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+
   // ===== 次のスライドにスクロール =====
   window.scrollToNext = function(currentSlide) {
     var nextSlide = document.getElementById('slide-' + (currentSlide + 1));
@@ -54,43 +314,32 @@
     }
   };
 
-  // ===== キーボード操作対応 =====
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'ArrowDown' || e.key === ' ' || e.key === 'Enter') {
-      e.preventDefault();
-      var sections = document.querySelectorAll('.slide-section');
-      var currentSection = null;
+  // ===== タッチスワイプ対応 =====
+  var touchStartY = 0;
+  var touchEndY = 0;
 
-      for (var i = 0; i < sections.length; i++) {
-        var rect = sections[i].getBoundingClientRect();
-        if (rect.top >= -100 && rect.top < window.innerHeight / 2) {
-          currentSection = i;
-          break;
-        }
-      }
+  document.addEventListener('touchstart', function(e) {
+    touchStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
 
-      if (currentSection !== null && currentSection < sections.length - 1) {
-        sections[currentSection + 1].scrollIntoView({ behavior: 'smooth' });
-      }
-    }
+  document.addEventListener('touchend', function(e) {
+    touchEndY = e.changedTouches[0].screenY;
+    handleSwipe();
+  }, { passive: true });
 
-    if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      var sections = document.querySelectorAll('.slide-section');
-      var currentSection = null;
-
-      for (var i = 0; i < sections.length; i++) {
-        var rect = sections[i].getBoundingClientRect();
-        if (rect.top >= -100 && rect.top < window.innerHeight / 2) {
-          currentSection = i;
-          break;
-        }
-      }
-
-      if (currentSection !== null && currentSection > 0) {
-        sections[currentSection - 1].scrollIntoView({ behavior: 'smooth' });
+  function handleSwipe() {
+    var diff = touchStartY - touchEndY;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0 && currentSectionIndex < sections.length - 1) {
+        // スワイプアップ = 次へ
+        sections[currentSectionIndex + 1].scrollIntoView({ behavior: 'smooth' });
+      } else if (diff < 0 && currentSectionIndex > 0) {
+        // スワイプダウン = 前へ
+        sections[currentSectionIndex - 1].scrollIntoView({ behavior: 'smooth' });
       }
     }
-  });
+  }
+
+  console.log('AIイエスマン スライド初期化完了');
 })();
 </script>
