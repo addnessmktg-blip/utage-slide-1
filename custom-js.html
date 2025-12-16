@@ -1,49 +1,105 @@
 <script>
-// 次のスライドにスクロール
-function scrollToNext(currentSlide) {
-  var nextSlide = document.getElementById('slide-' + (currentSlide + 1));
-  if (nextSlide) {
-    nextSlide.scrollIntoView({ behavior: 'smooth' });
+(function() {
+  // ===== 編集画面かどうか判定 =====
+  var isEditMode = (
+    window.location.href.indexOf('/edit') !== -1 ||
+    window.location.href.indexOf('/admin') !== -1 ||
+    window.location.href.indexOf('preview=') !== -1 ||
+    document.querySelector('.editor-container') ||
+    document.querySelector('#editor') ||
+    document.querySelector('[data-edit-mode]') ||
+    window.parent !== window
+  );
+
+  if (isEditMode) {
+    console.log('編集モード: フルスクリーン無効');
+    return;
   }
-}
 
-// キーボード操作対応（下矢印、スペース、Enter）
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'ArrowDown' || e.key === ' ' || e.key === 'Enter') {
-    e.preventDefault();
-    var sections = document.querySelectorAll('.slide-section');
-    var currentSection = null;
-    var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+  // ===== 公開ページ: フルスクリーン適用 =====
+  var slideWrapper = document.querySelector('.slide-wrapper');
+  if (slideWrapper) {
+    slideWrapper.style.position = 'relative';
+    slideWrapper.style.zIndex = '9999';
+  }
 
-    for (var i = 0; i < sections.length; i++) {
-      var rect = sections[i].getBoundingClientRect();
-      if (rect.top >= -100 && rect.top < window.innerHeight / 2) {
-        currentSection = i;
-        break;
+  document.body.style.margin = '0';
+  document.body.style.padding = '0';
+  document.body.style.backgroundColor = '#0a0a0a';
+  document.documentElement.style.backgroundColor = '#0a0a0a';
+
+  // UTAGE要素を非表示
+  var hideSelectors = [
+    '.btn-toolbar', '#next_btn', 'nav[aria-label="breadcrumb"]',
+    'h4.mb-4', 'header', 'header > nav', 'footer',
+    '.sidebar', '#sidebar',
+    '.col-3', '.col-md-3', '.col-lg-3',
+    '.top-bar', '.bottom-bar',
+    '.navbar', '.nav', '.navigation',
+    '[class*="header"]', '[class*="footer"]', '[class*="sidebar"]',
+    '[class*="breadcrumb"]', '[class*="toolbar"]'
+  ];
+
+  function hideElements() {
+    hideSelectors.forEach(function(sel) {
+      try {
+        document.querySelectorAll(sel).forEach(function(el) {
+          if (!el.closest('.slide-wrapper')) {
+            el.style.display = 'none';
+          }
+        });
+      } catch(e) {}
+    });
+  }
+
+  hideElements();
+  setInterval(hideElements, 500);
+
+  // ===== 次のスライドにスクロール =====
+  window.scrollToNext = function(currentSlide) {
+    var nextSlide = document.getElementById('slide-' + (currentSlide + 1));
+    if (nextSlide) {
+      nextSlide.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // ===== キーボード操作対応 =====
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowDown' || e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      var sections = document.querySelectorAll('.slide-section');
+      var currentSection = null;
+
+      for (var i = 0; i < sections.length; i++) {
+        var rect = sections[i].getBoundingClientRect();
+        if (rect.top >= -100 && rect.top < window.innerHeight / 2) {
+          currentSection = i;
+          break;
+        }
+      }
+
+      if (currentSection !== null && currentSection < sections.length - 1) {
+        sections[currentSection + 1].scrollIntoView({ behavior: 'smooth' });
       }
     }
 
-    if (currentSection !== null && currentSection < sections.length - 1) {
-      sections[currentSection + 1].scrollIntoView({ behavior: 'smooth' });
-    }
-  }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      var sections = document.querySelectorAll('.slide-section');
+      var currentSection = null;
 
-  if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    var sections = document.querySelectorAll('.slide-section');
-    var currentSection = null;
+      for (var i = 0; i < sections.length; i++) {
+        var rect = sections[i].getBoundingClientRect();
+        if (rect.top >= -100 && rect.top < window.innerHeight / 2) {
+          currentSection = i;
+          break;
+        }
+      }
 
-    for (var i = 0; i < sections.length; i++) {
-      var rect = sections[i].getBoundingClientRect();
-      if (rect.top >= -100 && rect.top < window.innerHeight / 2) {
-        currentSection = i;
-        break;
+      if (currentSection !== null && currentSection > 0) {
+        sections[currentSection - 1].scrollIntoView({ behavior: 'smooth' });
       }
     }
-
-    if (currentSection !== null && currentSection > 0) {
-      sections[currentSection - 1].scrollIntoView({ behavior: 'smooth' });
-    }
-  }
-});
+  });
+})();
 </script>
