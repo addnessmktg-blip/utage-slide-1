@@ -204,10 +204,15 @@
       z-index: 0;
     }
 
-    .final-video-bg video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+    .final-video-bg iframe {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 180%;
+      height: 180%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      border: none;
     }
 
     .final-video-bg::after {
@@ -1403,9 +1408,7 @@
     <div class="slide-section final-section" id="slide-25">
       <!-- 背景動画 -->
       <div class="final-video-bg">
-        <video autoplay loop muted playsinline>
-          <source src="https://utage-system.com/video/m8u907ngO3jY" type="video/mp4">
-        </video>
+        <iframe src="https://utage-system.com/video/m8u907ngO3jY?autoplay=1&loop=1&muted=1&controls=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
       </div>
       <!-- 装飾 -->
       <div class="deco-circle large"></div>
