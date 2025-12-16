@@ -194,20 +194,31 @@
       }
     }
 
-    .final-video {
+    .final-video-bg {
       position: absolute;
-      bottom: 50px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 300px;
-      max-width: 80%;
-      border-radius: 12px;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       overflow: hidden;
+      z-index: 0;
     }
 
-    .final-video video {
+    .final-video-bg video {
       width: 100%;
-      display: block;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .final-video-bg::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1;
     }
 
     .deco-circle {
@@ -1390,24 +1401,20 @@
 
     <!-- スライド25: 最終 -->
     <div class="slide-section final-section" id="slide-25">
+      <!-- 背景動画 -->
+      <div class="final-video-bg">
+        <video autoplay loop muted playsinline>
+          <source src="https://utage-system.com/video/m8u907ngO3jY" type="video/mp4">
+        </video>
+      </div>
       <!-- 装飾 -->
       <div class="deco-circle large"></div>
       <div class="deco-circle small"></div>
-      <!-- ニコニコアヒル -->
-      <div class="duck-character size-l bottom-left float">
-        <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/5iJzs7djt82cmgSwEsq83PI4TUPxGfewTI7wNnd5.png" alt="ニコニコアヒル">
-      </div>
-      <div class="content-section" style="text-align: center;">
+      <div class="content-section" style="text-align: center; position: relative; z-index: 2;">
         <p class="final-message">AIはイエスマン。<br>だから、<span style="color: #fff;">正しく疑わせろ。</span></p>
         <p class="final-sub">
           それだけで、AIはあなたの<br><strong style="color: #FFD700;">最強の壁打ち相手</strong>になる。
         </p>
-      </div>
-      <!-- 動画 -->
-      <div class="final-video">
-        <video autoplay loop muted playsinline>
-          <source src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/YOUR_VIDEO_FILE.mp4" type="video/mp4">
-        </video>
       </div>
     </div>
 
