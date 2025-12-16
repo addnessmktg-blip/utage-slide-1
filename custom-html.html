@@ -138,6 +138,73 @@
       }
     }
 
+    /* ===== AIキャラクター ===== */
+    .ai-character {
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      opacity: 0.15;
+      z-index: 5;
+    }
+
+    .ai-character.top-right {
+      top: 80px;
+      right: 40px;
+    }
+
+    .ai-character.bottom-left {
+      bottom: 100px;
+      left: 40px;
+    }
+
+    .ai-character svg {
+      width: 100%;
+      height: 100%;
+      fill: #FFD700;
+    }
+
+    /* 装飾的な円 */
+    .deco-circle {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 215, 0, 0.1);
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .deco-circle.large {
+      width: 400px;
+      height: 400px;
+      top: -100px;
+      right: -100px;
+    }
+
+    .deco-circle.medium {
+      width: 250px;
+      height: 250px;
+      bottom: -50px;
+      left: -50px;
+    }
+
+    .deco-circle.small {
+      width: 150px;
+      height: 150px;
+      top: 50%;
+      left: 10%;
+      animation: pulse 4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 0.1;
+      }
+      50% {
+        transform: scale(1.1);
+        opacity: 0.2;
+      }
+    }
+
     /* セクション共通 */
     .slide-section {
       min-height: 100vh;
@@ -149,6 +216,7 @@
       position: relative;
       z-index: 10;
       transition: background 0.8s ease;
+      overflow: hidden;
     }
 
     /* グラデーション背景バリエーション */
@@ -254,12 +322,16 @@
     .section-title .highlight::after {
       content: '';
       position: absolute;
-      bottom: -5px;
+      bottom: -2px;
       left: 0;
       width: 0;
       height: 3px;
       background: #FFD700;
       transition: width 0.8s ease 0.8s;
+    }
+
+    .section-title {
+      margin-bottom: 40px;
     }
 
     .slide-section.in-view .section-title .highlight::after {
@@ -853,6 +925,24 @@
 
     <!-- 1. タイトル -->
     <div class="slide-section title-section in-view" id="slide-1" data-show-floating="true">
+      <!-- 装飾 -->
+      <div class="deco-circle large"></div>
+      <div class="deco-circle medium"></div>
+      <!-- AIキャラクター（ロボット） -->
+      <div class="ai-character top-right">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <rect x="25" y="30" width="50" height="45" rx="8" fill="#FFD700"/>
+          <rect x="35" y="10" width="30" height="25" rx="5" fill="#FFD700"/>
+          <circle cx="42" cy="22" r="5" fill="#0a0a0a"/>
+          <circle cx="58" cy="22" r="5" fill="#0a0a0a"/>
+          <rect x="42" y="48" width="16" height="3" rx="1" fill="#0a0a0a"/>
+          <rect x="10" y="40" width="15" height="8" rx="3" fill="#FFD700"/>
+          <rect x="75" y="40" width="15" height="8" rx="3" fill="#FFD700"/>
+          <rect x="32" y="75" width="12" height="15" rx="3" fill="#FFD700"/>
+          <rect x="56" y="75" width="12" height="15" rx="3" fill="#FFD700"/>
+          <circle cx="50" cy="55" r="3" fill="#0a0a0a"/>
+        </svg>
+      </div>
       <h1 class="main-title">AIはイエスマン</h1>
       <p class="subtitle">〜 盲点を突かせる技術 〜</p>
       <div class="next-arrow" onclick="scrollToNext(1)">
@@ -941,10 +1031,10 @@
             <div class="chat-avatar">You</div>
             <div class="chat-bubble">この企画、どう思う？褒めて！</div>
           </div>
-          <div class="chat-message ai" data-typing-target="true">
+          <div class="chat-message ai">
             <div class="chat-avatar">AI</div>
             <div class="chat-bubble">
-              <span class="typed-text" data-full-text="素晴らしい企画ですね！ターゲット設定も明確で、市場のニーズをしっかり捉えています。特に、競合との差別化ポイントが明確で、実現可能性も高いと思います！"></span>
+              <span class="typed-text" data-full-text="素晴らしい企画ですね！ターゲット設定も明確で、市場のニーズをしっかり捉えています。特に、競合との差別化ポイントが明確で、実現可能性も高いと思います！">素晴らしい企画ですね！ターゲット設定も明確で、市場のニーズをしっかり捉えています。特に、競合との差別化ポイントが明確で、実現可能性も高いと思います！</span>
             </div>
           </div>
         </div>
@@ -984,10 +1074,10 @@
             <div class="chat-avatar">You</div>
             <div class="chat-bubble">この企画、批判的な視点で見てくれる？</div>
           </div>
-          <div class="chat-message ai" data-typing-target="true">
+          <div class="chat-message ai">
             <div class="chat-avatar">AI</div>
             <div class="chat-bubble">
-              <span class="typed-text" data-full-text="分かりました。批判的に見ますね。ターゲット層がやや広いかもしれません。また、競合との差別化ポイントをもう少し明確にすると良いでしょう。予算配分についても再検討の余地があるかもしれません。"></span>
+              <span class="typed-text" data-full-text="分かりました。批判的に見ますね。ターゲット層がやや広いかもしれません。また、競合との差別化ポイントをもう少し明確にすると良いでしょう。予算配分についても再検討の余地があるかもしれません。">分かりました。批判的に見ますね。ターゲット層がやや広いかもしれません。また、競合との差別化ポイントをもう少し明確にすると良いでしょう。予算配分についても再検討の余地があるかもしれません。</span>
             </div>
           </div>
         </div>
@@ -1015,11 +1105,11 @@
       </div>
     </div>
 
-    <!-- 10. なぜか？ -->
+    <!-- 10. その理由 -->
     <div class="slide-section" id="slide-10">
       <div class="content-section">
         <p class="section-number">WHY?</p>
-        <h2 class="section-title">なぜか？</h2>
+        <h2 class="section-title">その理由</h2>
         <div class="point-box">
           <p class="text">「批判的に考えて」という<br><strong style="color: #FFD700;">指示に従っただけ</strong></p>
         </div>
@@ -1268,20 +1358,20 @@
             <div class="chat-avatar">You</div>
             <div class="chat-bubble">この企画が失敗するとしたら？</div>
           </div>
-          <div class="chat-message ai" data-typing-target="true">
+          <div class="chat-message ai">
             <div class="chat-avatar">AI</div>
             <div class="chat-bubble">
-              <span class="typed-text" data-full-text="ターゲットの購買タイミングとズレている可能性があります。"></span>
+              <span class="typed-text" data-full-text="ターゲットの購買タイミングとズレている可能性があります。">ターゲットの購買タイミングとズレている可能性があります。</span>
             </div>
           </div>
           <div class="chat-message user">
             <div class="chat-avatar">You</div>
             <div class="chat-bubble">それ、もう少し詳しく教えて</div>
           </div>
-          <div class="chat-message ai" data-typing-target="true">
+          <div class="chat-message ai">
             <div class="chat-avatar">AI</div>
             <div class="chat-bubble">
-              <span class="typed-text" data-full-text="この商品カテゴリは年末に需要が集中しますが、企画は春の実施予定ですよね。また、ボーナス時期との兼ね合いも..."></span>
+              <span class="typed-text" data-full-text="この商品カテゴリは年末に需要が集中しますが、企画は春の実施予定ですよね。また、ボーナス時期との兼ね合いも...">この商品カテゴリは年末に需要が集中しますが、企画は春の実施予定ですよね。また、ボーナス時期との兼ね合いも...</span>
             </div>
           </div>
           <div class="chat-message user">
@@ -1341,6 +1431,23 @@
 
     <!-- 25. 最終メッセージ -->
     <div class="slide-section final-section" id="slide-25">
+      <!-- 装飾 -->
+      <div class="deco-circle large"></div>
+      <div class="deco-circle small"></div>
+      <!-- AIキャラクター（笑顔） -->
+      <div class="ai-character bottom-left">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <rect x="25" y="30" width="50" height="45" rx="8" fill="#FFD700"/>
+          <rect x="35" y="10" width="30" height="25" rx="5" fill="#FFD700"/>
+          <circle cx="42" cy="22" r="5" fill="#0a0a0a"/>
+          <circle cx="58" cy="22" r="5" fill="#0a0a0a"/>
+          <path d="M 38 50 Q 50 60 62 50" stroke="#0a0a0a" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <rect x="10" y="40" width="15" height="8" rx="3" fill="#FFD700"/>
+          <rect x="75" y="40" width="15" height="8" rx="3" fill="#FFD700"/>
+          <rect x="32" y="75" width="12" height="15" rx="3" fill="#FFD700"/>
+          <rect x="56" y="75" width="12" height="15" rx="3" fill="#FFD700"/>
+        </svg>
+      </div>
       <div class="content-section" style="text-align: center;">
         <p class="final-message">AIはイエスマン。<br>だから、<span style="color: #fff;">正しく疑わせろ。</span></p>
         <p class="final-sub">
