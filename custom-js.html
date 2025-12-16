@@ -17,38 +17,29 @@
   }
 
   // ===== 公開ページ: フルスクリーン適用 =====
-  var slideWrapper = document.querySelector('.slide-wrapper');
-  if (slideWrapper) {
-    slideWrapper.style.position = 'relative';
-    slideWrapper.style.zIndex = '9999';
+  var slide = document.getElementById('ai-yesman-slide');
+  if (slide) {
+    slide.classList.add('is-fullscreen');
   }
 
   document.body.style.margin = '0';
   document.body.style.padding = '0';
-  document.body.style.backgroundColor = '#0a0a0a';
-  document.documentElement.style.backgroundColor = '#0a0a0a';
+  document.body.style.overflow = 'hidden';
 
   // UTAGE要素を非表示
   var hideSelectors = [
     '.btn-toolbar', '#next_btn', 'nav[aria-label="breadcrumb"]',
-    'h4.mb-4', 'header', 'header > nav', 'footer',
-    '.sidebar', '#sidebar',
-    '.col-3', '.col-md-3', '.col-lg-3',
-    '.top-bar', '.bottom-bar',
-    '.navbar', '.nav', '.navigation',
-    '[class*="header"]', '[class*="footer"]', '[class*="sidebar"]',
-    '[class*="breadcrumb"]', '[class*="toolbar"]'
+    'h4.mb-4', 'header > nav', 'footer', '.sidebar', '#sidebar',
+    '.col-3', '.col-md-3', '.col-lg-3'
   ];
 
   function hideElements() {
     hideSelectors.forEach(function(sel) {
-      try {
-        document.querySelectorAll(sel).forEach(function(el) {
-          if (!el.closest('.slide-wrapper')) {
-            el.style.display = 'none';
-          }
-        });
-      } catch(e) {}
+      document.querySelectorAll(sel).forEach(function(el) {
+        if (!el.closest('#ai-yesman-slide')) {
+          el.style.display = 'none';
+        }
+      });
     });
   }
 
