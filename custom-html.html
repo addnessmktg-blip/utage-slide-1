@@ -1318,6 +1318,30 @@
       }
     }
 
+    /* 画面全体に貼り付く画像 */
+    .splash-image {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-size: contain;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-color: rgba(0, 0, 0, 0.8);
+      z-index: 9999;
+      opacity: 0;
+      transform: scale(0.5);
+      pointer-events: none;
+      transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .splash-image.show {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+    }
+
 
     /* スマホ対応 */
     @media (max-width: 768px) {
@@ -1360,6 +1384,9 @@
       <div class="floating-word" style="top: 50%; left: 25%; animation-delay: -1.5s;">素敵！</div>
       <div class="floating-word" style="top: 85%; left: 50%; animation-delay: -3.5s;">問題ありません！</div>
     </div>
+
+    <!-- スプラッシュ画像（5秒後に表示） -->
+    <div class="splash-image" id="splash-image" style="background-image: url('https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/cn640v6u1rNC4VQFAuf9aedxMXxNAL6u3EV2CgQT.png');" onclick="this.classList.remove('show')"></div>
 
     <!-- 1. タイトル -->
     <div class="slide-section title-section in-view" id="slide-1" data-show-floating="true">
