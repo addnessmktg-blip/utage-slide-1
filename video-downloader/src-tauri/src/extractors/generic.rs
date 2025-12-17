@@ -6,6 +6,7 @@ use url::Url;
 pub async fn extract(url: &str) -> Result<VideoInfo, ExtractError> {
     let client = Client::builder()
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        .redirect(reqwest::redirect::Policy::limited(10))
         .build()?;
 
     let response = client.get(url).send().await?;
@@ -17,13 +18,33 @@ pub async fn extract(url: &str) -> Result<VideoInfo, ExtractError> {
     // Try to find video URLs in the page
     let mut formats = Vec::new();
 
-    // Look for direct video links
+    // Look for direct video links - expanded patterns
     let video_patterns = [
+        // Standard HTML5 video elements
         r#"<source[^>]+src=["']([^"']+\.mp4[^"']*)["']"#,
         r#"<video[^>]+src=["']([^"']+\.mp4[^"']*)["']"#,
-        r#"["']([^"']+\.mp4)["']"#,
-        r#"["']([^"']+\.webm)["']"#,
-        r#"["'](https?://[^"']+/video[^"']*)["']"#,
+        r#"<video[^>]+src=["']([^"']+\.webm[^"']*)["']"#,
+        // Direct URLs in page
+        r#"["']([^"'\s]+\.mp4(?:\?[^"']*)?)["']"#,
+        r#"["']([^"'\s]+\.webm(?:\?[^"']*)?)["']"#,
+        r#"["']([^"'\s]+\.mov(?:\?[^"']*)?)["']"#,
+        // Video hosting patterns
+        r#"["'](https?://[^"'\s]+/video/[^"'\s]+)["']"#,
+        r#"["'](https?://[^"'\s]+/videos/[^"'\s]+)["']"#,
+        r#"["'](https?://[^"'\s]+/media/[^"'\s]+\.mp4[^"']*)["']"#,
+        // Cloudfront and CDN patterns
+        r#"["'](https?://[^"'\s]*cloudfront[^"'\s]+\.mp4[^"']*)["']"#,
+        r#"["'](https?://[^"'\s]*cdn[^"'\s]+\.mp4[^"']*)["']"#,
+        // Vimeo player patterns
+        r#"["'](https?://player\.vimeo\.com/video/\d+)["']"#,
+        // Wistia patterns
+        r#"["'](https?://fast\.wistia\.[^"'\s]+)["']"#,
+        // Generic video file patterns in JSON/JS
+        r#"["\']?(?:url|src|file|source|video_url|videoUrl|video)["\']?\s*[:=]\s*["']([^"']+\.mp4[^"']*)["']"#,
+        r#"["\']?(?:url|src|file|source|video_url|videoUrl|video)["\']?\s*[:=]\s*["']([^"']+\.m3u8[^"']*)["']"#,
+        // Data attributes
+        r#"data-(?:src|video|url)=["']([^"']+\.mp4[^"']*)["']"#,
+        r#"data-(?:src|video|url)=["']([^"']+\.m3u8[^"']*)["']"#,
     ];
 
     for (_idx, pattern) in video_patterns.iter().enumerate() {
@@ -36,9 +57,13 @@ pub async fn extract(url: &str) -> Result<VideoInfo, ExtractError> {
                     let full_url = resolve_url(url, video_url);
 
                     // Check if it's a valid video URL
-                    if is_valid_video_url(&full_url) {
+                    if is_valid_video_url(&full_url) && !formats.iter().any(|f: &VideoFormat| f.url == full_url) {
                         let ext = if full_url.contains(".webm") {
                             "webm"
+                        } else if full_url.contains(".mov") {
+                            "mov"
+                        } else if full_url.contains(".m3u8") {
+                            "m3u8"
                         } else {
                             "mp4"
                         };
@@ -60,8 +85,9 @@ pub async fn extract(url: &str) -> Result<VideoInfo, ExtractError> {
 
     // Look for m3u8 (HLS) streams
     let hls_patterns = [
-        r#"["']([^"']+\.m3u8[^"']*)["']"#,
+        r#"["']([^"'\s]+\.m3u8(?:\?[^"']*)?)["']"#,
         r#"src:\s*["']([^"']+\.m3u8[^"']*)["']"#,
+        r#"["\']?(?:hlsUrl|hls_url|playlist)["\']?\s*[:=]\s*["']([^"']+\.m3u8[^"']*)["']"#,
     ];
 
     for pattern in hls_patterns.iter() {
@@ -70,15 +96,51 @@ pub async fn extract(url: &str) -> Result<VideoInfo, ExtractError> {
                 if let Some(hls_url) = cap.get(1) {
                     let full_url = resolve_url(url, hls_url.as_str());
 
-                    formats.push(VideoFormat {
-                        format_id: format!("hls_{}", formats.len()),
-                        ext: "m3u8".to_string(),
-                        quality: "HLS stream".to_string(),
-                        url: full_url,
-                        filesize: None,
-                        has_video: true,
-                        has_audio: true,
-                    });
+                    if !formats.iter().any(|f| f.url == full_url) {
+                        formats.push(VideoFormat {
+                            format_id: format!("hls_{}", formats.len()),
+                            ext: "m3u8".to_string(),
+                            quality: "HLS stream".to_string(),
+                            url: full_url,
+                            filesize: None,
+                            has_video: true,
+                            has_audio: true,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    // Look for iframe embeds that might contain videos
+    if formats.is_empty() {
+        let iframe_patterns = [
+            r#"<iframe[^>]+src=["']([^"']+)["']"#,
+        ];
+
+        for pattern in iframe_patterns.iter() {
+            if let Ok(re) = Regex::new(pattern) {
+                for cap in re.captures_iter(&html) {
+                    if let Some(iframe_url) = cap.get(1) {
+                        let iframe_url = iframe_url.as_str();
+                        // Check if iframe contains known video platforms
+                        if iframe_url.contains("youtube")
+                            || iframe_url.contains("vimeo")
+                            || iframe_url.contains("wistia")
+                            || iframe_url.contains("player")
+                        {
+                            let full_url = resolve_url(url, iframe_url);
+                            formats.push(VideoFormat {
+                                format_id: format!("embed_{}", formats.len()),
+                                ext: "embed".to_string(),
+                                quality: "embedded".to_string(),
+                                url: full_url,
+                                filesize: None,
+                                has_video: true,
+                                has_audio: true,
+                            });
+                        }
+                    }
                 }
             }
         }
@@ -89,7 +151,7 @@ pub async fn extract(url: &str) -> Result<VideoInfo, ExtractError> {
 
     if formats.is_empty() {
         return Err(ExtractError::ParseError(
-            "No video found on this page. Try YouTube, Twitter, or pages with direct video links.".into(),
+            "No video found on this page. The video may be loaded dynamically via JavaScript, which requires browser automation to extract.".into(),
         ));
     }
 
