@@ -1285,6 +1285,29 @@
       display: none;
     }
 
+    /* ダイナミックアクションボタン */
+    .next-page-btn {
+      background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+      color: #000;
+      border: none;
+      padding: 18px 50px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
+    }
+
+    .next-page-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 30px rgba(255, 215, 0, 0.6);
+    }
+
+    .next-page-btn:active {
+      transform: scale(0.98);
+    }
+
     /* スマホ対応 */
     @media (max-width: 768px) {
       .progress-indicator {
@@ -1957,6 +1980,15 @@
         <p class="final-sub">
           それだけで、AIはあなたの<br><strong style="color: #FFD700;">最強の壁打ち相手</strong>になる。
         </p>
+        <!-- ダイナミックアクション: 次へ進むボタン -->
+        <div class="dynamic-action" id="dynamic-action" style="margin-top: 50px; opacity: 0; transition: opacity 1s ease;">
+          <p class="countdown-text" id="countdown-text" style="font-size: 0.9rem; color: #888; margin-bottom: 15px;">
+            <span id="countdown-num">10</span>秒後に自動で次へ進みます
+          </p>
+          <button class="next-page-btn" id="next-page-btn" onclick="goToNextPage()">
+            次へ進む →
+          </button>
+        </div>
       </div>
     </div>
 
