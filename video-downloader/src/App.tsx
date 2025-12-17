@@ -287,6 +287,7 @@ function App() {
       {status === "completed" && (
         <div className="completed-section">
           <p className="success-message">ダウンロード完了！</p>
+          {downloadedPath && <p className="downloaded-path">{downloadedPath}</p>}
           <div className="completed-actions">
             <button onClick={openDownloadFolder}>フォルダを開く</button>
             <button onClick={handleReset}>新しいダウンロード</button>
