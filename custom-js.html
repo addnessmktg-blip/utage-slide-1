@@ -340,18 +340,6 @@
     }
   }
 
-  // ===== スプラッシュ画像（10秒後に画面全体に表示） =====
-  var splashImage = document.getElementById('splash-image');
-  if (splashImage) {
-    setTimeout(function() {
-      splashImage.classList.add('show');
-      // 3秒後に自動で消える
-      setTimeout(function() {
-        splashImage.classList.remove('show');
-      }, 3000);
-    }, 10000);
-  }
-
   // ===== 紙吹雪アニメーション =====
   var confettiContainer = document.getElementById('confetti-container');
   var confettiImage = 'https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/cn640v6u1rNC4VQFAuf9aedxMXxNAL6u3EV2CgQT.png';
@@ -364,7 +352,6 @@
     confetti.style.backgroundImage = 'url(' + confettiImage + ')';
     confetti.style.left = Math.random() * 100 + '%';
     confetti.style.animationDuration = (Math.random() * 3 + 4) + 's';
-    confetti.style.animationDelay = (Math.random() * 2) + 's';
     confetti.style.width = (Math.random() * 60 + 50) + 'px';
     confetti.style.height = confetti.style.width;
 
