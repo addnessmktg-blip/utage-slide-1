@@ -199,20 +199,32 @@
       }
     }
 
-    .final-video {
+    .video-background {
       position: absolute;
-      bottom: 50px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 300px;
-      max-width: 80%;
-      border-radius: 12px;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       overflow: hidden;
+      z-index: 1;
     }
 
-    .final-video video {
-      width: 100%;
-      display: block;
+    .video-background video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      opacity: 0.4;
+    }
+
+    .final-section .content-section {
+      position: relative;
+      z-index: 10;
     }
 
     /* 装飾的な円 */
@@ -980,10 +992,6 @@
       <!-- 装飾 -->
       <div class="deco-circle large"></div>
       <div class="deco-circle medium"></div>
-      <!-- アヒルキャラクター（ニコニコ） -->
-      <div class="duck-character size-l top-right float">
-        <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/5iJzs7djt82cmgSwEsq83PI4TUPxGfewTI7wNnd5.png" alt="ニコニコアヒル">
-      </div>
       <h1 class="main-title">AIはイエスマン</h1>
       <p class="subtitle">〜 盲点を突かせる技術 〜</p>
       <div class="next-arrow" onclick="scrollToNext(1)">
@@ -1292,9 +1300,6 @@
 
     <!-- 17. じゃあどうするか -->
     <div class="slide-section highlight-section" id="slide-17">
-      <div class="duck-character size-m top-right float">
-        <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/fjmMGBFJHtsgXz2qQrMTJDJWfjwCFwHweUfHGwzv.png" alt="ひらめきアヒル">
-      </div>
       <div class="content-section" style="text-align: center;">
         <p class="section-number">05</p>
         <p class="impact-text">じゃあ、<span class="highlight">どうするか？</span></p>
@@ -1325,9 +1330,6 @@
 
     <!-- 19. プロンプト例1 -->
     <div class="slide-section" id="slide-19">
-      <div class="duck-character size-s top-left float">
-        <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/39TI3nBXrCdeAm0SsQVZ4saL0yV5yxzSUKYXeQfL.png" alt="真剣アヒル">
-      </div>
       <div class="content-section">
         <div class="prompt-large">
           <p class="label">PROMPT 01 / 失敗シナリオ</p>
@@ -1439,9 +1441,6 @@
 
     <!-- 24. 一発で終わらない -->
     <div class="slide-section highlight-section" id="slide-24">
-      <div class="duck-character size-m bottom-right float">
-        <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/fjmMGBFJHtsgXz2qQrMTJDJWfjwCFwHweUfHGwzv.png" alt="ひらめきアヒル">
-      </div>
       <div class="content-section" style="text-align: center;">
         <p class="section-number">06</p>
         <p class="impact-text">そして、<span class="highlight">一発で終わらない</span></p>
@@ -1515,9 +1514,6 @@
 
     <!-- 27. まとめ -->
     <div class="slide-section" id="slide-27">
-      <div class="duck-character size-m top-right float">
-        <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/39TI3nBXrCdeAm0SsQVZ4saL0yV5yxzSUKYXeQfL.png" alt="真剣アヒル">
-      </div>
       <div class="content-section">
         <p class="section-number">SUMMARY</p>
         <h2 class="section-title">今日のまとめ</h2>
@@ -1543,6 +1539,12 @@
 
     <!-- 28. 最終メッセージ -->
     <div class="slide-section final-section" id="slide-28">
+      <!-- 背景動画 -->
+      <div class="video-background">
+        <video autoplay loop muted playsinline>
+          <source src="https://utage-system.com/video/m8u907ngO3jY" type="video/mp4">
+        </video>
+      </div>
       <!-- 装飾 -->
       <div class="deco-circle large"></div>
       <div class="deco-circle small"></div>
@@ -1551,12 +1553,6 @@
         <p class="final-sub">
           それだけで、AIはあなたの<br><strong style="color: #FFD700;">最強の壁打ち相手</strong>になる。
         </p>
-      </div>
-      <!-- アヒル動画 -->
-      <div class="final-video">
-        <video autoplay loop muted playsinline>
-          <source src="https://utage-system.com/video/m8u907ngO3jY" type="video/mp4">
-        </video>
       </div>
     </div>
 
