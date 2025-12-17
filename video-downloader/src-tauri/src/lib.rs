@@ -61,23 +61,29 @@ async fn start_download(
         .unwrap_or_else(|| dirs::download_dir().unwrap_or_else(|| PathBuf::from(".")));
 
     let task_id = uuid::Uuid::new_v4().to_string();
-    let task_id_clone = task_id.clone();
 
     let manager = state.download_manager.clone();
+
+    // Clone window and task_id for use in the progress callback
+    let window_for_progress = window.clone();
+    let task_id_for_progress = task_id.clone();
+
+    // Clone task_id for use in completion/error handling
+    let task_id_for_result = task_id.clone();
 
     tokio::spawn(async move {
         let mut manager = manager.lock().await;
         match manager
             .download(&url, &format_id, &output_dir, move |progress| {
-                let _ = window.emit("download-progress", (&task_id_clone, &progress));
+                let _ = window_for_progress.emit("download-progress", (&task_id_for_progress, &progress));
             })
             .await
         {
             Ok(path) => {
-                let _ = window.emit("download-complete", (&task_id_clone, path.to_string_lossy().to_string()));
+                let _ = window.emit("download-complete", (&task_id_for_result, path.to_string_lossy().to_string()));
             }
             Err(e) => {
-                let _ = window.emit("download-error", (&task_id_clone, e.to_string()));
+                let _ = window.emit("download-error", (&task_id_for_result, e.to_string()));
             }
         }
     });
