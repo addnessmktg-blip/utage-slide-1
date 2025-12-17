@@ -269,6 +269,213 @@
       }
     }
 
+    /* ===== 盲点ダイアグラム ===== */
+    .blindspot-diagram {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      margin: 40px auto;
+    }
+
+    .blindspot-outer {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border: 3px solid #FFD700;
+      border-radius: 50%;
+      opacity: 0;
+      transform: scale(0.8);
+      transition: all 0.8s ease;
+    }
+
+    .slide-section.in-view .blindspot-outer {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .blindspot-inner {
+      position: absolute;
+      width: 50%;
+      height: 50%;
+      top: 25%;
+      left: 25%;
+      background: rgba(255, 215, 0, 0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #FFD700;
+      opacity: 0;
+      transform: scale(0.5);
+      transition: all 0.8s ease 0.3s;
+    }
+
+    .slide-section.in-view .blindspot-inner {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .blindspot-hidden {
+      position: absolute;
+      width: 35%;
+      height: 35%;
+      top: 10%;
+      right: 5%;
+      background: repeating-linear-gradient(
+        45deg,
+        rgba(255, 50, 50, 0.3),
+        rgba(255, 50, 50, 0.3) 5px,
+        transparent 5px,
+        transparent 10px
+      );
+      border-radius: 50%;
+      border: 2px dashed rgba(255, 50, 50, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      color: #ff6b6b;
+      opacity: 0;
+      animation: blindspotPulse 2s ease-in-out infinite;
+      transition: opacity 0.8s ease 0.6s;
+    }
+
+    .slide-section.in-view .blindspot-hidden {
+      opacity: 1;
+    }
+
+    @keyframes blindspotPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .blindspot-label {
+      position: absolute;
+      font-size: 0.75rem;
+      color: #888;
+      white-space: nowrap;
+    }
+
+    .blindspot-label.you { bottom: -30px; left: 50%; transform: translateX(-50%); }
+    .blindspot-label.blind { top: 5%; right: -60px; color: #ff6b6b; }
+
+    /* ===== プロンプトアイコン ===== */
+    .prompt-icon {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 20px;
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.05));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: scale(0.5) rotate(-20deg);
+      transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .slide-section.in-view .prompt-icon {
+      opacity: 1;
+      transform: scale(1) rotate(0deg);
+    }
+
+    .prompt-icon svg {
+      width: 30px;
+      height: 30px;
+      fill: #FFD700;
+    }
+
+    /* ===== フロー図 ===== */
+    .flow-diagram {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      margin: 40px auto;
+      flex-wrap: wrap;
+    }
+
+    .flow-box {
+      padding: 20px 25px;
+      background: rgba(26, 26, 26, 0.8);
+      border: 2px solid #444;
+      border-radius: 12px;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.5s ease;
+    }
+
+    .flow-box.you-box {
+      border-color: #FFD700;
+      background: rgba(255, 215, 0, 0.1);
+    }
+
+    .flow-box.ai-box {
+      border-color: #4ade80;
+      background: rgba(74, 222, 128, 0.1);
+    }
+
+    .slide-section.in-view .flow-box:nth-child(1) { opacity: 1; transform: translateY(0); transition-delay: 0.2s; }
+    .slide-section.in-view .flow-box:nth-child(2) { opacity: 1; transform: translateY(0); transition-delay: 0.4s; }
+    .slide-section.in-view .flow-box:nth-child(3) { opacity: 1; transform: translateY(0); transition-delay: 0.6s; }
+
+    .flow-arrow {
+      font-size: 1.5rem;
+      color: #FFD700;
+      opacity: 0;
+      transition: opacity 0.5s ease 0.5s;
+    }
+
+    .slide-section.in-view .flow-arrow {
+      opacity: 1;
+    }
+
+    .flow-box .label {
+      font-size: 0.75rem;
+      color: #888;
+      margin-bottom: 5px;
+    }
+
+    .flow-box .text {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* ===== 対話カウンター ===== */
+    .dialogue-counter {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin: 40px 0;
+    }
+
+    .counter-item {
+      text-align: center;
+      opacity: 0;
+      transform: scale(0.8);
+      transition: all 0.5s ease;
+    }
+
+    .slide-section.in-view .counter-item:nth-child(1) { opacity: 1; transform: scale(1); transition-delay: 0.2s; }
+    .slide-section.in-view .counter-item:nth-child(2) { opacity: 1; transform: scale(1); transition-delay: 0.4s; }
+    .slide-section.in-view .counter-item:nth-child(3) { opacity: 1; transform: scale(1); transition-delay: 0.6s; }
+
+    .counter-num {
+      font-size: 3rem;
+      font-weight: 900;
+      color: #FFD700;
+      line-height: 1;
+    }
+
+    .counter-label {
+      font-size: 0.9rem;
+      color: #888;
+      margin-top: 5px;
+    }
+
     /* セクション共通 */
     .slide-section {
       min-height: 100vh;
@@ -1185,10 +1392,26 @@
       <div class="content-section" style="text-align: center;">
         <p class="section-number">POINT</p>
         <p class="impact-text">
-          AIは<span class="highlight">指示に従う</span>。<br>
-          <span style="font-size: 0.6em; color: #888;">それ以上でも、それ以下でもない。</span>
+          AIは<span class="highlight">指示に従う</span>。
         </p>
-        <p class="section-text" style="margin-top: 40px;">
+        <!-- フロー図 -->
+        <div class="flow-diagram">
+          <div class="flow-box you-box">
+            <p class="label">YOU</p>
+            <p class="text">指示を出す</p>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-box ai-box">
+            <p class="label">AI</p>
+            <p class="text">忠実に実行</p>
+          </div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-box">
+            <p class="label">OUTPUT</p>
+            <p class="text">指示の範囲内</p>
+          </div>
+        </div>
+        <p class="section-text">
           優秀すぎるがゆえに、<br>
           あなたの指示の「外側」には出てこない。
         </p>
@@ -1266,13 +1489,19 @@
     <div class="slide-section highlight-section" id="slide-15">
       <div class="content-section" style="text-align: center;">
         <p class="impact-text">
-          <span class="highlight">自分の穴</span>は、<br>自分では見えない。
+          <span class="highlight">自分の穴</span>は、自分では見えない。
         </p>
-        <p class="section-text" style="margin-top: 40px;">
-          誰かに「それ、違くない？」と言われて、<br>
-          <strong>初めて気づく</strong>ことがある。<br><br>
-          指摘されなければ、<br>
-          その穴を抱えたまま進んでしまう。
+        <!-- 盲点ダイアグラム -->
+        <div class="blindspot-diagram">
+          <div class="blindspot-outer"></div>
+          <div class="blindspot-inner">あなたの視野</div>
+          <div class="blindspot-hidden">?</div>
+          <span class="blindspot-label you">見えている範囲</span>
+          <span class="blindspot-label blind">盲点</span>
+        </div>
+        <p class="section-text">
+          誰かに「それ、違くない？」と言われて<br>
+          <strong>初めて気づく</strong>。
         </p>
       </div>
       <div class="next-arrow" onclick="scrollToNext(15)">
@@ -1332,6 +1561,10 @@
     <div class="slide-section" id="slide-19">
       <div class="content-section">
         <div class="prompt-large">
+          <!-- 失敗アイコン -->
+          <div class="prompt-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+          </div>
           <p class="label">PROMPT 01 / 失敗シナリオ</p>
           <p class="text">「この企画が<strong>失敗する</strong>としたら、<br>どんな理由が考えられる？」</p>
           <div class="ai-response-example">
@@ -1354,6 +1587,10 @@
     <div class="slide-section" id="slide-20">
       <div class="content-section">
         <div class="prompt-large">
+          <!-- 視点アイコン -->
+          <div class="prompt-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+          </div>
           <p class="label">PROMPT 02 / ターゲット外視点</p>
           <p class="text">「<strong>ターゲット外</strong>の人がこれを見たら、<br>どう感じると思う？」</p>
           <div class="ai-response-example">
@@ -1376,6 +1613,10 @@
     <div class="slide-section" id="slide-21">
       <div class="content-section">
         <div class="prompt-large">
+          <!-- 競合アイコン -->
+          <div class="prompt-icon">
+            <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+          </div>
           <p class="label">PROMPT 03 / 競合視点</p>
           <p class="text">「<strong>競合</strong>がこの企画を見たら、<br>何て言うと思う？」</p>
           <div class="ai-response-example">
@@ -1398,6 +1639,10 @@
     <div class="slide-section" id="slide-22">
       <div class="content-section">
         <div class="prompt-large">
+          <!-- 疑問アイコン -->
+          <div class="prompt-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
+          </div>
           <p class="label">PROMPT 04 / 前提を疑う</p>
           <p class="text">「この企画の<strong>前提が間違っている</strong><br>可能性はある？」</p>
           <div class="ai-response-example">
@@ -1420,6 +1665,10 @@
     <div class="slide-section" id="slide-23">
       <div class="content-section">
         <div class="prompt-large">
+          <!-- 発見アイコン -->
+          <div class="prompt-icon">
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          </div>
           <p class="label">PROMPT 05 / 見落とし</p>
           <p class="text">「私が<strong>見落としている視点</strong>が<br>あるとしたら何？」</p>
           <div class="ai-response-example">
@@ -1496,15 +1745,27 @@
     <!-- 26. 繰り返すことで -->
     <div class="slide-section" id="slide-26">
       <div class="content-section" style="text-align: center;">
-        <p class="section-text-large section-text">
-          このやり取りを<span class="highlight" style="color: #FFD700;">何度も繰り返す</span>ことで、
+        <p class="impact-text">
+          <span class="highlight">繰り返す</span>ほど、見えてくる。
         </p>
-        <p class="impact-text" style="margin-top: 30px;">
-          自分では<span class="highlight">気づけなかった視点</span>が<br>見えてくる。
-        </p>
-        <p class="section-text" style="margin-top: 40px; color: #888;">
-          3回、5回、10回...<br>
-          深掘りするほど、盲点が見つかる。
+        <!-- 対話カウンター -->
+        <div class="dialogue-counter">
+          <div class="counter-item">
+            <p class="counter-num">3</p>
+            <p class="counter-label">回目</p>
+          </div>
+          <div class="counter-item">
+            <p class="counter-num">5</p>
+            <p class="counter-label">回目</p>
+          </div>
+          <div class="counter-item">
+            <p class="counter-num">10</p>
+            <p class="counter-label">回目</p>
+          </div>
+        </div>
+        <p class="section-text">
+          深掘りするほど、<br>
+          <strong>自分では気づけなかった視点</strong>が見えてくる。
         </p>
       </div>
       <div class="next-arrow" onclick="scrollToNext(26)">
