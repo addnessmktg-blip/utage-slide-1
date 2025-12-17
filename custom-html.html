@@ -222,6 +222,19 @@
       opacity: 0.4;
     }
 
+    .video-background iframe {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 177.78vh; /* 16:9 ratio */
+      height: 100vh;
+      min-width: 100%;
+      min-height: 100%;
+      transform: translate(-50%, -50%);
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
     .final-section .content-section {
       position: relative;
       z-index: 10;
@@ -1807,11 +1820,9 @@
 
     <!-- 28. 最終メッセージ -->
     <div class="slide-section final-section" id="slide-28">
-      <!-- 背景動画 -->
+      <!-- 背景動画（iframe埋め込み） -->
       <div class="video-background">
-        <video autoplay loop muted playsinline>
-          <source src="https://utage-system.com/video/m8u907ngO3jY" type="video/mp4">
-        </video>
+        <iframe src="https://utage-system.com/video/m8u907ngO3jY?autoplay=1&loop=1&muted=1" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>
       </div>
       <!-- 装飾 -->
       <div class="deco-circle large"></div>
