@@ -549,6 +549,21 @@
       opacity: 1;
     }
 
+    /* ===== スライド画像 ===== */
+    .slide-image {
+      max-width: 250px;
+      height: auto;
+    }
+
+    .slide-image.small { max-width: 150px; }
+    .slide-image.medium { max-width: 200px; }
+    .slide-image.large { max-width: 300px; }
+
+    .image-container {
+      margin: 30px 0;
+      text-align: center;
+    }
+
     /* ===== 対話カウンター ===== */
     .dialogue-counter {
       display: flex;
@@ -1317,6 +1332,9 @@
       <!-- 装飾 -->
       <div class="deco-circle large"></div>
       <div class="deco-circle medium"></div>
+      <div class="image-container" style="margin-bottom: 20px;">
+        <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/zb84GRj8kei1uwoz1Lqie9VETzahor1mirRMGFcq.png" alt="AIイエスマンロボット" class="slide-image large">
+      </div>
       <h1 class="main-title">AIはイエスマン</h1>
       <p class="subtitle">〜 盲点を突かせる技術 〜</p>
       <div class="next-arrow" onclick="scrollToNext(1)">
@@ -1358,9 +1376,11 @@
       <div class="content-section" style="text-align: center;">
         <p class="section-number">01</p>
         <p class="impact-text">AIは<span class="highlight">便利</span>。</p>
-        <p class="section-text-large section-text" style="color: #666;">
-          企画のアイデア出し、文章作成、リサーチ...<br>
-          なんでも手伝ってくれる。
+        <div class="image-container">
+          <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/H97jjoib472oyF2uUqztzE2uX7AZuLeKBlmJEIy1.png" alt="AIアシスタント" class="slide-image large">
+        </div>
+        <p class="section-text" style="color: #666;">
+          アイデア出し、文章作成、リサーチ...<br>なんでも手伝ってくれる。
         </p>
       </div>
       <div class="next-arrow" onclick="scrollToNext(3)">
@@ -1390,6 +1410,9 @@
       <div class="content-section">
         <p class="section-number">02</p>
         <h2 class="section-title">AIは、<span class="highlight">なんでも肯定する</span></h2>
+        <div class="image-container">
+          <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/zb84GRj8kei1uwoz1Lqie9VETzahor1mirRMGFcq.png" alt="イエスマンロボット" class="slide-image medium">
+        </div>
         <p class="section-text">
           あなたが何を言っても、基本的に「いいですね！」と返ってくる。<br>
           これが、AIの本質。<br><br>
@@ -1610,6 +1633,9 @@
         <p class="impact-text">
           <span class="highlight">自分の穴</span>は、<br>自分では見えない。
         </p>
+        <div class="image-container" style="margin-bottom: 20px;">
+          <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/SdWANBGjHBF2sswXWcXphfUm1nggVuAGjkFI0olP.png" alt="気づきの瞬間" class="slide-image medium">
+        </div>
         <!-- 盲点ダイアグラム -->
         <div class="blindspot-diagram">
           <div class="blindspot-outer"></div>
@@ -1927,6 +1953,9 @@
       <div class="deco-circle large"></div>
       <div class="deco-circle small"></div>
       <div class="content-section" style="text-align: center;">
+        <div class="image-container" style="margin-bottom: 30px;">
+          <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/eIGw0960ssQQ4CwnnB0pFM7pq2ycoTQOlDQqXxGs.png" alt="壁打ち相手" class="slide-image large">
+        </div>
         <p class="final-message">AIはイエスマン。<br>だから、<span style="color: #fff;">正しく疑わせろ。</span></p>
         <p class="final-sub">
           それだけで、AIはあなたの<br><strong style="color: #FFD700;">最強の壁打ち相手</strong>になる。
