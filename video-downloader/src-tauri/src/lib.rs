@@ -71,7 +71,7 @@ async fn start_download(
     // Clone task_id for use in completion/error handling
     let task_id_for_result = task_id.clone();
 
-    tokio::spawn(async move {
+    tauri::async_runtime::spawn(async move {
         let mut manager = manager.lock().await;
         match manager
             .download(&url, &format_id, &output_dir, move |progress| {
@@ -188,12 +188,12 @@ pub fn run() {
 
             // Start HTTP server in background
             let tx_clone = tx.clone();
-            tokio::spawn(async move {
+            tauri::async_runtime::spawn(async move {
                 start_http_server(tx_clone).await;
             });
 
             // Handle incoming URLs from extension
-            tokio::spawn(async move {
+            tauri::async_runtime::spawn(async move {
                 while let Some(url) = rx.recv().await {
                     // Send the URL to the frontend
                     if let Some(window) = app_handle.get_webview_window("main") {
