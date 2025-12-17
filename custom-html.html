@@ -294,96 +294,87 @@
       }
     }
 
-    /* ===== 盲点ダイアグラム ===== */
+    /* ===== 盲点ダイアグラム（シンプル版） ===== */
     .blindspot-diagram {
       position: relative;
-      width: 280px;
-      height: 280px;
+      width: 320px;
       margin: 40px auto;
-    }
-
-    .blindspot-outer {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      border: 3px solid #FFD700;
-      border-radius: 50%;
-      opacity: 0;
-      transform: scale(0.8);
-      transition: all 0.8s ease;
-    }
-
-    .slide-section.in-view .blindspot-outer {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    .blindspot-inner {
-      position: absolute;
-      width: 50%;
-      height: 50%;
-      top: 25%;
-      left: 25%;
-      background: rgba(255, 215, 0, 0.2);
-      border-radius: 50%;
       display: flex;
+      gap: 20px;
       align-items: center;
       justify-content: center;
-      font-weight: 700;
-      color: #FFD700;
+    }
+
+    .vision-box {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       opacity: 0;
       transform: scale(0.5);
-      transition: all 0.8s ease 0.3s;
+      transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
-    .slide-section.in-view .blindspot-inner {
+    .vision-box.visible-area {
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.3) 0%, rgba(255, 215, 0, 0.1) 100%);
+      border: 3px solid #FFD700;
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+    }
+
+    .vision-box.blind-area {
+      background: linear-gradient(135deg, rgba(255, 50, 50, 0.2) 0%, rgba(0, 0, 0, 0.3) 100%);
+      border: 3px dashed rgba(255, 50, 50, 0.5);
+      animation: blindPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes blindPulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(255, 50, 50, 0.2); }
+      50% { box-shadow: 0 0 40px rgba(255, 50, 50, 0.4); }
+    }
+
+    .slide-section.in-view .vision-box.visible-area {
       opacity: 1;
       transform: scale(1);
+      transition-delay: 0.3s;
     }
 
-    .blindspot-hidden {
-      position: absolute;
-      width: 35%;
-      height: 35%;
-      top: 10%;
-      right: 5%;
-      background: repeating-linear-gradient(
-        45deg,
-        rgba(255, 50, 50, 0.3),
-        rgba(255, 50, 50, 0.3) 5px,
-        transparent 5px,
-        transparent 10px
-      );
-      border-radius: 50%;
-      border: 2px dashed rgba(255, 50, 50, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.8rem;
+    .slide-section.in-view .vision-box.blind-area {
+      opacity: 1;
+      transform: scale(1);
+      transition-delay: 0.6s;
+    }
+
+    .vision-icon {
+      font-size: 2.5rem;
+      margin-bottom: 8px;
+    }
+
+    .vision-label {
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .vision-box.visible-area .vision-label {
+      color: #FFD700;
+    }
+
+    .vision-box.blind-area .vision-label {
       color: #ff6b6b;
-      opacity: 0;
-      animation: blindspotPulse 2s ease-in-out infinite;
-      transition: opacity 0.8s ease 0.6s;
     }
 
-    .slide-section.in-view .blindspot-hidden {
+    .vision-arrow {
+      font-size: 2rem;
+      color: #444;
+      opacity: 0;
+      transition: opacity 0.5s ease 0.5s;
+    }
+
+    .slide-section.in-view .vision-arrow {
       opacity: 1;
     }
-
-    @keyframes blindspotPulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-
-    .blindspot-label {
-      position: absolute;
-      font-size: 0.75rem;
-      color: #888;
-      white-space: nowrap;
-    }
-
-    .blindspot-label.you { bottom: -30px; left: 50%; transform: translateX(-50%); }
-    .blindspot-label.blind { top: 5%; right: -60px; color: #ff6b6b; }
 
     /* ===== プロンプトアイコン ===== */
     .prompt-icon {
@@ -549,6 +540,67 @@
       opacity: 1;
     }
 
+    /* ===== AI便利アイコン群 ===== */
+    .ai-abilities {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 50px;
+      flex-wrap: wrap;
+    }
+
+    .ability-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .slide-section.in-view .ability-item:nth-child(1) { opacity: 1; transform: translateY(0); transition-delay: 0.3s; }
+    .slide-section.in-view .ability-item:nth-child(2) { opacity: 1; transform: translateY(0); transition-delay: 0.5s; }
+    .slide-section.in-view .ability-item:nth-child(3) { opacity: 1; transform: translateY(0); transition-delay: 0.7s; }
+    .slide-section.in-view .ability-item:nth-child(4) { opacity: 1; transform: translateY(0); transition-delay: 0.9s; }
+
+    .ability-icon {
+      width: 70px;
+      height: 70px;
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 215, 0, 0.05) 100%);
+      border: 2px solid rgba(255, 215, 0, 0.3);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      transition: all 0.3s ease;
+    }
+
+    .slide-section.in-view .ability-icon {
+      animation: iconFloat 3s ease-in-out infinite;
+    }
+
+    .ability-item:nth-child(2) .ability-icon { animation-delay: 0.5s; }
+    .ability-item:nth-child(3) .ability-icon { animation-delay: 1s; }
+    .ability-item:nth-child(4) .ability-icon { animation-delay: 1.5s; }
+
+    @keyframes iconFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .ability-icon:hover {
+      transform: scale(1.1) translateY(-5px);
+      border-color: #FFD700;
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+    }
+
+    .ability-label {
+      font-size: 0.9rem;
+      color: #888;
+    }
+
     /* ===== 対話カウンター ===== */
     .dialogue-counter {
       display: flex;
@@ -618,19 +670,54 @@
       font-size: clamp(3rem, 10vw, 7rem);
       font-weight: 900;
       color: #FFD700;
-      text-shadow: 0 0 60px rgba(255, 215, 0, 0.5);
+      text-shadow:
+        0 0 20px rgba(255, 215, 0, 0.8),
+        0 0 40px rgba(255, 215, 0, 0.6),
+        0 0 80px rgba(255, 215, 0, 0.4),
+        0 0 120px rgba(255, 215, 0, 0.2);
       margin-bottom: 20px;
       letter-spacing: 0.1em;
-      animation: titlePulse 3s ease-in-out infinite;
+      animation: titlePulse 3s ease-in-out infinite, titleFloat 6s ease-in-out infinite;
     }
 
     @keyframes titlePulse {
       0%, 100% {
-        text-shadow: 0 0 60px rgba(255, 215, 0, 0.5);
+        text-shadow:
+          0 0 20px rgba(255, 215, 0, 0.8),
+          0 0 40px rgba(255, 215, 0, 0.6),
+          0 0 80px rgba(255, 215, 0, 0.4);
       }
       50% {
-        text-shadow: 0 0 100px rgba(255, 215, 0, 0.8), 0 0 150px rgba(255, 215, 0, 0.4);
+        text-shadow:
+          0 0 30px rgba(255, 215, 0, 1),
+          0 0 60px rgba(255, 215, 0, 0.8),
+          0 0 120px rgba(255, 215, 0, 0.6),
+          0 0 200px rgba(255, 215, 0, 0.3);
       }
+    }
+
+    @keyframes titleFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    /* タイトルスライド背景エフェクト */
+    .title-section::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(255, 215, 0, 0.15) 0%, transparent 70%);
+      transform: translate(-50%, -50%);
+      animation: bgPulse 4s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes bgPulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+      50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
     }
 
     .subtitle {
@@ -1204,30 +1291,99 @@
     }
 
     .final-message {
-      font-size: clamp(1.5rem, 4vw, 2.5rem);
-      font-weight: 700;
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      font-weight: 900;
       color: #FFD700;
       margin-bottom: 30px;
       opacity: 0;
-      transform: translateY(30px);
-      transition: all 0.8s ease;
+      transform: translateY(30px) scale(0.9);
+      transition: all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      text-shadow:
+        0 0 20px rgba(255, 215, 0, 0.5),
+        0 0 40px rgba(255, 215, 0, 0.3);
     }
 
     .slide-section.in-view .final-message {
       opacity: 1;
-      transform: translateY(0);
+      transform: translateY(0) scale(1);
+      animation: finalGlow 2s ease-in-out infinite 1s;
+    }
+
+    @keyframes finalGlow {
+      0%, 100% {
+        text-shadow:
+          0 0 20px rgba(255, 215, 0, 0.5),
+          0 0 40px rgba(255, 215, 0, 0.3);
+      }
+      50% {
+        text-shadow:
+          0 0 30px rgba(255, 215, 0, 0.8),
+          0 0 60px rgba(255, 215, 0, 0.5),
+          0 0 100px rgba(255, 215, 0, 0.3);
+      }
     }
 
     .final-sub {
-      font-size: 1.2rem;
-      color: #888;
+      font-size: 1.3rem;
+      color: #aaa;
       opacity: 0;
-      transition: all 0.8s ease 0.3s;
+      transform: translateY(20px);
+      transition: all 0.8s ease 0.5s;
     }
 
     .slide-section.in-view .final-sub {
       opacity: 1;
+      transform: translateY(0);
     }
+
+    .final-sub strong {
+      font-size: 1.5rem;
+      animation: strongPulse 1.5s ease-in-out infinite 1.5s;
+    }
+
+    @keyframes strongPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    /* 最終スライド用スパークル */
+    .sparkle-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 5;
+    }
+
+    .sparkle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: #FFD700;
+      border-radius: 50%;
+      opacity: 0;
+    }
+
+    .slide-section.in-view .sparkle {
+      animation: sparkleAnim 2s ease-in-out infinite;
+    }
+
+    @keyframes sparkleAnim {
+      0%, 100% { opacity: 0; transform: scale(0); }
+      50% { opacity: 1; transform: scale(1); }
+    }
+
+    .sparkle:nth-child(1) { top: 20%; left: 10%; animation-delay: 0s; }
+    .sparkle:nth-child(2) { top: 30%; left: 85%; animation-delay: 0.3s; }
+    .sparkle:nth-child(3) { top: 60%; left: 15%; animation-delay: 0.6s; }
+    .sparkle:nth-child(4) { top: 70%; left: 80%; animation-delay: 0.9s; }
+    .sparkle:nth-child(5) { top: 40%; left: 5%; animation-delay: 1.2s; }
+    .sparkle:nth-child(6) { top: 25%; left: 90%; animation-delay: 1.5s; }
+    .sparkle:nth-child(7) { top: 80%; left: 25%; animation-delay: 0.2s; }
+    .sparkle:nth-child(8) { top: 15%; left: 70%; animation-delay: 0.8s; }
 
     /* 次へ矢印 */
     .next-arrow {
@@ -1358,8 +1514,26 @@
       <div class="content-section" style="text-align: center;">
         <p class="section-number">01</p>
         <p class="impact-text">AIは<span class="highlight">便利</span>。</p>
-        <p class="section-text-large section-text" style="color: #666;">
-          企画のアイデア出し、文章作成、リサーチ...<br>
+        <!-- AI能力アイコン -->
+        <div class="ai-abilities">
+          <div class="ability-item">
+            <div class="ability-icon">💡</div>
+            <span class="ability-label">アイデア出し</span>
+          </div>
+          <div class="ability-item">
+            <div class="ability-icon">✍️</div>
+            <span class="ability-label">文章作成</span>
+          </div>
+          <div class="ability-item">
+            <div class="ability-icon">🔍</div>
+            <span class="ability-label">リサーチ</span>
+          </div>
+          <div class="ability-item">
+            <div class="ability-icon">📊</div>
+            <span class="ability-label">分析</span>
+          </div>
+        </div>
+        <p class="section-text" style="color: #666; margin-top: 40px;">
           なんでも手伝ってくれる。
         </p>
       </div>
@@ -1610,13 +1784,17 @@
         <p class="impact-text">
           <span class="highlight">自分の穴</span>は、<br>自分では見えない。
         </p>
-        <!-- 盲点ダイアグラム -->
+        <!-- 盲点ダイアグラム（シンプル版） -->
         <div class="blindspot-diagram">
-          <div class="blindspot-outer"></div>
-          <div class="blindspot-inner">あなたの視野</div>
-          <div class="blindspot-hidden">?</div>
-          <span class="blindspot-label you">見えている範囲</span>
-          <span class="blindspot-label blind">盲点</span>
+          <div class="vision-box visible-area">
+            <span class="vision-icon">👁️</span>
+            <span class="vision-label">見えてる</span>
+          </div>
+          <span class="vision-arrow">⇄</span>
+          <div class="vision-box blind-area">
+            <span class="vision-icon">❓</span>
+            <span class="vision-label">見えてない</span>
+          </div>
         </div>
         <p class="section-text">
           誰かに「それ、違くない？」と言われて<br>
@@ -1922,6 +2100,17 @@
       <!-- 背景動画（iframe埋め込み） -->
       <div class="video-background">
         <iframe src="https://utage-system.com/video/m8u907ngO3jY?autoplay=1&loop=1&muted=1" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>
+      </div>
+      <!-- スパークル -->
+      <div class="sparkle-container">
+        <div class="sparkle"></div>
+        <div class="sparkle"></div>
+        <div class="sparkle"></div>
+        <div class="sparkle"></div>
+        <div class="sparkle"></div>
+        <div class="sparkle"></div>
+        <div class="sparkle"></div>
+        <div class="sparkle"></div>
       </div>
       <!-- 装飾 -->
       <div class="deco-circle large"></div>
