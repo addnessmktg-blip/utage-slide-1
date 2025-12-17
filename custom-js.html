@@ -340,6 +340,40 @@
     }
   }
 
+  // ===== 紙吹雪アニメーション =====
+  var confettiContainer = document.getElementById('confetti-container');
+  var confettiImage = 'https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/cn640v6u1rNC4VQFAuf9aedxMXxNAL6u3EV2CgQT.png';
+
+  function createConfetti() {
+    if (!confettiContainer) return;
+
+    var confetti = document.createElement('div');
+    confetti.className = 'confetti';
+    confetti.style.backgroundImage = 'url(' + confettiImage + ')';
+    confetti.style.left = Math.random() * 100 + '%';
+    confetti.style.animationDuration = (Math.random() * 3 + 4) + 's';
+    confetti.style.animationDelay = (Math.random() * 2) + 's';
+    confetti.style.width = (Math.random() * 30 + 25) + 'px';
+    confetti.style.height = confetti.style.width;
+
+    confettiContainer.appendChild(confetti);
+
+    // アニメーション終了後に削除
+    setTimeout(function() {
+      if (confetti.parentNode) {
+        confetti.parentNode.removeChild(confetti);
+      }
+    }, 8000);
+  }
+
+  // 初期に15個生成、その後定期的に追加
+  if (confettiContainer) {
+    for (var i = 0; i < 15; i++) {
+      setTimeout(createConfetti, i * 200);
+    }
+    setInterval(createConfetti, 800);
+  }
+
   console.log('AIイエスマン スライド初期化完了');
 })();
 </script>
