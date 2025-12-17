@@ -1,4 +1,4 @@
-use crate::extractors::{extract_video_info, ExtractError, VideoFormat};
+use crate::extractors::{extract_video_info, ExtractError};
 use futures::StreamExt;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};

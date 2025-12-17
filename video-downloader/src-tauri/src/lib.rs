@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 use std::sync::Arc;
-use tauri::State;
+use tauri::{Emitter, Manager, State};
 use tokio::sync::Mutex;
 use axum::{
     extract::Json,

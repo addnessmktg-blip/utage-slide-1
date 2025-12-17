@@ -26,7 +26,7 @@ pub async fn extract(url: &str) -> Result<VideoInfo, ExtractError> {
         r#"["'](https?://[^"']+/video[^"']*)["']"#,
     ];
 
-    for (idx, pattern) in video_patterns.iter().enumerate() {
+    for (_idx, pattern) in video_patterns.iter().enumerate() {
         if let Ok(re) = Regex::new(pattern) {
             for cap in re.captures_iter(&html) {
                 if let Some(video_url) = cap.get(1) {
