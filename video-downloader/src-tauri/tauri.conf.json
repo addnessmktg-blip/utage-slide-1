@@ -37,10 +37,5 @@
     ],
     "externalBin": []
   },
-  "plugins": {
-    "http": {
-      "enabled": true,
-      "scope": ["https://**", "http://**"]
-    }
-  }
+  "plugins": {}
 }
