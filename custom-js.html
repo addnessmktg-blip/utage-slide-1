@@ -352,7 +352,7 @@
     confetti.style.backgroundImage = 'url(' + confettiImage + ')';
     confetti.style.left = Math.random() * 100 + '%';
     confetti.style.animationDuration = (Math.random() * 3 + 4) + 's';
-    confetti.style.width = (Math.random() * 60 + 50) + 'px';
+    confetti.style.width = (Math.random() * 90 + 75) + 'px';
     confetti.style.height = confetti.style.width;
 
     confettiContainer.appendChild(confetti);
@@ -365,12 +365,12 @@
     }, 8000);
   }
 
-  // 初期に15個生成、その後定期的に追加
+  // 初期に8個生成、その後定期的に追加
   if (confettiContainer) {
-    for (var i = 0; i < 15; i++) {
-      setTimeout(createConfetti, i * 200);
+    for (var i = 0; i < 8; i++) {
+      setTimeout(createConfetti, i * 300);
     }
-    setInterval(createConfetti, 800);
+    setInterval(createConfetti, 1500);
   }
 
   // ===== 最終スライドの動画自動再生 =====
