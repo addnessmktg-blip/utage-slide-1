@@ -373,6 +373,25 @@
     setInterval(createConfetti, 800);
   }
 
+  // ===== 最終スライドの動画自動再生 =====
+  var finalSlide = document.getElementById('slide-28');
+  var finalVideo = document.getElementById('final-video');
+  var videoStarted = false;
+
+  if (finalSlide && finalVideo) {
+    var videoObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting && !videoStarted) {
+          // スライドが表示されたら動画を再生開始
+          finalVideo.src = finalVideo.getAttribute('data-src');
+          videoStarted = true;
+        }
+      });
+    }, { threshold: 0.5 });
+
+    videoObserver.observe(finalSlide);
+  }
+
   console.log('AIイエスマン スライド初期化完了');
 })();
 </script>
