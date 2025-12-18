@@ -173,10 +173,24 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   capturedVideos.delete(tabId);
 });
 
-// Clean up when tab navigates
-chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-  if (changeInfo.url) {
-    capturedVideos.set(tabId, []);
+// Clean up when tab navigates to a completely different page
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  // Only clear if navigating to a completely different origin
+  if (changeInfo.status === 'loading' && changeInfo.url) {
+    try {
+      const newUrl = new URL(changeInfo.url);
+      const videos = capturedVideos.get(tabId) || [];
+      if (videos.length > 0) {
+        const oldUrl = new URL(videos[0].initiator || videos[0].url);
+        // Only clear if origin changed
+        if (newUrl.origin !== oldUrl.origin) {
+          console.log('Clearing videos - navigated to different origin');
+          capturedVideos.set(tabId, []);
+        }
+      }
+    } catch (e) {
+      // If URL parsing fails, don't clear
+    }
   }
 });
 
@@ -330,11 +344,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     const tabId = request.tabId;
     const videos = capturedVideos.get(tabId) || [];
 
+    console.log(`getCapturedVideos for tab ${tabId}: found ${videos.length} videos`);
+    console.log('All tabs with videos:', Array.from(capturedVideos.keys()));
+
     // Filter to show useful videos
     const filteredVideos = videos.filter(v =>
       v.type === 'hls' || v.type === 'mp4' || v.type === 'webm' || v.type === 'video'
     );
 
+    console.log(`Returning ${filteredVideos.length} filtered videos`);
     sendResponse({ videos: filteredVideos });
     return true;
   }
