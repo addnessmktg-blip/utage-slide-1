@@ -1,9 +1,56 @@
 // Background service worker for video downloads
-// This bypasses CORS restrictions
+// This bypasses CORS restrictions and includes cookies for authentication
+
+// Get cookies for a URL and format them as a header string
+async function getCookiesForUrl(url) {
+  try {
+    const urlObj = new URL(url);
+    const cookies = await chrome.cookies.getAll({ domain: urlObj.hostname });
+
+    // Also try without subdomain
+    const domainParts = urlObj.hostname.split('.');
+    if (domainParts.length > 2) {
+      const baseDomain = domainParts.slice(-2).join('.');
+      const baseCookies = await chrome.cookies.getAll({ domain: baseDomain });
+      cookies.push(...baseCookies);
+    }
+
+    // Deduplicate by name
+    const seen = new Set();
+    const uniqueCookies = cookies.filter(c => {
+      if (seen.has(c.name)) return false;
+      seen.add(c.name);
+      return true;
+    });
+
+    return uniqueCookies.map(c => `${c.name}=${c.value}`).join('; ');
+  } catch (e) {
+    console.error('Error getting cookies:', e);
+    return '';
+  }
+}
+
+// Fetch with cookies
+async function fetchWithCookies(url) {
+  const cookieHeader = await getCookiesForUrl(url);
+
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+  };
+
+  if (cookieHeader) {
+    headers['Cookie'] = cookieHeader;
+  }
+
+  return fetch(url, {
+    headers,
+    credentials: 'include'
+  });
+}
 
 // Parse m3u8 playlist
 async function parseM3u8(url) {
-  const response = await fetch(url);
+  const response = await fetchWithCookies(url);
   const text = await response.text();
 
   // Check if it's HTML (error page)
@@ -55,15 +102,15 @@ async function downloadHls(url, sendProgress) {
   // Download all segments
   const chunks = [];
   for (let i = 0; i < segments.length; i++) {
-    sendProgress({ 
-      status: 'downloading', 
+    sendProgress({
+      status: 'downloading',
       message: `Downloading ${i + 1}/${segments.length}...`,
       current: i + 1,
       total: segments.length,
       percent: Math.floor((i / segments.length) * 90)
     });
 
-    const response = await fetch(segments[i]);
+    const response = await fetchWithCookies(segments[i]);
     if (!response.ok) {
       throw new Error(`Segment ${i + 1} failed: ${response.status}`);
     }
@@ -89,8 +136,8 @@ async function downloadHls(url, sendProgress) {
 async function downloadDirect(url, sendProgress) {
   sendProgress({ status: 'downloading', message: 'Downloading...', percent: 10 });
 
-  const response = await fetch(url);
-  
+  const response = await fetchWithCookies(url);
+
   if (!response.ok) {
     throw new Error(`Download failed: ${response.status}`);
   }
@@ -116,8 +163,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       try {
         let data;
         const sendProgress = (progress) => {
-          // Can't send progress updates in MV3 service worker easily
-          // but we can log for debugging
           console.log('Progress:', progress);
         };
 
@@ -128,10 +173,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
 
         // Create blob URL and download
-        const blob = new Blob([data], { 
-          type: type === 'hls' || url.includes('.m3u8') ? 'video/mp2t' : 'video/mp4' 
+        const blob = new Blob([data], {
+          type: type === 'hls' || url.includes('.m3u8') ? 'video/mp2t' : 'video/mp4'
         });
-        
+
         const reader = new FileReader();
         reader.onloadend = () => {
           const base64 = reader.result.split(',')[1];
