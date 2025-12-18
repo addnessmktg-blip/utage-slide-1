@@ -50,17 +50,20 @@ function getFullPath() {
   // Get folder name (use page title if empty)
   let folder = folderInput.value.trim();
   if (!folder) {
-    folder = pageTitle || 'downloads';
+    folder = pageTitle || 'VIDEO_HACKER';
   }
-  folder = folder.replace(/[<>:"/\\|?*]/g, '_');
+  // Sanitize folder name
+  folder = folder.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').replace(/\.+$/g, '');
 
   // Get filename (required)
   let filename = filenameInput.value.trim();
   if (!filename) {
     filename = 'video_' + Date.now();
   }
-  filename = filename.replace(/[<>:"/\\|?*]/g, '_');
+  // Sanitize filename
+  filename = filename.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').replace(/\.+$/g, '');
 
+  console.log('Folder:', folder, 'Filename:', filename);
   return { folder, filename };
 }
 
@@ -95,12 +98,21 @@ async function downloadVideo(video) {
 
       // Create full path: folder/filename.ext
       const fullPath = folder + '/' + filename + ext;
+      console.log('Saving to:', fullPath);
 
       chrome.downloads.download({
         url: blobUrl,
         filename: fullPath,
-        saveAs: false  // Don't show dialog, save directly
-      }, () => {
+        conflictAction: 'uniquify'
+      }, (downloadId) => {
+        if (chrome.runtime.lastError) {
+          console.error('Download error:', chrome.runtime.lastError);
+          alert('保存エラー: ' + chrome.runtime.lastError.message);
+          hideProgress();
+          URL.revokeObjectURL(blobUrl);
+          return;
+        }
+        console.log('Download started with ID:', downloadId);
         showProgress('完了！', 100);
         setTimeout(() => {
           URL.revokeObjectURL(blobUrl);
