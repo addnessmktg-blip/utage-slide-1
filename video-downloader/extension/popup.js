@@ -69,6 +69,7 @@ function detectVideos() {
 }
 
 let foundVideos = [];
+let currentPageUrl = ''; // Store the page URL for referer
 
 // Progress UI helpers
 function showProgress(text, percent) {
@@ -98,7 +99,8 @@ async function downloadVideo(video) {
       action: 'download',
       url: video.url,
       type: video.type,
-      filename: filename
+      filename: filename,
+      referer: currentPageUrl  // Include the page URL for authentication
     });
 
     if (response.success) {
@@ -148,6 +150,7 @@ async function scanPage() {
 
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    currentPageUrl = tab.url; // Save the page URL for referer
 
     const results = await chrome.scripting.executeScript({
       target: { tabId: tab.id },

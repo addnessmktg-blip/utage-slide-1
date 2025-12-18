@@ -1,23 +1,53 @@
 // Background service worker for video downloads
 // This bypasses CORS restrictions and includes cookies for authentication
 
-// Get cookies for a URL and format them as a header string
-async function getCookiesForUrl(url) {
-  try {
-    const urlObj = new URL(url);
-    const cookies = await chrome.cookies.getAll({ domain: urlObj.hostname });
+let pageUrl = ''; // Store the page URL for referer
 
-    // Also try without subdomain
-    const domainParts = urlObj.hostname.split('.');
-    if (domainParts.length > 2) {
-      const baseDomain = domainParts.slice(-2).join('.');
-      const baseCookies = await chrome.cookies.getAll({ domain: baseDomain });
-      cookies.push(...baseCookies);
+// Get cookies for multiple domains
+async function getAllRelevantCookies(videoUrl, refererUrl) {
+  try {
+    const allCookies = [];
+    const domains = new Set();
+
+    // Add video domain
+    const videoUrlObj = new URL(videoUrl);
+    domains.add(videoUrlObj.hostname);
+
+    // Add base domain of video URL
+    const videoDomainParts = videoUrlObj.hostname.split('.');
+    if (videoDomainParts.length > 2) {
+      domains.add(videoDomainParts.slice(-2).join('.'));
     }
+
+    // Add referer domain if provided
+    if (refererUrl) {
+      try {
+        const refererUrlObj = new URL(refererUrl);
+        domains.add(refererUrlObj.hostname);
+        const refererDomainParts = refererUrlObj.hostname.split('.');
+        if (refererDomainParts.length > 2) {
+          domains.add(refererDomainParts.slice(-2).join('.'));
+        }
+      } catch (e) {}
+    }
+
+    // Get cookies from all domains
+    for (const domain of domains) {
+      try {
+        const cookies = await chrome.cookies.getAll({ domain });
+        allCookies.push(...cookies);
+      } catch (e) {}
+    }
+
+    // Also get all cookies (for session cookies that might not have domain set properly)
+    try {
+      const allStoreCookies = await chrome.cookies.getAll({});
+      allCookies.push(...allStoreCookies);
+    } catch (e) {}
 
     // Deduplicate by name
     const seen = new Set();
-    const uniqueCookies = cookies.filter(c => {
+    const uniqueCookies = allCookies.filter(c => {
       if (seen.has(c.name)) return false;
       seen.add(c.name);
       return true;
@@ -30,28 +60,45 @@ async function getCookiesForUrl(url) {
   }
 }
 
-// Fetch with cookies
-async function fetchWithCookies(url) {
-  const cookieHeader = await getCookiesForUrl(url);
+// Fetch with cookies and proper headers
+async function fetchWithAuth(url, refererUrl) {
+  const cookieHeader = await getAllRelevantCookies(url, refererUrl);
 
   const headers = {
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': '*/*',
+    'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8'
   };
 
   if (cookieHeader) {
     headers['Cookie'] = cookieHeader;
   }
 
+  // Add Referer and Origin to make it look like a request from the page
+  if (refererUrl) {
+    headers['Referer'] = refererUrl;
+    try {
+      const refererUrlObj = new URL(refererUrl);
+      headers['Origin'] = refererUrlObj.origin;
+    } catch (e) {}
+  }
+
+  console.log('Fetching:', url);
+  console.log('Headers:', headers);
+
   return fetch(url, {
     headers,
-    credentials: 'include'
+    credentials: 'include',
+    mode: 'cors'
   });
 }
 
 // Parse m3u8 playlist
-async function parseM3u8(url) {
-  const response = await fetchWithCookies(url);
+async function parseM3u8(url, refererUrl) {
+  const response = await fetchWithAuth(url, refererUrl);
   const text = await response.text();
+
+  console.log('M3u8 response:', text.substring(0, 500));
 
   // Check if it's HTML (error page)
   if (text.trim().startsWith('<!') || text.trim().startsWith('<html')) {
@@ -68,7 +115,7 @@ async function parseM3u8(url) {
     if (!streamUrl.startsWith('http')) {
       streamUrl = baseUrl + streamUrl;
     }
-    return parseM3u8(streamUrl);
+    return parseM3u8(streamUrl, refererUrl);
   }
 
   // Parse segment URLs
@@ -88,10 +135,10 @@ async function parseM3u8(url) {
 }
 
 // Download HLS stream
-async function downloadHls(url, sendProgress) {
+async function downloadHls(url, refererUrl, sendProgress) {
   sendProgress({ status: 'parsing', message: 'Parsing playlist...' });
 
-  const segments = await parseM3u8(url);
+  const segments = await parseM3u8(url, refererUrl);
 
   if (segments.length === 0) {
     throw new Error('セグメントが見つかりません');
@@ -110,7 +157,7 @@ async function downloadHls(url, sendProgress) {
       percent: Math.floor((i / segments.length) * 90)
     });
 
-    const response = await fetchWithCookies(segments[i]);
+    const response = await fetchWithAuth(segments[i], refererUrl);
     if (!response.ok) {
       throw new Error(`Segment ${i + 1} failed: ${response.status}`);
     }
@@ -133,10 +180,10 @@ async function downloadHls(url, sendProgress) {
 }
 
 // Download MP4/direct file
-async function downloadDirect(url, sendProgress) {
+async function downloadDirect(url, refererUrl, sendProgress) {
   sendProgress({ status: 'downloading', message: 'Downloading...', percent: 10 });
 
-  const response = await fetchWithCookies(url);
+  const response = await fetchWithAuth(url, refererUrl);
 
   if (!response.ok) {
     throw new Error(`Download failed: ${response.status}`);
@@ -156,7 +203,7 @@ async function downloadDirect(url, sendProgress) {
 // Handle messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'download') {
-    const { url, type, filename } = request;
+    const { url, type, filename, referer } = request;
 
     // Use async handling
     (async () => {
@@ -167,9 +214,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         };
 
         if (type === 'hls' || url.includes('.m3u8')) {
-          data = await downloadHls(url, sendProgress);
+          data = await downloadHls(url, referer, sendProgress);
         } else {
-          data = await downloadDirect(url, sendProgress);
+          data = await downloadDirect(url, referer, sendProgress);
         }
 
         // Create blob URL and download
@@ -185,6 +232,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         reader.readAsDataURL(blob);
 
       } catch (err) {
+        console.error('Download error:', err);
         sendResponse({ success: false, error: err.message });
       }
     })();
