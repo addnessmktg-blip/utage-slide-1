@@ -4,6 +4,14 @@ let currentTabId = null;
 let pageTitle = '';
 let currentVideos = [];
 
+// Listen for progress updates from background
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.action === 'downloadProgress') {
+    const { current, total, percent } = message;
+    showProgress(`ダウンロード中... ${current}/${total} (${percent}%)`, percent);
+  }
+});
+
 // Clean filename (remove invalid characters)
 function cleanFilename(name) {
   if (!name) return '';

@@ -273,7 +273,7 @@ function generateIV(index, explicitIV) {
 }
 
 // Download segments (with optional decryption)
-async function downloadSegments(segments, onProgress, encryptionInfo = null) {
+async function downloadSegments(segments, onProgress, encryptionInfo = null, progressCallback = null) {
   console.log('Downloading', segments.length, 'segments');
 
   let key = null;
@@ -285,10 +285,14 @@ async function downloadSegments(segments, onProgress, encryptionInfo = null) {
   const chunks = [];
   let failed = 0;
 
+  // Download in batches to avoid memory issues
+  const BATCH_SIZE = 10;
+
   for (let i = 0; i < segments.length; i++) {
     try {
-      if (onProgress) {
-        onProgress(i + 1, segments.length);
+      // Report progress
+      if (progressCallback) {
+        progressCallback(i + 1, segments.length);
       }
 
       const response = await fetch(segments[i]);
@@ -307,10 +311,8 @@ async function downloadSegments(segments, onProgress, encryptionInfo = null) {
           try {
             data = await decryptSegment(buffer, key, iv);
             // Verify decryption worked (check for TS sync byte)
-            if (data.length > 0 && data[0] === 0x47) {
-              console.log(`Segment ${i + 1}: Decrypted successfully`);
-            } else {
-              console.log(`Segment ${i + 1}: Decrypted but first byte is ${data[0].toString(16)}`);
+            if (i % 50 === 0) {
+              console.log(`Segment ${i + 1}/${segments.length}: Decrypted`);
             }
           } catch (e) {
             console.error(`Segment ${i + 1}: Decryption failed, using raw data`);
@@ -327,6 +329,11 @@ async function downloadSegments(segments, onProgress, encryptionInfo = null) {
       failed++;
       console.error(`Segment ${i + 1} error:`, e.message);
     }
+
+    // Small delay every batch to prevent overwhelming
+    if (i > 0 && i % BATCH_SIZE === 0) {
+      await new Promise(r => setTimeout(r, 10));
+    }
   }
 
   console.log(`Downloaded ${chunks.length}/${segments.length} segments (${failed} failed)`);
@@ -337,6 +344,8 @@ async function downloadSegments(segments, onProgress, encryptionInfo = null) {
 
   // Combine chunks
   const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+  console.log(`Total size: ${(totalLength / 1024 / 1024).toFixed(2)} MB`);
+
   const combined = new Uint8Array(totalLength);
   let offset = 0;
   for (const chunk of chunks) {
@@ -391,6 +400,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       try {
         let data;
 
+        // Progress callback - send updates to popup
+        const progressCallback = (current, total) => {
+          const percent = Math.round((current / total) * 100);
+          // Send progress to all extension pages
+          chrome.runtime.sendMessage({
+            action: 'downloadProgress',
+            current,
+            total,
+            percent
+          }).catch(() => {}); // Ignore errors if popup is closed
+        };
+
         if (type === 'hls') {
           // Find the video info with segments
           const videos = capturedVideos.get(tabId) || [];
@@ -405,14 +426,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             if (encryptionInfo) {
               console.log('Stream is encrypted, will decrypt segments');
             }
-            data = await downloadSegments(videoInfo.segments, null, encryptionInfo);
+            data = await downloadSegments(videoInfo.segments, null, encryptionInfo, progressCallback);
           } else {
             // Try to parse again
             console.log('Re-parsing m3u8...');
             const { segments, error, encrypted, keyUrl, keyIV } = await parseM3u8ForSegments(url);
             if (segments.length > 0) {
               const encryptionInfo = encrypted ? { keyUrl, keyIV } : null;
-              data = await downloadSegments(segments, null, encryptionInfo);
+              data = await downloadSegments(segments, null, encryptionInfo, progressCallback);
             } else {
               throw new Error(error || 'セグメントが見つかりません');
             }
@@ -420,6 +441,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         } else {
           data = await downloadDirect(url);
         }
+
+        console.log('Download complete, preparing file...');
 
         // Convert to base64
         const blob = new Blob([data], {
@@ -465,4 +488,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-console.log('Video Downloader v3.1 - Auto-parse m3u8 mode');
+console.log('Video Downloader v4.1 - Long video support with progress');
