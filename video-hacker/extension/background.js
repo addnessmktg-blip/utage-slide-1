@@ -442,39 +442,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           data = await downloadDirect(url);
         }
 
-        console.log('Download complete, saving file directly...');
+        console.log('Download complete, sending data to popup...');
+        console.log(`Data size: ${(data.length / 1024 / 1024).toFixed(2)} MB`);
 
-        // Create blob and download directly (NO base64 - avoids memory issues!)
-        const mimeType = type === 'hls' ? 'video/mp2t' : 'video/mp4';
-        const blob = new Blob([data], { type: mimeType });
-
-        // Use self.URL for service worker compatibility
-        const createURL = (self.URL || globalThis.URL || URL);
-        const blobUrl = createURL.createObjectURL(blob);
-
-        // Register filename for onDeterminingFilename
-        if (filename) {
-          pendingDownloads.set(blobUrl, filename);
-          console.log('[VIDEO HACKER] Registered filename:', filename);
-        }
-
-        // Download directly from background script
-        chrome.downloads.download({
-          url: blobUrl,
-          filename: filename || 'video.ts',
-          saveAs: false
-        }, (downloadId) => {
-          if (chrome.runtime.lastError) {
-            console.error('Download error:', chrome.runtime.lastError);
-            sendResponse({ success: false, error: chrome.runtime.lastError.message });
-          } else {
-            console.log('Download started with ID:', downloadId);
-            // Clean up blob URL after a delay
-            setTimeout(() => {
-              try { createURL.revokeObjectURL(blobUrl); } catch(e) {}
-            }, 60000);
-            sendResponse({ success: true, downloadId });
-          }
+        // Send raw array data to popup (popup will create blob and download)
+        sendResponse({
+          success: true,
+          data: Array.from(data),
+          mimeType: type === 'hls' ? 'video/mp2t' : 'video/mp4'
         });
 
       } catch (err) {

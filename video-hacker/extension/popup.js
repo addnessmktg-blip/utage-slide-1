@@ -101,20 +101,48 @@ async function downloadVideo(video, customFilename = null) {
   showProgress('ダウンロード開始...', 1);
 
   try {
-    // Send download request to background (downloads directly, no base64!)
+    // Send download request to background
     const response = await chrome.runtime.sendMessage({
       action: 'download',
       url: video.url,
       type: video.type,
-      tabId: currentTabId,
-      filename: fullPath
+      tabId: currentTabId
     });
 
     if (response.success) {
-      showProgress('完了！', 100);
-      setTimeout(() => {
-        hideProgress();
-      }, 2000);
+      showProgress('ファイル作成中...', 95);
+
+      // Convert array back to Uint8Array and create blob
+      const bytes = new Uint8Array(response.data);
+      const blob = new Blob([bytes], { type: response.mimeType });
+      const blobUrl = URL.createObjectURL(blob);
+
+      // Register filename with background script
+      await chrome.runtime.sendMessage({
+        action: 'registerDownload',
+        blobUrl: blobUrl,
+        filename: fullPath
+      });
+
+      // Download
+      chrome.downloads.download({
+        url: blobUrl,
+        filename: fullPath,
+        saveAs: false
+      }, (downloadId) => {
+        if (chrome.runtime.lastError) {
+          console.error('Download error:', chrome.runtime.lastError);
+          alert('エラー: ' + chrome.runtime.lastError.message);
+          hideProgress();
+        } else {
+          console.log('Download started:', downloadId);
+          showProgress('完了！', 100);
+          setTimeout(() => {
+            URL.revokeObjectURL(blobUrl);
+            hideProgress();
+          }, 2000);
+        }
+      });
     } else {
       throw new Error(response.error || 'ダウンロード失敗');
     }
