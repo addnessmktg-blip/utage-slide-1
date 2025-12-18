@@ -447,7 +447,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // Create blob and download directly (NO base64 - avoids memory issues!)
         const mimeType = type === 'hls' ? 'video/mp2t' : 'video/mp4';
         const blob = new Blob([data], { type: mimeType });
-        const blobUrl = URL.createObjectURL(blob);
+
+        // Use self.URL for service worker compatibility
+        const createURL = (self.URL || globalThis.URL || URL);
+        const blobUrl = createURL.createObjectURL(blob);
 
         // Register filename for onDeterminingFilename
         if (filename) {
@@ -467,7 +470,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           } else {
             console.log('Download started with ID:', downloadId);
             // Clean up blob URL after a delay
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+            setTimeout(() => {
+              try { createURL.revokeObjectURL(blobUrl); } catch(e) {}
+            }, 60000);
             sendResponse({ success: true, downloadId });
           }
         });
