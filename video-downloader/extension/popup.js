@@ -42,10 +42,9 @@ function hideProgress() {
   document.getElementById('progress').classList.remove('active');
 }
 
-// Get full path (folder/filename) from inputs
-function getFullPath() {
+// Get folder name from input
+function getFolder() {
   const folderInput = document.getElementById('foldername');
-  const filenameInput = document.getElementById('filename');
 
   // Get folder name (use page title if empty)
   let folder = folderInput.value.trim();
@@ -55,22 +54,20 @@ function getFullPath() {
   // Sanitize folder name
   folder = folder.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').replace(/\.+$/g, '');
 
-  // Get filename (required)
-  let filename = filenameInput.value.trim();
+  return folder;
+}
+
+// Download a single video with optional custom filename
+async function downloadVideo(video, customFilename = null) {
+  const folder = getFolder();
+  // Use custom filename, or generate default with timestamp
+  let filename = customFilename;
   if (!filename) {
     filename = 'video_' + Date.now();
   }
   // Sanitize filename
   filename = filename.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').replace(/\.+$/g, '');
 
-  console.log('Folder:', folder, 'Filename:', filename);
-  return { folder, filename };
-}
-
-// Download a single video with optional custom filename
-async function downloadVideo(video, customFilename = null) {
-  const { folder, filename: defaultFilename } = getFullPath();
-  const filename = customFilename || defaultFilename;
   const isHls = video.type === 'hls';
 
   showProgress('ダウンロード中...', 5);
