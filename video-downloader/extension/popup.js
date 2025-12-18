@@ -36,39 +36,26 @@ function detectVideos() {
     }
   });
 
-  // 3. Search for video URLs in scripts
-  const scriptContent = Array.from(document.querySelectorAll('script'))
-    .map(s => s.textContent || '')
-    .join('\n');
+  // 3. Search for video URLs in scripts and page content
+  const pageContent = document.documentElement.innerHTML;
 
   // Look for mp4 URLs
   const mp4Regex = /https?:\/\/[^\s"'<>]+\.mp4[^\s"'<>]*/gi;
-  const mp4Matches = scriptContent.match(mp4Regex) || [];
+  const mp4Matches = pageContent.match(mp4Regex) || [];
   mp4Matches.forEach(url => {
-    const cleanUrl = url.replace(/["'\\]/g, '');
+    const cleanUrl = url.replace(/["'\\]/g, '').split('?')[0] + (url.includes('?') ? '?' + url.split('?')[1]?.replace(/["'\\]/g, '') : '');
     if (!videos.some(v => v.url === cleanUrl)) {
-      videos.push({ type: 'mp4', url: cleanUrl, source: 'script' });
+      videos.push({ type: 'mp4', url: cleanUrl, source: 'page' });
     }
   });
 
   // Look for m3u8 (HLS) URLs
   const m3u8Regex = /https?:\/\/[^\s"'<>]+\.m3u8[^\s"'<>]*/gi;
-  const m3u8Matches = scriptContent.match(m3u8Regex) || [];
+  const m3u8Matches = pageContent.match(m3u8Regex) || [];
   m3u8Matches.forEach(url => {
     const cleanUrl = url.replace(/["'\\]/g, '');
     if (!videos.some(v => v.url === cleanUrl)) {
-      videos.push({ type: 'hls', url: cleanUrl, source: 'script' });
-    }
-  });
-
-  // 4. Search in data attributes
-  document.querySelectorAll('[data-src], [data-video], [data-url], [data-video-url]').forEach(el => {
-    const url = el.dataset.src || el.dataset.video || el.dataset.url || el.dataset.videoUrl;
-    if (url && (url.includes('.mp4') || url.includes('.m3u8'))) {
-      if (!videos.some(v => v.url === url)) {
-        const type = url.includes('.m3u8') ? 'hls' : 'mp4';
-        videos.push({ type, url, source: 'data attribute' });
-      }
+      videos.push({ type: 'hls', url: cleanUrl, source: 'page' });
     }
   });
 
@@ -82,7 +69,6 @@ function detectVideos() {
 }
 
 let foundVideos = [];
-let currentTab = null;
 
 // Progress UI helpers
 function showProgress(text, percent) {
@@ -99,196 +85,51 @@ function hideProgress() {
   document.getElementById('progress').classList.remove('active');
 }
 
-// Function to be injected into page for HLS download
-async function downloadHlsInPage(url) {
-  // Parse m3u8 playlist
-  async function parseM3u8(url) {
-    const response = await fetch(url, { credentials: 'include' });
-    const text = await response.text();
-
-    // Check if it's HTML (error page)
-    if (text.trim().startsWith('<!') || text.trim().startsWith('<html')) {
-      throw new Error('認証エラー: ログインが必要です');
-    }
-
-    const lines = text.split('\n');
-    const segments = [];
-    const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
-
-    // Check if this is a master playlist
-    const m3u8Lines = lines.filter(l => l.trim().endsWith('.m3u8'));
-    if (m3u8Lines.length > 0) {
-      let streamUrl = m3u8Lines[m3u8Lines.length - 1].trim();
-      if (!streamUrl.startsWith('http')) {
-        streamUrl = baseUrl + streamUrl;
-      }
-      return parseM3u8(streamUrl);
-    }
-
-    // Parse segment URLs
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed && !trimmed.startsWith('#')) {
-        let segmentUrl = trimmed;
-        if (!segmentUrl.startsWith('http')) {
-          segmentUrl = baseUrl + segmentUrl;
-        }
-        segments.push(segmentUrl);
-      }
-    }
-
-    return segments;
-  }
-
-  try {
-    const segments = await parseM3u8(url);
-
-    if (segments.length === 0) {
-      throw new Error('セグメントが見つかりません');
-    }
-
-    // Download all segments
-    const chunks = [];
-    for (let i = 0; i < segments.length; i++) {
-      const response = await fetch(segments[i], { credentials: 'include' });
-      const buffer = await response.arrayBuffer();
-      chunks.push(new Uint8Array(buffer));
-
-      // Update progress via console (we'll read this)
-      console.log(`__DOWNLOAD_PROGRESS__:${i + 1}/${segments.length}`);
-    }
-
-    // Combine all chunks
-    const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-    const combined = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const chunk of chunks) {
-      combined.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    // Convert to base64 for transfer
-    let binary = '';
-    const len = combined.byteLength;
-    for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(combined[i]);
-    }
-    return { success: true, data: btoa(binary), segments: segments.length };
-
-  } catch (err) {
-    return { success: false, error: err.message };
-  }
-}
-
-// Function to be injected for MP4 download
-async function downloadMp4InPage(url) {
-  try {
-    const response = await fetch(url, { credentials: 'include' });
-    const contentType = response.headers.get('content-type') || '';
-
-    if (contentType.includes('text/html')) {
-      throw new Error('認証エラー: ログインが必要です');
-    }
-
-    const buffer = await response.arrayBuffer();
-    const data = new Uint8Array(buffer);
-
-    // Convert to base64
-    let binary = '';
-    const len = data.byteLength;
-    for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(data[i]);
-    }
-    return { success: true, data: btoa(binary) };
-
-  } catch (err) {
-    return { success: false, error: err.message };
-  }
-}
-
-// Download video by injecting into page context
+// Download video using background script (bypasses CORS)
 async function downloadVideo(video) {
   const filename = 'video_' + Date.now();
+  const isHls = video.type === 'hls' || video.url.includes('.m3u8');
 
-  showProgress('Downloading... (this may take a while)', 10);
+  showProgress('Starting download...', 5);
 
   try {
-    let result;
+    // Send download request to background script
+    const response = await chrome.runtime.sendMessage({
+      action: 'download',
+      url: video.url,
+      type: video.type,
+      filename: filename
+    });
 
-    if (video.type === 'hls' || video.url.includes('.m3u8')) {
-      // HLS download
-      const results = await chrome.scripting.executeScript({
-        target: { tabId: currentTab.id },
-        func: downloadHlsInPage,
-        args: [video.url],
-        world: 'MAIN'  // Run in page context to access cookies
-      });
-      result = results[0]?.result;
+    if (response.success) {
+      showProgress('Saving file...', 95);
 
-      if (result?.success) {
-        showProgress('Saving file...', 90);
-
-        // Convert base64 back to blob
-        const binaryString = atob(result.data);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-
-        const blob = new Blob([bytes], { type: 'video/mp2t' });
-        const blobUrl = URL.createObjectURL(blob);
-
-        chrome.downloads.download({
-          url: blobUrl,
-          filename: filename + '.ts',
-          saveAs: true
-        }, () => {
-          showProgress('Download complete!', 100);
-          setTimeout(() => {
-            URL.revokeObjectURL(blobUrl);
-            hideProgress();
-          }, 3000);
-        });
-      } else {
-        throw new Error(result?.error || 'Download failed');
+      // Convert base64 back to blob
+      const binaryString = atob(response.data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
       }
+
+      const ext = isHls ? '.ts' : '.mp4';
+      const mimeType = isHls ? 'video/mp2t' : 'video/mp4';
+      const blob = new Blob([bytes], { type: mimeType });
+      const blobUrl = URL.createObjectURL(blob);
+
+      chrome.downloads.download({
+        url: blobUrl,
+        filename: filename + ext,
+        saveAs: true
+      }, () => {
+        showProgress('Download complete!', 100);
+        setTimeout(() => {
+          URL.revokeObjectURL(blobUrl);
+          hideProgress();
+        }, 3000);
+      });
 
     } else {
-      // MP4/direct download
-      const results = await chrome.scripting.executeScript({
-        target: { tabId: currentTab.id },
-        func: downloadMp4InPage,
-        args: [video.url],
-        world: 'MAIN'
-      });
-      result = results[0]?.result;
-
-      if (result?.success) {
-        showProgress('Saving file...', 90);
-
-        const binaryString = atob(result.data);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-
-        const blob = new Blob([bytes], { type: 'video/mp4' });
-        const blobUrl = URL.createObjectURL(blob);
-
-        chrome.downloads.download({
-          url: blobUrl,
-          filename: filename + '.mp4',
-          saveAs: true
-        }, () => {
-          showProgress('Download complete!', 100);
-          setTimeout(() => {
-            URL.revokeObjectURL(blobUrl);
-            hideProgress();
-          }, 3000);
-        });
-      } else {
-        throw new Error(result?.error || 'Download failed');
-      }
+      throw new Error(response.error || 'Download failed');
     }
 
   } catch (err) {
@@ -307,7 +148,6 @@ async function scanPage() {
 
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    currentTab = tab;
 
     const results = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
