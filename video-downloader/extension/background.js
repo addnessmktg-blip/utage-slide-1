@@ -31,7 +31,7 @@ function initTab(tabId) {
   }
 }
 
-// Parse m3u8 and get ALL segment URLs
+// Parse m3u8 and get ALL segment URLs with encryption info
 async function parseM3u8ForSegments(url) {
   try {
     console.log('Parsing m3u8:', url);
@@ -40,7 +40,7 @@ async function parseM3u8ForSegments(url) {
 
     if (text.includes('<!') || text.includes('<html')) {
       console.log('Got HTML instead of m3u8');
-      return { segments: [], error: 'auth' };
+      return { segments: [], error: 'auth', encrypted: false, keyUrl: null };
     }
 
     const lines = text.split('\n');
@@ -58,6 +58,31 @@ async function parseM3u8ForSegments(url) {
       return parseM3u8ForSegments(streamUrl);
     }
 
+    // Check for encryption
+    let encrypted = false;
+    let keyUrl = null;
+    let keyIV = null;
+
+    for (const line of lines) {
+      if (line.startsWith('#EXT-X-KEY')) {
+        encrypted = true;
+        // Parse key URL: #EXT-X-KEY:METHOD=AES-128,URI="key.bin",IV=0x...
+        const uriMatch = line.match(/URI="([^"]+)"/);
+        const ivMatch = line.match(/IV=0x([0-9a-fA-F]+)/);
+
+        if (uriMatch) {
+          keyUrl = uriMatch[1];
+          if (!keyUrl.startsWith('http')) {
+            keyUrl = baseUrl + keyUrl;
+          }
+        }
+        if (ivMatch) {
+          keyIV = ivMatch[1];
+        }
+        console.log('Found encryption:', { keyUrl, keyIV: keyIV ? 'present' : 'none' });
+      }
+    }
+
     // Parse segment URLs
     const segments = [];
     for (const line of lines) {
@@ -71,11 +96,11 @@ async function parseM3u8ForSegments(url) {
       }
     }
 
-    console.log(`Found ${segments.length} segments in playlist`);
-    return { segments, error: null };
+    console.log(`Found ${segments.length} segments in playlist (encrypted: ${encrypted})`);
+    return { segments, error: null, encrypted, keyUrl, keyIV };
   } catch (e) {
     console.error('Error parsing m3u8:', e);
-    return { segments: [], error: e.message };
+    return { segments: [], error: e.message, encrypted: false, keyUrl: null };
   }
 }
 
@@ -96,19 +121,25 @@ async function addCapturedVideo(tabId, url, type, initiator) {
     timestamp: Date.now(),
     segments: [],
     segmentCount: 0,
-    status: 'captured'
+    status: 'captured',
+    encrypted: false,
+    keyUrl: null,
+    keyIV: null
   };
 
   // If it's HLS, immediately parse to get all segments
   if (type === 'hls') {
     videoInfo.status = 'parsing';
-    const { segments, error } = await parseM3u8ForSegments(url);
+    const { segments, error, encrypted, keyUrl, keyIV } = await parseM3u8ForSegments(url);
 
     if (segments.length > 0) {
       videoInfo.segments = segments;
       videoInfo.segmentCount = segments.length;
+      videoInfo.encrypted = encrypted;
+      videoInfo.keyUrl = keyUrl;
+      videoInfo.keyIV = keyIV;
       videoInfo.status = 'ready';
-      console.log(`HLS ready: ${segments.length} segments`);
+      console.log(`HLS ready: ${segments.length} segments, encrypted: ${encrypted}`);
     } else {
       videoInfo.status = error === 'auth' ? 'auth_error' : 'parse_error';
       console.log('HLS parse failed:', error);
@@ -149,9 +180,75 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   }
 });
 
-// Download segments
-async function downloadSegments(segments, onProgress) {
+// Fetch encryption key
+async function fetchEncryptionKey(keyUrl) {
+  try {
+    console.log('Fetching encryption key from:', keyUrl);
+    const response = await fetch(keyUrl);
+    if (!response.ok) {
+      throw new Error(`Key fetch failed: ${response.status}`);
+    }
+    const keyData = await response.arrayBuffer();
+    console.log('Got encryption key, length:', keyData.byteLength);
+    return new Uint8Array(keyData);
+  } catch (e) {
+    console.error('Failed to fetch key:', e);
+    throw e;
+  }
+}
+
+// Decrypt a segment using AES-128-CBC
+async function decryptSegment(encryptedData, key, iv) {
+  try {
+    // Import the key for AES-CBC decryption
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      key,
+      { name: 'AES-CBC' },
+      false,
+      ['decrypt']
+    );
+
+    // Decrypt
+    const decrypted = await crypto.subtle.decrypt(
+      { name: 'AES-CBC', iv: iv },
+      cryptoKey,
+      encryptedData
+    );
+
+    return new Uint8Array(decrypted);
+  } catch (e) {
+    console.error('Decryption failed:', e);
+    throw e;
+  }
+}
+
+// Generate IV from segment index (default HLS behavior)
+function generateIV(index, explicitIV) {
+  if (explicitIV) {
+    // Parse hex IV string
+    const iv = new Uint8Array(16);
+    for (let i = 0; i < 16; i++) {
+      iv[i] = parseInt(explicitIV.substr(i * 2, 2), 16);
+    }
+    return iv;
+  }
+  // Default: use segment index as IV
+  const iv = new Uint8Array(16);
+  const view = new DataView(iv.buffer);
+  view.setUint32(12, index, false); // Big-endian
+  return iv;
+}
+
+// Download segments (with optional decryption)
+async function downloadSegments(segments, onProgress, encryptionInfo = null) {
   console.log('Downloading', segments.length, 'segments');
+
+  let key = null;
+  if (encryptionInfo && encryptionInfo.keyUrl) {
+    console.log('Stream is encrypted, fetching key...');
+    key = await fetchEncryptionKey(encryptionInfo.keyUrl);
+  }
 
   const chunks = [];
   let failed = 0;
@@ -164,8 +261,32 @@ async function downloadSegments(segments, onProgress) {
 
       const response = await fetch(segments[i]);
       if (response.ok) {
-        const buffer = await response.arrayBuffer();
-        chunks.push(new Uint8Array(buffer));
+        let buffer = await response.arrayBuffer();
+        let data = new Uint8Array(buffer);
+
+        // Check if this looks like video data (TS sync byte is 0x47)
+        if (data.length > 0 && data[0] !== 0x47 && !key) {
+          console.log(`Segment ${i + 1}: First byte is ${data[0].toString(16)}, not 0x47 (may be encrypted)`);
+        }
+
+        // Decrypt if we have a key
+        if (key) {
+          const iv = generateIV(i, encryptionInfo.keyIV);
+          try {
+            data = await decryptSegment(buffer, key, iv);
+            // Verify decryption worked (check for TS sync byte)
+            if (data.length > 0 && data[0] === 0x47) {
+              console.log(`Segment ${i + 1}: Decrypted successfully`);
+            } else {
+              console.log(`Segment ${i + 1}: Decrypted but first byte is ${data[0].toString(16)}`);
+            }
+          } catch (e) {
+            console.error(`Segment ${i + 1}: Decryption failed, using raw data`);
+            data = new Uint8Array(buffer);
+          }
+        }
+
+        chunks.push(data);
       } else {
         failed++;
         console.log(`Segment ${i + 1} failed: ${response.status}`);
@@ -232,13 +353,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
           if (videoInfo && videoInfo.segments && videoInfo.segments.length > 0) {
             console.log(`Using ${videoInfo.segments.length} pre-parsed segments`);
-            data = await downloadSegments(videoInfo.segments);
+            const encryptionInfo = videoInfo.encrypted ? {
+              keyUrl: videoInfo.keyUrl,
+              keyIV: videoInfo.keyIV
+            } : null;
+            if (encryptionInfo) {
+              console.log('Stream is encrypted, will decrypt segments');
+            }
+            data = await downloadSegments(videoInfo.segments, null, encryptionInfo);
           } else {
             // Try to parse again
             console.log('Re-parsing m3u8...');
-            const { segments, error } = await parseM3u8ForSegments(url);
+            const { segments, error, encrypted, keyUrl, keyIV } = await parseM3u8ForSegments(url);
             if (segments.length > 0) {
-              data = await downloadSegments(segments);
+              const encryptionInfo = encrypted ? { keyUrl, keyIV } : null;
+              data = await downloadSegments(segments, null, encryptionInfo);
             } else {
               throw new Error(error || 'セグメントが見つかりません');
             }

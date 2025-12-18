@@ -19,7 +19,10 @@ function hideProgress() {
 
 // Download video
 async function downloadVideo(video) {
-  const filename = 'video_' + Date.now();
+  // Create timestamp-based filename
+  const now = new Date();
+  const timestamp = now.toISOString().slice(0, 19).replace(/[T:]/g, '-');
+  const filename = 'video_' + timestamp;
   const isHls = video.type === 'hls';
 
   showProgress('ダウンロード中...', 5);
@@ -72,7 +75,8 @@ async function downloadVideo(video) {
 // Get status text
 function getStatusText(video) {
   if (video.status === 'ready') {
-    return `${video.segmentCount} segments ready`;
+    const encryptedText = video.encrypted ? ' (encrypted)' : '';
+    return `${video.segmentCount} segments ready${encryptedText}`;
   } else if (video.status === 'parsing') {
     return 'Parsing...';
   } else if (video.status === 'auth_error') {
