@@ -67,9 +67,10 @@ function getFullPath() {
   return { folder, filename };
 }
 
-// Download a single video
-async function downloadVideo(video) {
-  const { folder, filename } = getFullPath();
+// Download a single video with optional custom filename
+async function downloadVideo(video, customFilename = null) {
+  const { folder, filename: defaultFilename } = getFullPath();
+  const filename = customFilename || defaultFilename;
   const isHls = video.type === 'hls';
 
   showProgress('ダウンロード中...', 5);
@@ -100,19 +101,32 @@ async function downloadVideo(video) {
       const fullPath = folder + '/' + filename + ext;
       console.log('Saving to:', fullPath);
 
-      // Use anchor tag download - more reliable for filename
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = filename + ext;  // Filename only (folders not supported with this method)
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      // Register the filename with background script
+      await chrome.runtime.sendMessage({
+        action: 'registerDownload',
+        blobUrl: blobUrl,
+        filename: fullPath
+      });
 
-      showProgress('完了！', 100);
-      setTimeout(() => {
-        URL.revokeObjectURL(blobUrl);
-        hideProgress();
-      }, 2000);
+      // Use chrome.downloads.download for proper filename/folder support
+      chrome.downloads.download({
+        url: blobUrl,
+        filename: fullPath,
+        saveAs: false
+      }, (downloadId) => {
+        if (chrome.runtime.lastError) {
+          console.error('Download error:', chrome.runtime.lastError);
+          alert('エラー: ' + chrome.runtime.lastError.message);
+          hideProgress();
+        } else {
+          console.log('Download started with ID:', downloadId);
+          showProgress('完了！', 100);
+          setTimeout(() => {
+            URL.revokeObjectURL(blobUrl);
+            hideProgress();
+          }, 2000);
+        }
+      });
 
     } else {
       throw new Error(response.error || 'ダウンロード失敗');
@@ -208,16 +222,25 @@ async function loadCapturedVideos() {
         const statusColor = video.status === 'ready' || video.status === 'captured' ? '#22c55e' : '#eab308';
 
         item.innerHTML = `
-          <div>
+          <div class="video-header">
             <span class="type-badge">${video.type.toUpperCase()}</span>
             <span class="status" style="color: ${statusColor}">${getStatusText(video)}</span>
           </div>
           <div class="url">${video.url.substring(0, 60)}...</div>
+          <div class="video-filename-row">
+            <input type="text" class="video-filename-input" id="videoFilename${index}" placeholder="ファイル名を入力">
+            <button class="video-download-btn" data-index="${index}">保存</button>
+          </div>
         `;
 
-        item.style.cursor = 'pointer';
-        item.onclick = () => downloadVideo(video);
-        item.title = 'クリックでダウンロード';
+        // Add click handler for the download button
+        const downloadBtn = item.querySelector('.video-download-btn');
+        downloadBtn.onclick = (e) => {
+          e.stopPropagation();
+          const filenameInput = item.querySelector('.video-filename-input');
+          const customFilename = filenameInput.value.trim();
+          downloadVideo(video, customFilename || null);
+        };
 
         videosEl.appendChild(item);
       });

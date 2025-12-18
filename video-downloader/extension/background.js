@@ -4,6 +4,24 @@
 // Store captured video requests per tab
 const capturedVideos = new Map(); // tabId -> array of video info
 
+// Pending downloads map: blob URL -> filename
+const pendingDownloads = new Map();
+
+// Force filename for blob URL downloads
+chrome.downloads.onDeterminingFilename.addListener((downloadItem, suggest) => {
+  if (downloadItem.url.startsWith('blob:')) {
+    const pendingFilename = pendingDownloads.get(downloadItem.url);
+    if (pendingFilename) {
+      console.log('[VIDEO HACKER] Setting filename:', pendingFilename);
+      suggest({ filename: pendingFilename });
+      pendingDownloads.delete(downloadItem.url);
+      return true;
+    }
+  }
+  suggest();
+  return true;
+});
+
 // Video file patterns
 const VIDEO_PATTERNS = [
   /\.m3u8(\?|$)/i,
@@ -340,6 +358,15 @@ async function downloadDirect(url) {
 
 // Handle messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // Register pending download filename
+  if (request.action === 'registerDownload') {
+    const { blobUrl, filename } = request;
+    pendingDownloads.set(blobUrl, filename);
+    console.log('[VIDEO HACKER] Registered pending download:', filename);
+    sendResponse({ success: true });
+    return true;
+  }
+
   if (request.action === 'getCapturedVideos') {
     const tabId = request.tabId;
     const videos = capturedVideos.get(tabId) || [];
