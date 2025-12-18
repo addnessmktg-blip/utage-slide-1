@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Video Downloader Helper",
-  "version": "3.2.0",
-  "description": "Download videos with HLS encryption support",
+  "name": "動画ダウンローダー",
+  "version": "3.4.0",
+  "description": "動画ダウンローダー - MP4/HLS対応",
   "permissions": [
     "activeTab",
     "scripting",

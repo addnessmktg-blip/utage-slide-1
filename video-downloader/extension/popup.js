@@ -109,19 +109,21 @@ async function downloadVideo(video, customFilename) {
   }
 }
 
-// Get status text
+// Get status text (Japanese)
 function getStatusText(video) {
   if (video.status === 'ready') {
-    const encryptedText = video.encrypted ? ' (encrypted)' : '';
-    return `${video.segmentCount} segments ready${encryptedText}`;
+    const encryptedText = video.encrypted ? ' (暗号化)' : '';
+    return `${video.segmentCount}パート準備完了${encryptedText}`;
   } else if (video.status === 'parsing') {
-    return 'Parsing...';
+    return '解析中...';
   } else if (video.status === 'auth_error') {
-    return 'Auth error';
+    return '認証エラー';
   } else if (video.status === 'parse_error') {
-    return 'Parse error';
+    return '解析エラー';
+  } else if (video.status === 'captured') {
+    return '取得済み';
   }
-  return video.status || '';
+  return '';
 }
 
 // Get status color
@@ -140,7 +142,7 @@ async function loadCapturedVideos() {
   const videosEl = document.getElementById('videos');
 
   statusEl.className = 'status scanning';
-  statusEl.textContent = 'Loading...';
+  statusEl.textContent = '読み込み中...';
   videosEl.innerHTML = '';
 
   try {
