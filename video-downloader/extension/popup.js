@@ -1,139 +1,196 @@
-// Local API endpoint (Tauri app runs a local HTTP server)
-const API_BASE = 'http://localhost:8765';
-
-// Supported URL patterns
-const SUPPORTED_PATTERNS = [
-  /youtube\.com\/watch/,
-  /youtu\.be\//,
-  /youtube\.com\/shorts/,
-  /twitter\.com\/.*\/status/,
-  /x\.com\/.*\/status/,
-  /tiktok\.com/,
-  /vimeo\.com/,
-];
-
-// Check if URL is supported
-function isSupportedUrl(url) {
-  return SUPPORTED_PATTERNS.some(pattern => pattern.test(url));
-}
-
-// Check if the desktop app is running
-async function checkConnection() {
-  try {
-    const response = await fetch(`${API_BASE}/health`, {
-      method: 'GET',
-      signal: AbortSignal.timeout(2000)
-    });
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
-
-// Send download request to desktop app
-async function sendDownloadRequest(url) {
-  try {
-    const response = await fetch(`${API_BASE}/download`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ url }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Download request failed');
+// Video detection function to be injected into the page
+function detectVideos() {
+  const videos = [];
+  
+  // 1. Find HTML5 video elements
+  document.querySelectorAll('video').forEach((video, idx) => {
+    if (video.src) {
+      videos.push({
+        type: 'video',
+        url: video.src,
+        source: 'video element'
+      });
     }
-
-    return await response.json();
-  } catch (error) {
-    throw error;
-  }
-}
-
-// Update UI based on connection status
-function updateStatus(connected) {
-  const statusEl = document.getElementById('status');
-  const urlSection = document.getElementById('url-section');
-  const messageEl = document.getElementById('message');
-
-  if (connected) {
-    statusEl.className = 'status connected';
-    statusEl.textContent = 'アプリに接続済み';
-    urlSection.style.display = 'block';
-    messageEl.style.display = 'none';
-  } else {
-    statusEl.className = 'status disconnected';
-    statusEl.textContent = 'アプリが起動していません';
-    urlSection.style.display = 'none';
-    messageEl.style.display = 'block';
-    messageEl.innerHTML = 'デスクトップアプリを起動してください。<br><br>まだインストールしていない場合は、<br>ダウンロードしてインストールしてください。';
-  }
-}
-
-// Update current URL display
-function updateUrlDisplay(url) {
-  const urlEl = document.getElementById('current-url');
-  const downloadBtn = document.getElementById('download-btn');
-
-  // Truncate long URLs for display
-  const displayUrl = url.length > 50 ? url.substring(0, 50) + '...' : url;
-  urlEl.textContent = displayUrl;
-
-  // Enable/disable download button based on URL support
-  if (isSupportedUrl(url)) {
-    downloadBtn.disabled = false;
-    downloadBtn.textContent = 'ダウンロード';
-  } else {
-    downloadBtn.disabled = true;
-    downloadBtn.textContent = 'このサイトは非対応です';
-  }
-}
-
-// Initialize popup
-async function init() {
-  // Check connection first
-  const connected = await checkConnection();
-  updateStatus(connected);
-
-  // Get current tab URL
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab && tab.url) {
-    updateUrlDisplay(tab.url);
-
-    // Set up download button
-    const downloadBtn = document.getElementById('download-btn');
-    downloadBtn.addEventListener('click', async () => {
-      if (!connected) {
-        alert('デスクトップアプリが起動していません。');
-        return;
-      }
-
-      downloadBtn.disabled = true;
-      downloadBtn.textContent = '送信中...';
-
-      try {
-        await sendDownloadRequest(tab.url);
-        downloadBtn.textContent = '送信しました！';
-        downloadBtn.style.backgroundColor = '#22c55e';
-
-        // Close popup after a short delay
-        setTimeout(() => {
-          window.close();
-        }, 1000);
-      } catch (error) {
-        downloadBtn.textContent = 'エラーが発生しました';
-        downloadBtn.style.backgroundColor = '#ef4444';
-
-        setTimeout(() => {
-          downloadBtn.disabled = false;
-          downloadBtn.textContent = 'ダウンロード';
-          downloadBtn.style.backgroundColor = '';
-        }, 2000);
+    // Check source elements inside video
+    video.querySelectorAll('source').forEach(source => {
+      if (source.src) {
+        videos.push({
+          type: 'video',
+          url: source.src,
+          source: 'source element'
+        });
       }
     });
+  });
+  
+  // 2. Find iframes (video embeds)
+  document.querySelectorAll('iframe').forEach((iframe, idx) => {
+    const src = iframe.src;
+    if (src) {
+      // Check for known video platforms
+      if (src.includes('youtube') || src.includes('youtu.be')) {
+        videos.push({ type: 'youtube', url: src, source: 'iframe' });
+      } else if (src.includes('vimeo')) {
+        videos.push({ type: 'vimeo', url: src, source: 'iframe' });
+      } else if (src.includes('wistia')) {
+        videos.push({ type: 'wistia', url: src, source: 'iframe' });
+      } else if (src.includes('player') || src.includes('video') || src.includes('embed')) {
+        videos.push({ type: 'embed', url: src, source: 'iframe' });
+      }
+    }
+  });
+  
+  // 3. Search for video URLs in scripts
+  const scriptContent = Array.from(document.querySelectorAll('script'))
+    .map(s => s.textContent || '')
+    .join('\n');
+  
+  // Look for mp4 URLs
+  const mp4Regex = /https?:\/\/[^\s"'<>]+\.mp4[^\s"'<>]*/gi;
+  const mp4Matches = scriptContent.match(mp4Regex) || [];
+  mp4Matches.forEach(url => {
+    if (!videos.some(v => v.url === url)) {
+      videos.push({ type: 'mp4', url: url, source: 'script' });
+    }
+  });
+  
+  // Look for m3u8 (HLS) URLs
+  const m3u8Regex = /https?:\/\/[^\s"'<>]+\.m3u8[^\s"'<>]*/gi;
+  const m3u8Matches = scriptContent.match(m3u8Regex) || [];
+  m3u8Matches.forEach(url => {
+    if (!videos.some(v => v.url === url)) {
+      videos.push({ type: 'hls', url: url, source: 'script' });
+    }
+  });
+  
+  // 4. Search in data attributes
+  document.querySelectorAll('[data-src], [data-video], [data-url], [data-video-url]').forEach(el => {
+    const url = el.dataset.src || el.dataset.video || el.dataset.url || el.dataset.videoUrl;
+    if (url && (url.includes('.mp4') || url.includes('.m3u8') || url.includes('video'))) {
+      if (!videos.some(v => v.url === url)) {
+        videos.push({ type: 'data-attr', url: url, source: 'data attribute' });
+      }
+    }
+  });
+  
+  // 5. Look for Vimeo player config
+  const vimeoConfigRegex = /"config_url"\s*:\s*"([^"]+)"/g;
+  let match;
+  while ((match = vimeoConfigRegex.exec(scriptContent)) !== null) {
+    videos.push({ type: 'vimeo-config', url: match[1].replace(/\\\//g, '/'), source: 'vimeo config' });
+  }
+  
+  // 6. Look for Wistia videos
+  const wistiaRegex = /wistia\.com\/(?:embed|medias)\/([a-zA-Z0-9]+)/g;
+  while ((match = wistiaRegex.exec(scriptContent)) !== null) {
+    videos.push({ type: 'wistia', url: `https://fast.wistia.com/embed/medias/${match[1]}.json`, source: 'wistia' });
+  }
+  
+  // Deduplicate by URL
+  const seen = new Set();
+  return videos.filter(v => {
+    if (seen.has(v.url)) return false;
+    seen.add(v.url);
+    return true;
+  });
+}
+
+// Get page URL
+function getPageUrl() {
+  return window.location.href;
+}
+
+let foundVideos = [];
+
+async function scanPage() {
+  const statusEl = document.getElementById('status');
+  const videosEl = document.getElementById('videos');
+  
+  statusEl.className = 'status scanning';
+  statusEl.textContent = 'Scanning page...';
+  videosEl.innerHTML = '';
+  
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    // Inject and execute video detection
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: detectVideos
+    });
+    
+    const pageUrlResults = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: getPageUrl
+    });
+    
+    const pageUrl = pageUrlResults[0]?.result || tab.url;
+    foundVideos = results[0]?.result || [];
+    
+    if (foundVideos.length === 0) {
+      statusEl.className = 'status';
+      statusEl.textContent = 'No videos found on this page';
+      videosEl.innerHTML = '<div class="no-videos">Try scrolling or playing the video first, then scan again.</div>';
+      
+      // Add option to send page URL to app for analysis
+      const sendPageBtn = document.createElement('button');
+      sendPageBtn.textContent = 'Send Page URL to App';
+      sendPageBtn.style.marginTop = '10px';
+      sendPageBtn.onclick = () => sendToApp(pageUrl);
+      videosEl.appendChild(sendPageBtn);
+    } else {
+      statusEl.className = 'status found';
+      statusEl.textContent = `Found ${foundVideos.length} video(s)!`;
+      
+      foundVideos.forEach((video, idx) => {
+        const item = document.createElement('div');
+        item.className = 'video-item';
+        
+        const typeEl = document.createElement('div');
+        typeEl.className = 'type';
+        typeEl.textContent = `${video.type} (${video.source})`;
+        
+        const urlEl = document.createElement('div');
+        urlEl.className = 'url';
+        urlEl.textContent = video.url.length > 100 ? video.url.substring(0, 100) + '...' : video.url;
+        
+        const btn = document.createElement('button');
+        btn.textContent = 'Send to App';
+        btn.onclick = () => sendToApp(video.url);
+        
+        item.appendChild(typeEl);
+        item.appendChild(urlEl);
+        item.appendChild(btn);
+        videosEl.appendChild(item);
+      });
+    }
+  } catch (err) {
+    statusEl.className = 'status error';
+    statusEl.textContent = 'Error: ' + err.message;
   }
 }
 
-// Run when popup opens
-document.addEventListener('DOMContentLoaded', init);
+async function sendToApp(url) {
+  try {
+    // Send to local Tauri app HTTP server
+    const response = await fetch('http://localhost:8765/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: url })
+    });
+    
+    if (response.ok) {
+      alert('Sent to Video Downloader app! Check the app for download options.');
+    } else {
+      alert('Failed to send. Make sure Video Downloader app is running.');
+    }
+  } catch (err) {
+    alert('Could not connect to Video Downloader app.\n\nMake sure the app is running first!');
+  }
+}
+
+// Initial scan
+scanPage();
+
+// Refresh button
+document.getElementById('refresh').addEventListener('click', scanPage);
