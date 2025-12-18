@@ -95,62 +95,26 @@ async function downloadVideo(video, customFilename = null) {
   filename = filename.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').replace(/\.+$/g, '');
 
   const isHls = video.type === 'hls';
+  const ext = isHls ? '.ts' : '.mp4';
+  const fullPath = folder + '/' + filename + ext;
 
-  showProgress('ダウンロード中...', 5);
+  showProgress('ダウンロード開始...', 1);
 
   try {
+    // Send download request to background (downloads directly, no base64!)
     const response = await chrome.runtime.sendMessage({
       action: 'download',
       url: video.url,
       type: video.type,
-      tabId: currentTabId
+      tabId: currentTabId,
+      filename: fullPath
     });
 
     if (response.success) {
-      showProgress('保存中...', 95);
-
-      const binaryString = atob(response.data);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-
-      const ext = isHls ? '.ts' : '.mp4';
-      const mimeType = isHls ? 'video/mp2t' : 'video/mp4';
-      const blob = new Blob([bytes], { type: mimeType });
-      const blobUrl = URL.createObjectURL(blob);
-
-      // Create full path: folder/filename.ext
-      const fullPath = folder + '/' + filename + ext;
-      console.log('Saving to:', fullPath);
-
-      // Register the filename with background script
-      await chrome.runtime.sendMessage({
-        action: 'registerDownload',
-        blobUrl: blobUrl,
-        filename: fullPath
-      });
-
-      // Use chrome.downloads.download for proper filename/folder support
-      chrome.downloads.download({
-        url: blobUrl,
-        filename: fullPath,
-        saveAs: false
-      }, (downloadId) => {
-        if (chrome.runtime.lastError) {
-          console.error('Download error:', chrome.runtime.lastError);
-          alert('エラー: ' + chrome.runtime.lastError.message);
-          hideProgress();
-        } else {
-          console.log('Download started with ID:', downloadId);
-          showProgress('完了！', 100);
-          setTimeout(() => {
-            URL.revokeObjectURL(blobUrl);
-            hideProgress();
-          }, 2000);
-        }
-      });
-
+      showProgress('完了！', 100);
+      setTimeout(() => {
+        hideProgress();
+      }, 2000);
     } else {
       throw new Error(response.error || 'ダウンロード失敗');
     }

@@ -394,7 +394,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === 'download') {
-    const { url, type, tabId } = request;
+    const { url, type, tabId, filename } = request;
 
     (async () => {
       try {
@@ -442,19 +442,35 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           data = await downloadDirect(url);
         }
 
-        console.log('Download complete, preparing file...');
+        console.log('Download complete, saving file directly...');
 
-        // Convert to base64
-        const blob = new Blob([data], {
-          type: type === 'hls' ? 'video/mp2t' : 'video/mp4'
+        // Create blob and download directly (NO base64 - avoids memory issues!)
+        const mimeType = type === 'hls' ? 'video/mp2t' : 'video/mp4';
+        const blob = new Blob([data], { type: mimeType });
+        const blobUrl = URL.createObjectURL(blob);
+
+        // Register filename for onDeterminingFilename
+        if (filename) {
+          pendingDownloads.set(blobUrl, filename);
+          console.log('[VIDEO HACKER] Registered filename:', filename);
+        }
+
+        // Download directly from background script
+        chrome.downloads.download({
+          url: blobUrl,
+          filename: filename || 'video.ts',
+          saveAs: false
+        }, (downloadId) => {
+          if (chrome.runtime.lastError) {
+            console.error('Download error:', chrome.runtime.lastError);
+            sendResponse({ success: false, error: chrome.runtime.lastError.message });
+          } else {
+            console.log('Download started with ID:', downloadId);
+            // Clean up blob URL after a delay
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+            sendResponse({ success: true, downloadId });
+          }
         });
-
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64 = reader.result.split(',')[1];
-          sendResponse({ success: true, data: base64 });
-        };
-        reader.readAsDataURL(blob);
 
       } catch (err) {
         console.error('Download error:', err);
@@ -488,4 +504,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-console.log('Video Downloader v4.1 - Long video support with progress');
+console.log('Video Downloader v4.2 - Direct download (no base64)');
