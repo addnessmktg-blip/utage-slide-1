@@ -1,6 +1,18 @@
-// Popup for Video Downloader v3.2 - With filename input
+// Popup for Video Downloader v3.3 - With auto filename
 
 let currentTabId = null;
+let pageTitle = '';
+
+// Clean filename (remove invalid characters)
+function cleanFilename(name) {
+  if (!name) return '';
+  return name
+    .replace(/[<>:"/\\|?*]/g, '_')  // Invalid chars
+    .replace(/\s+/g, '_')            // Spaces to underscore
+    .replace(/_+/g, '_')             // Multiple underscores to single
+    .replace(/^_|_$/g, '')           // Trim underscores
+    .substring(0, 100);              // Limit length
+}
 
 // Filter videos: hide HLS if MP4 exists from same source
 function filterVideos(videos) {
@@ -135,6 +147,7 @@ async function loadCapturedVideos() {
     // Get current tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     currentTabId = tab.id;
+    pageTitle = cleanFilename(tab.title || '');
 
     // Get captured videos from background
     const response = await chrome.runtime.sendMessage({
@@ -178,7 +191,7 @@ async function loadCapturedVideos() {
         urlEl.className = 'url';
         urlEl.textContent = video.url.length > 80 ? video.url.substring(0, 80) + '...' : video.url;
 
-        // Filename input
+        // Filename input (pre-filled with page title)
         const filenameLabel = document.createElement('label');
         filenameLabel.className = 'filename-label';
         filenameLabel.textContent = 'ファイル名:';
@@ -188,6 +201,8 @@ async function loadCapturedVideos() {
         filenameInput.className = 'filename-input';
         filenameInput.placeholder = '例: UTAGE講座_第1回';
         filenameInput.id = `filename-${index}`;
+        // Auto-fill with page title
+        filenameInput.value = pageTitle;
 
         const btn = document.createElement('button');
         btn.className = 'download-btn';
