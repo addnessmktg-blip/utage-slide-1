@@ -7,6 +7,57 @@ const capturedVideos = new Map(); // tabId -> array of video info
 // Pending downloads map: blob URL -> filename
 const pendingDownloads = new Map();
 
+// IndexedDB for temporary video data storage
+const DB_NAME = 'VideoHackerDB';
+const STORE_NAME = 'videoData';
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      }
+    };
+  });
+}
+
+async function storeVideoData(id, data, mimeType) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    store.put({ id, data, mimeType, timestamp: Date.now() });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function getVideoData(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.get(id);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function deleteVideoData(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    store.delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
 // Force filename for blob URL downloads
 chrome.downloads.onDeterminingFilename.addListener((downloadItem, suggest) => {
   if (downloadItem.url.startsWith('blob:')) {
@@ -442,18 +493,52 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           data = await downloadDirect(url);
         }
 
-        console.log('Download complete, sending data to popup...');
+        console.log('Download complete, storing in IndexedDB...');
         console.log(`Data size: ${(data.length / 1024 / 1024).toFixed(2)} MB`);
 
-        // Send raw array data to popup (popup will create blob and download)
+        // Store in IndexedDB (avoids message size limits)
+        const dataId = 'video_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        const mimeType = type === 'hls' ? 'video/mp2t' : 'video/mp4';
+
+        await storeVideoData(dataId, Array.from(data), mimeType);
+        console.log('Stored in IndexedDB with ID:', dataId);
+
+        // Send just the reference ID to popup
         sendResponse({
           success: true,
-          data: Array.from(data),
-          mimeType: type === 'hls' ? 'video/mp2t' : 'video/mp4'
+          dataId: dataId,
+          mimeType: mimeType,
+          size: data.length
         });
 
       } catch (err) {
         console.error('Download error:', err);
+        sendResponse({ success: false, error: err.message });
+      }
+    })();
+
+    return true;
+  }
+
+  // Retrieve video data from IndexedDB
+  if (request.action === 'getVideoData') {
+    const { dataId } = request;
+
+    (async () => {
+      try {
+        const record = await getVideoData(dataId);
+        if (record) {
+          // Delete after retrieval to clean up
+          await deleteVideoData(dataId);
+          sendResponse({
+            success: true,
+            data: record.data,
+            mimeType: record.mimeType
+          });
+        } else {
+          sendResponse({ success: false, error: 'Data not found' });
+        }
+      } catch (err) {
         sendResponse({ success: false, error: err.message });
       }
     })();

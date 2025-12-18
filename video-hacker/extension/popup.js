@@ -12,6 +12,42 @@ chrome.runtime.onMessage.addListener((message) => {
   }
 });
 
+// IndexedDB helper - read directly (avoids message size limits)
+const DB_NAME = 'VideoHackerDB';
+const STORE_NAME = 'videoData';
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      }
+    };
+  });
+}
+
+async function getVideoDataDirect(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.get(id);
+    request.onsuccess = () => {
+      const result = request.result;
+      if (result) {
+        // Delete after retrieval
+        store.delete(id);
+      }
+      resolve(result);
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
 // Clean filename (remove invalid characters)
 function cleanFilename(name) {
   if (!name) return '';
@@ -101,7 +137,7 @@ async function downloadVideo(video, customFilename = null) {
   showProgress('ダウンロード開始...', 1);
 
   try {
-    // Send download request to background
+    // Step 1: Download segments (stored in IndexedDB)
     const response = await chrome.runtime.sendMessage({
       action: 'download',
       url: video.url,
@@ -109,43 +145,55 @@ async function downloadVideo(video, customFilename = null) {
       tabId: currentTabId
     });
 
-    if (response.success) {
-      showProgress('ファイル作成中...', 95);
-
-      // Convert array back to Uint8Array and create blob
-      const bytes = new Uint8Array(response.data);
-      const blob = new Blob([bytes], { type: response.mimeType });
-      const blobUrl = URL.createObjectURL(blob);
-
-      // Register filename with background script
-      await chrome.runtime.sendMessage({
-        action: 'registerDownload',
-        blobUrl: blobUrl,
-        filename: fullPath
-      });
-
-      // Download
-      chrome.downloads.download({
-        url: blobUrl,
-        filename: fullPath,
-        saveAs: false
-      }, (downloadId) => {
-        if (chrome.runtime.lastError) {
-          console.error('Download error:', chrome.runtime.lastError);
-          alert('エラー: ' + chrome.runtime.lastError.message);
-          hideProgress();
-        } else {
-          console.log('Download started:', downloadId);
-          showProgress('完了！', 100);
-          setTimeout(() => {
-            URL.revokeObjectURL(blobUrl);
-            hideProgress();
-          }, 2000);
-        }
-      });
-    } else {
+    if (!response.success) {
       throw new Error(response.error || 'ダウンロード失敗');
     }
+
+    console.log('Data stored in IndexedDB, ID:', response.dataId);
+    console.log('Size:', (response.size / 1024 / 1024).toFixed(2), 'MB');
+
+    showProgress('データ取得中...', 92);
+
+    // Step 2: Read directly from IndexedDB (avoids message size limits!)
+    const record = await getVideoDataDirect(response.dataId);
+
+    if (!record) {
+      throw new Error('データ取得失敗');
+    }
+
+    showProgress('ファイル作成中...', 95);
+
+    // Step 3: Create blob and download
+    const bytes = new Uint8Array(record.data);
+    const blob = new Blob([bytes], { type: record.mimeType });
+    const blobUrl = URL.createObjectURL(blob);
+
+    // Register filename with background script
+    await chrome.runtime.sendMessage({
+      action: 'registerDownload',
+      blobUrl: blobUrl,
+      filename: fullPath
+    });
+
+    // Download
+    chrome.downloads.download({
+      url: blobUrl,
+      filename: fullPath,
+      saveAs: false
+    }, (downloadId) => {
+      if (chrome.runtime.lastError) {
+        console.error('Download error:', chrome.runtime.lastError);
+        alert('エラー: ' + chrome.runtime.lastError.message);
+        hideProgress();
+      } else {
+        console.log('Download started:', downloadId);
+        showProgress('完了！', 100);
+        setTimeout(() => {
+          URL.revokeObjectURL(blobUrl);
+          hideProgress();
+        }, 2000);
+      }
+    });
 
   } catch (err) {
     alert('エラー: ' + err.message);
