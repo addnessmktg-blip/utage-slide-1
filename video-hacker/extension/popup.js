@@ -163,9 +163,8 @@ async function downloadVideo(video, customFilename = null) {
 
     showProgress('ファイル作成中...', 95);
 
-    // Step 3: Create blob and download
-    const bytes = new Uint8Array(record.data);
-    const blob = new Blob([bytes], { type: record.mimeType });
+    // Step 3: Create blob and download (data is ArrayBuffer)
+    const blob = new Blob([record.data], { type: record.mimeType });
     const blobUrl = URL.createObjectURL(blob);
 
     // Register filename with background script

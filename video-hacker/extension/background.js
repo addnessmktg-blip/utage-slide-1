@@ -500,7 +500,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const dataId = 'video_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         const mimeType = type === 'hls' ? 'video/mp2t' : 'video/mp4';
 
-        await storeVideoData(dataId, Array.from(data), mimeType);
+        // Store ArrayBuffer directly (NOT Array.from which fails for large data)
+        await storeVideoData(dataId, data.buffer, mimeType);
         console.log('Stored in IndexedDB with ID:', dataId);
 
         // Send just the reference ID to popup
