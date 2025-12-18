@@ -1,13 +1,16 @@
 {
   "manifest_version": 3,
   "name": "Video Downloader Helper",
-  "version": "2.1.0",
-  "description": "Download videos directly from web pages - no extra apps needed",
+  "version": "3.0.0",
+  "description": "Download videos by capturing browser requests",
   "permissions": [
     "activeTab",
     "scripting",
     "downloads",
-    "cookies"
+    "cookies",
+    "webRequest",
+    "storage",
+    "tabs"
   ],
   "host_permissions": [
     "<all_urls>"

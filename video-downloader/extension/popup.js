@@ -1,75 +1,6 @@
-// Video detection function to be injected into the page
-function detectVideos() {
-  const videos = [];
+// Popup for Video Downloader v3 - Network Capture Mode
 
-  // 1. Find HTML5 video elements
-  document.querySelectorAll('video').forEach((video) => {
-    if (video.src) {
-      videos.push({
-        type: video.src.includes('.m3u8') ? 'hls' : 'video',
-        url: video.src,
-        source: 'video element'
-      });
-    }
-    video.querySelectorAll('source').forEach(source => {
-      if (source.src) {
-        videos.push({
-          type: source.src.includes('.m3u8') ? 'hls' : 'video',
-          url: source.src,
-          source: 'source element'
-        });
-      }
-    });
-  });
-
-  // 2. Find iframes (video embeds)
-  document.querySelectorAll('iframe').forEach((iframe) => {
-    const src = iframe.src;
-    if (src) {
-      if (src.includes('youtube') || src.includes('youtu.be')) {
-        videos.push({ type: 'youtube', url: src, source: 'iframe' });
-      } else if (src.includes('vimeo')) {
-        videos.push({ type: 'vimeo', url: src, source: 'iframe' });
-      } else if (src.includes('player') || src.includes('video') || src.includes('embed')) {
-        videos.push({ type: 'embed', url: src, source: 'iframe' });
-      }
-    }
-  });
-
-  // 3. Search for video URLs in scripts and page content
-  const pageContent = document.documentElement.innerHTML;
-
-  // Look for mp4 URLs
-  const mp4Regex = /https?:\/\/[^\s"'<>]+\.mp4[^\s"'<>]*/gi;
-  const mp4Matches = pageContent.match(mp4Regex) || [];
-  mp4Matches.forEach(url => {
-    const cleanUrl = url.replace(/["'\\]/g, '').split('?')[0] + (url.includes('?') ? '?' + url.split('?')[1]?.replace(/["'\\]/g, '') : '');
-    if (!videos.some(v => v.url === cleanUrl)) {
-      videos.push({ type: 'mp4', url: cleanUrl, source: 'page' });
-    }
-  });
-
-  // Look for m3u8 (HLS) URLs
-  const m3u8Regex = /https?:\/\/[^\s"'<>]+\.m3u8[^\s"'<>]*/gi;
-  const m3u8Matches = pageContent.match(m3u8Regex) || [];
-  m3u8Matches.forEach(url => {
-    const cleanUrl = url.replace(/["'\\]/g, '');
-    if (!videos.some(v => v.url === cleanUrl)) {
-      videos.push({ type: 'hls', url: cleanUrl, source: 'page' });
-    }
-  });
-
-  // Deduplicate by URL
-  const seen = new Set();
-  return videos.filter(v => {
-    if (seen.has(v.url)) return false;
-    seen.add(v.url);
-    return true;
-  });
-}
-
-let foundVideos = [];
-let currentPageUrl = ''; // Store the page URL for referer
+let currentTabId = null;
 
 // Progress UI helpers
 function showProgress(text, percent) {
@@ -86,27 +17,25 @@ function hideProgress() {
   document.getElementById('progress').classList.remove('active');
 }
 
-// Download video using background script (bypasses CORS)
+// Download video
 async function downloadVideo(video) {
   const filename = 'video_' + Date.now();
-  const isHls = video.type === 'hls' || video.url.includes('.m3u8');
+  const isHls = video.type === 'hls' || video.type === 'segment';
 
-  showProgress('Starting download...', 5);
+  showProgress('Downloading...', 5);
 
   try {
-    // Send download request to background script
     const response = await chrome.runtime.sendMessage({
       action: 'download',
       url: video.url,
       type: video.type,
-      filename: filename,
-      referer: currentPageUrl  // Include the page URL for authentication
+      tabId: currentTabId
     });
 
     if (response.success) {
-      showProgress('Saving file...', 95);
+      showProgress('Saving...', 95);
 
-      // Convert base64 back to blob
+      // Convert base64 to blob
       const binaryString = atob(response.data);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
@@ -123,11 +52,11 @@ async function downloadVideo(video) {
         filename: filename + ext,
         saveAs: true
       }, () => {
-        showProgress('Download complete!', 100);
+        showProgress('Complete!', 100);
         setTimeout(() => {
           URL.revokeObjectURL(blobUrl);
           hideProgress();
-        }, 3000);
+        }, 2000);
       });
 
     } else {
@@ -135,45 +64,58 @@ async function downloadVideo(video) {
     }
 
   } catch (err) {
-    alert('Download error: ' + err.message);
+    alert('Error: ' + err.message);
     hideProgress();
   }
 }
 
-async function scanPage() {
+// Load captured videos from background
+async function loadCapturedVideos() {
   const statusEl = document.getElementById('status');
   const videosEl = document.getElementById('videos');
 
   statusEl.className = 'status scanning';
-  statusEl.textContent = 'Scanning page...';
+  statusEl.textContent = 'Loading captured videos...';
   videosEl.innerHTML = '';
 
   try {
+    // Get current tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    currentPageUrl = tab.url; // Save the page URL for referer
+    currentTabId = tab.id;
 
-    const results = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: detectVideos
+    // Get captured videos from background
+    const response = await chrome.runtime.sendMessage({
+      action: 'getCapturedVideos',
+      tabId: tab.id
     });
 
-    foundVideos = results[0]?.result || [];
+    const videos = response.videos || [];
 
-    if (foundVideos.length === 0) {
+    if (videos.length === 0) {
       statusEl.className = 'status';
-      statusEl.textContent = 'No videos found on this page';
-      videosEl.innerHTML = '<div class="no-videos">Try playing the video first, then scan again.</div>';
+      statusEl.innerHTML = `
+        <div style="text-align: center;">
+          <div style="margin-bottom: 10px;">No videos captured yet</div>
+          <div style="font-size: 11px; color: #94a3b8;">
+            Play the video first, then click "Refresh"
+          </div>
+        </div>
+      `;
     } else {
       statusEl.className = 'status found';
-      statusEl.textContent = `Found ${foundVideos.length} video(s)!`;
+      statusEl.textContent = `Captured ${videos.length} video(s)!`;
 
-      foundVideos.forEach((video) => {
+      videos.forEach((video) => {
         const item = document.createElement('div');
         item.className = 'video-item';
 
         const typeEl = document.createElement('div');
         typeEl.className = 'type';
-        typeEl.textContent = `${video.type.toUpperCase()} (${video.source})`;
+        let typeText = video.type.toUpperCase();
+        if (video.segmentCount) {
+          typeText += ` (${video.segmentCount} segments)`;
+        }
+        typeEl.textContent = typeText;
 
         const urlEl = document.createElement('div');
         urlEl.className = 'url';
@@ -196,8 +138,8 @@ async function scanPage() {
   }
 }
 
-// Initial scan
-scanPage();
+// Initial load
+loadCapturedVideos();
 
 // Refresh button
-document.getElementById('refresh').addEventListener('click', scanPage);
+document.getElementById('refresh').addEventListener('click', loadCapturedVideos);

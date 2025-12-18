@@ -1,124 +1,216 @@
 // Background service worker for video downloads
-// This bypasses CORS restrictions and includes cookies for authentication
+// Captures network requests to find authenticated video URLs
 
-let pageUrl = ''; // Store the page URL for referer
+// Store captured video requests per tab
+const capturedVideos = new Map(); // tabId -> array of video info
+const capturedSegments = new Map(); // tabId -> Map of m3u8Url -> segments
 
-// Get cookies for multiple domains
-async function getAllRelevantCookies(videoUrl, refererUrl) {
-  try {
-    const allCookies = [];
-    const domains = new Set();
+// Video file patterns
+const VIDEO_PATTERNS = [
+  /\.m3u8(\?|$)/i,
+  /\.ts(\?|$)/i,
+  /\.mp4(\?|$)/i,
+  /\.webm(\?|$)/i,
+  /\.m4s(\?|$)/i,
+  /\/video\//i,
+  /\/media\//i,
+  /\/stream\//i,
+  /\/hls\//i,
+  /\/playlist\//i
+];
 
-    // Add video domain
-    const videoUrlObj = new URL(videoUrl);
-    domains.add(videoUrlObj.hostname);
+// Check if URL looks like a video
+function isVideoUrl(url) {
+  return VIDEO_PATTERNS.some(pattern => pattern.test(url));
+}
 
-    // Add base domain of video URL
-    const videoDomainParts = videoUrlObj.hostname.split('.');
-    if (videoDomainParts.length > 2) {
-      domains.add(videoDomainParts.slice(-2).join('.'));
-    }
+// Get video type from URL
+function getVideoType(url) {
+  if (/\.m3u8(\?|$)/i.test(url)) return 'hls';
+  if (/\.ts(\?|$)/i.test(url)) return 'segment';
+  if (/\.mp4(\?|$)/i.test(url)) return 'mp4';
+  if (/\.webm(\?|$)/i.test(url)) return 'webm';
+  if (/\.m4s(\?|$)/i.test(url)) return 'dash-segment';
+  return 'video';
+}
 
-    // Add referer domain if provided
-    if (refererUrl) {
-      try {
-        const refererUrlObj = new URL(refererUrl);
-        domains.add(refererUrlObj.hostname);
-        const refererDomainParts = refererUrlObj.hostname.split('.');
-        if (refererDomainParts.length > 2) {
-          domains.add(refererDomainParts.slice(-2).join('.'));
-        }
-      } catch (e) {}
-    }
-
-    // Get cookies from all domains
-    for (const domain of domains) {
-      try {
-        const cookies = await chrome.cookies.getAll({ domain });
-        allCookies.push(...cookies);
-      } catch (e) {}
-    }
-
-    // Also get all cookies (for session cookies that might not have domain set properly)
-    try {
-      const allStoreCookies = await chrome.cookies.getAll({});
-      allCookies.push(...allStoreCookies);
-    } catch (e) {}
-
-    // Deduplicate by name
-    const seen = new Set();
-    const uniqueCookies = allCookies.filter(c => {
-      if (seen.has(c.name)) return false;
-      seen.add(c.name);
-      return true;
-    });
-
-    return uniqueCookies.map(c => `${c.name}=${c.value}`).join('; ');
-  } catch (e) {
-    console.error('Error getting cookies:', e);
-    return '';
+// Initialize storage for a tab
+function initTab(tabId) {
+  if (!capturedVideos.has(tabId)) {
+    capturedVideos.set(tabId, []);
+  }
+  if (!capturedSegments.has(tabId)) {
+    capturedSegments.set(tabId, new Map());
   }
 }
 
-// Fetch with cookies and proper headers
-async function fetchWithAuth(url, refererUrl) {
-  const cookieHeader = await getAllRelevantCookies(url, refererUrl);
+// Add a captured video URL
+function addCapturedVideo(tabId, url, type, initiator) {
+  initTab(tabId);
+  const videos = capturedVideos.get(tabId);
 
-  const headers = {
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Accept': '*/*',
-    'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8'
-  };
-
-  if (cookieHeader) {
-    headers['Cookie'] = cookieHeader;
+  // Check if already captured
+  if (videos.some(v => v.url === url)) {
+    return;
   }
 
-  // Add Referer and Origin to make it look like a request from the page
-  if (refererUrl) {
-    headers['Referer'] = refererUrl;
-    try {
-      const refererUrlObj = new URL(refererUrl);
-      headers['Origin'] = refererUrlObj.origin;
-    } catch (e) {}
-  }
-
-  console.log('Fetching:', url);
-  console.log('Headers:', headers);
-
-  return fetch(url, {
-    headers,
-    credentials: 'include',
-    mode: 'cors'
+  videos.push({
+    url,
+    type,
+    initiator,
+    timestamp: Date.now()
   });
+
+  console.log(`Captured ${type}:`, url.substring(0, 100));
 }
 
-// Parse m3u8 playlist
-async function parseM3u8(url, refererUrl) {
-  const response = await fetchWithAuth(url, refererUrl);
+// Add a segment to an HLS stream
+function addSegment(tabId, m3u8Url, segmentUrl) {
+  initTab(tabId);
+  const segments = capturedSegments.get(tabId);
+
+  if (!segments.has(m3u8Url)) {
+    segments.set(m3u8Url, new Set());
+  }
+
+  segments.get(m3u8Url).add(segmentUrl);
+}
+
+// Listen for network requests
+chrome.webRequest.onBeforeRequest.addListener(
+  (details) => {
+    const { url, tabId, type, initiator } = details;
+
+    // Skip extension requests
+    if (tabId < 0) return;
+
+    // Check if this is a video request
+    if (isVideoUrl(url)) {
+      const videoType = getVideoType(url);
+
+      if (videoType === 'segment' || videoType === 'dash-segment') {
+        // This is a segment, try to find parent m3u8
+        const videos = capturedVideos.get(tabId) || [];
+        const hlsVideos = videos.filter(v => v.type === 'hls');
+
+        if (hlsVideos.length > 0) {
+          // Add to the most recent HLS stream
+          addSegment(tabId, hlsVideos[hlsVideos.length - 1].url, url);
+        }
+
+        // Also add as standalone in case we need it
+        addCapturedVideo(tabId, url, videoType, initiator);
+      } else {
+        addCapturedVideo(tabId, url, videoType, initiator);
+      }
+    }
+  },
+  { urls: ["<all_urls>"] }
+);
+
+// Clean up when tab is closed
+chrome.tabs.onRemoved.addListener((tabId) => {
+  capturedVideos.delete(tabId);
+  capturedSegments.delete(tabId);
+});
+
+// Clean up when tab navigates
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.url) {
+    // Clear captured videos when navigating to a new page
+    capturedVideos.set(tabId, []);
+    capturedSegments.set(tabId, new Map());
+  }
+});
+
+// Download function using captured segments
+async function downloadCapturedVideo(url, type, tabId) {
+  console.log('Downloading:', url, type);
+
+  if (type === 'hls') {
+    // Get captured segments for this HLS stream
+    const segments = capturedSegments.get(tabId);
+    let segmentUrls = [];
+
+    if (segments && segments.has(url)) {
+      segmentUrls = Array.from(segments.get(url));
+    }
+
+    if (segmentUrls.length > 0) {
+      console.log(`Found ${segmentUrls.length} captured segments`);
+      return downloadSegments(segmentUrls);
+    } else {
+      // Try to fetch the m3u8 and download normally
+      // This might still fail without auth, but worth trying
+      return downloadHlsStream(url);
+    }
+  } else if (type === 'segment') {
+    // Single segment - just download it
+    return downloadDirect(url);
+  } else {
+    // Direct download
+    return downloadDirect(url);
+  }
+}
+
+// Download captured segments
+async function downloadSegments(segmentUrls) {
+  console.log('Downloading', segmentUrls.length, 'segments');
+
+  const chunks = [];
+
+  for (let i = 0; i < segmentUrls.length; i++) {
+    try {
+      const response = await fetch(segmentUrls[i]);
+      if (response.ok) {
+        const buffer = await response.arrayBuffer();
+        chunks.push(new Uint8Array(buffer));
+        console.log(`Downloaded segment ${i + 1}/${segmentUrls.length}`);
+      }
+    } catch (e) {
+      console.error(`Failed to download segment ${i}:`, e);
+    }
+  }
+
+  if (chunks.length === 0) {
+    throw new Error('No segments could be downloaded');
+  }
+
+  // Combine chunks
+  const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+  const combined = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    combined.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  return combined;
+}
+
+// Try to download HLS stream (fallback)
+async function downloadHlsStream(url) {
+  const response = await fetch(url);
   const text = await response.text();
 
-  console.log('M3u8 response:', text.substring(0, 500));
-
-  // Check if it's HTML (error page)
-  if (text.trim().startsWith('<!') || text.trim().startsWith('<html')) {
-    throw new Error('認証エラー: ページにアクセスできません');
+  if (text.includes('<!') || text.includes('<html')) {
+    throw new Error('認証エラー');
   }
 
   const lines = text.split('\n');
   const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
 
-  // Check if this is a master playlist
+  // Check for master playlist
   const m3u8Lines = lines.filter(l => l.trim().endsWith('.m3u8'));
   if (m3u8Lines.length > 0) {
     let streamUrl = m3u8Lines[m3u8Lines.length - 1].trim();
     if (!streamUrl.startsWith('http')) {
       streamUrl = baseUrl + streamUrl;
     }
-    return parseM3u8(streamUrl, refererUrl);
+    return downloadHlsStream(streamUrl);
   }
 
-  // Parse segment URLs
+  // Get segments
   const segments = [];
   for (const line of lines) {
     const trimmed = line.trim();
@@ -131,97 +223,52 @@ async function parseM3u8(url, refererUrl) {
     }
   }
 
-  return segments;
+  return downloadSegments(segments);
 }
 
-// Download HLS stream
-async function downloadHls(url, refererUrl, sendProgress) {
-  sendProgress({ status: 'parsing', message: 'Parsing playlist...' });
-
-  const segments = await parseM3u8(url, refererUrl);
-
-  if (segments.length === 0) {
-    throw new Error('セグメントが見つかりません');
-  }
-
-  sendProgress({ status: 'downloading', message: `Found ${segments.length} segments`, total: segments.length });
-
-  // Download all segments
-  const chunks = [];
-  for (let i = 0; i < segments.length; i++) {
-    sendProgress({
-      status: 'downloading',
-      message: `Downloading ${i + 1}/${segments.length}...`,
-      current: i + 1,
-      total: segments.length,
-      percent: Math.floor((i / segments.length) * 90)
-    });
-
-    const response = await fetchWithAuth(segments[i], refererUrl);
-    if (!response.ok) {
-      throw new Error(`Segment ${i + 1} failed: ${response.status}`);
-    }
-    const buffer = await response.arrayBuffer();
-    chunks.push(new Uint8Array(buffer));
-  }
-
-  sendProgress({ status: 'combining', message: 'Combining segments...', percent: 92 });
-
-  // Combine all chunks
-  const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-  const combined = new Uint8Array(totalLength);
-  let offset = 0;
-  for (const chunk of chunks) {
-    combined.set(chunk, offset);
-    offset += chunk.length;
-  }
-
-  return combined;
-}
-
-// Download MP4/direct file
-async function downloadDirect(url, refererUrl, sendProgress) {
-  sendProgress({ status: 'downloading', message: 'Downloading...', percent: 10 });
-
-  const response = await fetchWithAuth(url, refererUrl);
-
+// Direct download
+async function downloadDirect(url) {
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Download failed: ${response.status}`);
   }
-
-  const contentType = response.headers.get('content-type') || '';
-  if (contentType.includes('text/html')) {
-    throw new Error('認証エラー: ログインが必要です');
-  }
-
-  const buffer = await response.arrayBuffer();
-  sendProgress({ status: 'complete', message: 'Download complete', percent: 100 });
-
-  return new Uint8Array(buffer);
+  return new Uint8Array(await response.arrayBuffer());
 }
 
 // Handle messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'download') {
-    const { url, type, filename, referer } = request;
+  if (request.action === 'getCapturedVideos') {
+    const tabId = request.tabId;
+    const videos = capturedVideos.get(tabId) || [];
+    const segments = capturedSegments.get(tabId) || new Map();
 
-    // Use async handling
+    // Add segment count to HLS videos
+    const videosWithInfo = videos.map(v => {
+      if (v.type === 'hls' && segments.has(v.url)) {
+        return { ...v, segmentCount: segments.get(v.url).size };
+      }
+      return v;
+    });
+
+    // Filter to show useful videos (HLS and direct videos, not individual segments)
+    const filteredVideos = videosWithInfo.filter(v =>
+      v.type === 'hls' || v.type === 'mp4' || v.type === 'webm' || v.type === 'video'
+    );
+
+    sendResponse({ videos: filteredVideos });
+    return true;
+  }
+
+  if (request.action === 'download') {
+    const { url, type, tabId } = request;
+
     (async () => {
       try {
-        let data;
-        const sendProgress = (progress) => {
-          console.log('Progress:', progress);
-        };
+        const data = await downloadCapturedVideo(url, type, tabId);
 
-        if (type === 'hls' || url.includes('.m3u8')) {
-          data = await downloadHls(url, referer, sendProgress);
-        } else {
-          data = await downloadDirect(url, referer, sendProgress);
-        }
-
-        // Create blob URL and download
+        // Convert to base64
         const blob = new Blob([data], {
-          type: type === 'hls' || url.includes('.m3u8') ? 'video/mp2t' : 'video/mp4'
+          type: type === 'hls' || type === 'segment' ? 'video/mp2t' : 'video/mp4'
         });
 
         const reader = new FileReader();
@@ -237,8 +284,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
     })();
 
-    return true; // Keep channel open for async response
+    return true;
   }
 });
 
-console.log('Video Downloader background script loaded');
+console.log('Video Downloader v3 - Network capture mode loaded');
