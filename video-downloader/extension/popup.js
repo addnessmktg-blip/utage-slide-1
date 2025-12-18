@@ -1,4 +1,4 @@
-// Popup for Video Downloader v3 - Network Capture Mode
+// Popup for Video Downloader v3.1 - Auto-parse m3u8 mode
 
 let currentTabId = null;
 
@@ -20,9 +20,9 @@ function hideProgress() {
 // Download video
 async function downloadVideo(video) {
   const filename = 'video_' + Date.now();
-  const isHls = video.type === 'hls' || video.type === 'segment';
+  const isHls = video.type === 'hls';
 
-  showProgress('Downloading...', 5);
+  showProgress('ダウンロード中...', 5);
 
   try {
     const response = await chrome.runtime.sendMessage({
@@ -33,7 +33,7 @@ async function downloadVideo(video) {
     });
 
     if (response.success) {
-      showProgress('Saving...', 95);
+      showProgress('保存中...', 95);
 
       // Convert base64 to blob
       const binaryString = atob(response.data);
@@ -52,7 +52,7 @@ async function downloadVideo(video) {
         filename: filename + ext,
         saveAs: true
       }, () => {
-        showProgress('Complete!', 100);
+        showProgress('完了！', 100);
         setTimeout(() => {
           URL.revokeObjectURL(blobUrl);
           hideProgress();
@@ -64,9 +64,33 @@ async function downloadVideo(video) {
     }
 
   } catch (err) {
-    alert('Error: ' + err.message);
+    alert('エラー: ' + err.message);
     hideProgress();
   }
+}
+
+// Get status text
+function getStatusText(video) {
+  if (video.status === 'ready') {
+    return `${video.segmentCount} segments ready`;
+  } else if (video.status === 'parsing') {
+    return 'Parsing...';
+  } else if (video.status === 'auth_error') {
+    return 'Auth error';
+  } else if (video.status === 'parse_error') {
+    return 'Parse error';
+  }
+  return video.status || '';
+}
+
+// Get status color
+function getStatusColor(video) {
+  if (video.status === 'ready' && video.segmentCount > 0) {
+    return '#4ade80'; // Green
+  } else if (video.status === 'auth_error' || video.status === 'parse_error') {
+    return '#f87171'; // Red
+  }
+  return '#fbbf24'; // Yellow
 }
 
 // Load captured videos from background
@@ -75,7 +99,7 @@ async function loadCapturedVideos() {
   const videosEl = document.getElementById('videos');
 
   statusEl.className = 'status scanning';
-  statusEl.textContent = 'Loading captured videos...';
+  statusEl.textContent = 'Loading...';
   videosEl.innerHTML = '';
 
   try {
@@ -95,15 +119,15 @@ async function loadCapturedVideos() {
       statusEl.className = 'status';
       statusEl.innerHTML = `
         <div style="text-align: center;">
-          <div style="margin-bottom: 10px;">No videos captured yet</div>
+          <div style="margin-bottom: 10px;">動画が見つかりません</div>
           <div style="font-size: 11px; color: #94a3b8;">
-            Play the video first, then click "Refresh"
+            ページを読み込むと自動でキャプチャされます
           </div>
         </div>
       `;
     } else {
       statusEl.className = 'status found';
-      statusEl.textContent = `Captured ${videos.length} video(s)!`;
+      statusEl.textContent = `${videos.length} video(s) found!`;
 
       videos.forEach((video) => {
         const item = document.createElement('div');
@@ -111,11 +135,12 @@ async function loadCapturedVideos() {
 
         const typeEl = document.createElement('div');
         typeEl.className = 'type';
-        let typeText = video.type.toUpperCase();
-        if (video.segmentCount) {
-          typeText += ` (${video.segmentCount} segments)`;
-        }
-        typeEl.textContent = typeText;
+        typeEl.innerHTML = `
+          <span>${video.type.toUpperCase()}</span>
+          <span style="color: ${getStatusColor(video)}; margin-left: 8px;">
+            ${getStatusText(video)}
+          </span>
+        `;
 
         const urlEl = document.createElement('div');
         urlEl.className = 'url';
@@ -123,8 +148,18 @@ async function loadCapturedVideos() {
 
         const btn = document.createElement('button');
         btn.className = 'download-btn';
-        btn.textContent = 'Download';
-        btn.onclick = () => downloadVideo(video);
+
+        if (video.status === 'ready' && video.segmentCount > 0) {
+          btn.textContent = `Download (${video.segmentCount} parts)`;
+          btn.onclick = () => downloadVideo(video);
+        } else if (video.type !== 'hls') {
+          btn.textContent = 'Download';
+          btn.onclick = () => downloadVideo(video);
+        } else {
+          btn.textContent = 'Not available';
+          btn.disabled = true;
+          btn.style.opacity = '0.5';
+        }
 
         item.appendChild(typeEl);
         item.appendChild(urlEl);

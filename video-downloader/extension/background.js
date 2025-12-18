@@ -1,22 +1,14 @@
 // Background service worker for video downloads
-// Captures network requests to find authenticated video URLs
+// Captures m3u8 URLs and parses them to get ALL segments
 
 // Store captured video requests per tab
 const capturedVideos = new Map(); // tabId -> array of video info
-const capturedSegments = new Map(); // tabId -> Map of m3u8Url -> segments
 
 // Video file patterns
 const VIDEO_PATTERNS = [
   /\.m3u8(\?|$)/i,
-  /\.ts(\?|$)/i,
   /\.mp4(\?|$)/i,
-  /\.webm(\?|$)/i,
-  /\.m4s(\?|$)/i,
-  /\/video\//i,
-  /\/media\//i,
-  /\/stream\//i,
-  /\/hls\//i,
-  /\/playlist\//i
+  /\.webm(\?|$)/i
 ];
 
 // Check if URL looks like a video
@@ -27,10 +19,8 @@ function isVideoUrl(url) {
 // Get video type from URL
 function getVideoType(url) {
   if (/\.m3u8(\?|$)/i.test(url)) return 'hls';
-  if (/\.ts(\?|$)/i.test(url)) return 'segment';
   if (/\.mp4(\?|$)/i.test(url)) return 'mp4';
   if (/\.webm(\?|$)/i.test(url)) return 'webm';
-  if (/\.m4s(\?|$)/i.test(url)) return 'dash-segment';
   return 'video';
 }
 
@@ -39,13 +29,58 @@ function initTab(tabId) {
   if (!capturedVideos.has(tabId)) {
     capturedVideos.set(tabId, []);
   }
-  if (!capturedSegments.has(tabId)) {
-    capturedSegments.set(tabId, new Map());
+}
+
+// Parse m3u8 and get ALL segment URLs
+async function parseM3u8ForSegments(url) {
+  try {
+    console.log('Parsing m3u8:', url);
+    const response = await fetch(url);
+    const text = await response.text();
+
+    if (text.includes('<!') || text.includes('<html')) {
+      console.log('Got HTML instead of m3u8');
+      return { segments: [], error: 'auth' };
+    }
+
+    const lines = text.split('\n');
+    const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
+
+    // Check if this is a master playlist (contains other m3u8)
+    const m3u8Lines = lines.filter(l => l.trim().endsWith('.m3u8') && !l.startsWith('#'));
+    if (m3u8Lines.length > 0) {
+      // Get the highest quality (usually last one)
+      let streamUrl = m3u8Lines[m3u8Lines.length - 1].trim();
+      if (!streamUrl.startsWith('http')) {
+        streamUrl = baseUrl + streamUrl;
+      }
+      console.log('Found sub-playlist:', streamUrl);
+      return parseM3u8ForSegments(streamUrl);
+    }
+
+    // Parse segment URLs
+    const segments = [];
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#')) {
+        let segmentUrl = trimmed;
+        if (!segmentUrl.startsWith('http')) {
+          segmentUrl = baseUrl + segmentUrl;
+        }
+        segments.push(segmentUrl);
+      }
+    }
+
+    console.log(`Found ${segments.length} segments in playlist`);
+    return { segments, error: null };
+  } catch (e) {
+    console.error('Error parsing m3u8:', e);
+    return { segments: [], error: e.message };
   }
 }
 
 // Add a captured video URL
-function addCapturedVideo(tabId, url, type, initiator) {
+async function addCapturedVideo(tabId, url, type, initiator) {
   initTab(tabId);
   const videos = capturedVideos.get(tabId);
 
@@ -54,32 +89,40 @@ function addCapturedVideo(tabId, url, type, initiator) {
     return;
   }
 
-  videos.push({
+  const videoInfo = {
     url,
     type,
     initiator,
-    timestamp: Date.now()
-  });
+    timestamp: Date.now(),
+    segments: [],
+    segmentCount: 0,
+    status: 'captured'
+  };
 
-  console.log(`Captured ${type}:`, url.substring(0, 100));
-}
+  // If it's HLS, immediately parse to get all segments
+  if (type === 'hls') {
+    videoInfo.status = 'parsing';
+    const { segments, error } = await parseM3u8ForSegments(url);
 
-// Add a segment to an HLS stream
-function addSegment(tabId, m3u8Url, segmentUrl) {
-  initTab(tabId);
-  const segments = capturedSegments.get(tabId);
-
-  if (!segments.has(m3u8Url)) {
-    segments.set(m3u8Url, new Set());
+    if (segments.length > 0) {
+      videoInfo.segments = segments;
+      videoInfo.segmentCount = segments.length;
+      videoInfo.status = 'ready';
+      console.log(`HLS ready: ${segments.length} segments`);
+    } else {
+      videoInfo.status = error === 'auth' ? 'auth_error' : 'parse_error';
+      console.log('HLS parse failed:', error);
+    }
   }
 
-  segments.get(m3u8Url).add(segmentUrl);
+  videos.push(videoInfo);
+  console.log(`Captured ${type}:`, url.substring(0, 100));
 }
 
 // Listen for network requests
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
-    const { url, tabId, type, initiator } = details;
+    const { url, tabId, initiator } = details;
 
     // Skip extension requests
     if (tabId < 0) return;
@@ -87,22 +130,8 @@ chrome.webRequest.onBeforeRequest.addListener(
     // Check if this is a video request
     if (isVideoUrl(url)) {
       const videoType = getVideoType(url);
-
-      if (videoType === 'segment' || videoType === 'dash-segment') {
-        // This is a segment, try to find parent m3u8
-        const videos = capturedVideos.get(tabId) || [];
-        const hlsVideos = videos.filter(v => v.type === 'hls');
-
-        if (hlsVideos.length > 0) {
-          // Add to the most recent HLS stream
-          addSegment(tabId, hlsVideos[hlsVideos.length - 1].url, url);
-        }
-
-        // Also add as standalone in case we need it
-        addCapturedVideo(tabId, url, videoType, initiator);
-      } else {
-        addCapturedVideo(tabId, url, videoType, initiator);
-      }
+      // Don't block, just capture async
+      addCapturedVideo(tabId, url, videoType, initiator);
     }
   },
   { urls: ["<all_urls>"] }
@@ -111,69 +140,46 @@ chrome.webRequest.onBeforeRequest.addListener(
 // Clean up when tab is closed
 chrome.tabs.onRemoved.addListener((tabId) => {
   capturedVideos.delete(tabId);
-  capturedSegments.delete(tabId);
 });
 
 // Clean up when tab navigates
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.url) {
-    // Clear captured videos when navigating to a new page
     capturedVideos.set(tabId, []);
-    capturedSegments.set(tabId, new Map());
   }
 });
 
-// Download function using captured segments
-async function downloadCapturedVideo(url, type, tabId) {
-  console.log('Downloading:', url, type);
-
-  if (type === 'hls') {
-    // Get captured segments for this HLS stream
-    const segments = capturedSegments.get(tabId);
-    let segmentUrls = [];
-
-    if (segments && segments.has(url)) {
-      segmentUrls = Array.from(segments.get(url));
-    }
-
-    if (segmentUrls.length > 0) {
-      console.log(`Found ${segmentUrls.length} captured segments`);
-      return downloadSegments(segmentUrls);
-    } else {
-      // Try to fetch the m3u8 and download normally
-      // This might still fail without auth, but worth trying
-      return downloadHlsStream(url);
-    }
-  } else if (type === 'segment') {
-    // Single segment - just download it
-    return downloadDirect(url);
-  } else {
-    // Direct download
-    return downloadDirect(url);
-  }
-}
-
-// Download captured segments
-async function downloadSegments(segmentUrls) {
-  console.log('Downloading', segmentUrls.length, 'segments');
+// Download segments
+async function downloadSegments(segments, onProgress) {
+  console.log('Downloading', segments.length, 'segments');
 
   const chunks = [];
+  let failed = 0;
 
-  for (let i = 0; i < segmentUrls.length; i++) {
+  for (let i = 0; i < segments.length; i++) {
     try {
-      const response = await fetch(segmentUrls[i]);
+      if (onProgress) {
+        onProgress(i + 1, segments.length);
+      }
+
+      const response = await fetch(segments[i]);
       if (response.ok) {
         const buffer = await response.arrayBuffer();
         chunks.push(new Uint8Array(buffer));
-        console.log(`Downloaded segment ${i + 1}/${segmentUrls.length}`);
+      } else {
+        failed++;
+        console.log(`Segment ${i + 1} failed: ${response.status}`);
       }
     } catch (e) {
-      console.error(`Failed to download segment ${i}:`, e);
+      failed++;
+      console.error(`Segment ${i + 1} error:`, e.message);
     }
   }
 
+  console.log(`Downloaded ${chunks.length}/${segments.length} segments (${failed} failed)`);
+
   if (chunks.length === 0) {
-    throw new Error('No segments could be downloaded');
+    throw new Error('セグメントをダウンロードできませんでした');
   }
 
   // Combine chunks
@@ -186,44 +192,6 @@ async function downloadSegments(segmentUrls) {
   }
 
   return combined;
-}
-
-// Try to download HLS stream (fallback)
-async function downloadHlsStream(url) {
-  const response = await fetch(url);
-  const text = await response.text();
-
-  if (text.includes('<!') || text.includes('<html')) {
-    throw new Error('認証エラー');
-  }
-
-  const lines = text.split('\n');
-  const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
-
-  // Check for master playlist
-  const m3u8Lines = lines.filter(l => l.trim().endsWith('.m3u8'));
-  if (m3u8Lines.length > 0) {
-    let streamUrl = m3u8Lines[m3u8Lines.length - 1].trim();
-    if (!streamUrl.startsWith('http')) {
-      streamUrl = baseUrl + streamUrl;
-    }
-    return downloadHlsStream(streamUrl);
-  }
-
-  // Get segments
-  const segments = [];
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (trimmed && !trimmed.startsWith('#')) {
-      let segmentUrl = trimmed;
-      if (!segmentUrl.startsWith('http')) {
-        segmentUrl = baseUrl + segmentUrl;
-      }
-      segments.push(segmentUrl);
-    }
-  }
-
-  return downloadSegments(segments);
 }
 
 // Direct download
@@ -240,18 +208,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'getCapturedVideos') {
     const tabId = request.tabId;
     const videos = capturedVideos.get(tabId) || [];
-    const segments = capturedSegments.get(tabId) || new Map();
 
-    // Add segment count to HLS videos
-    const videosWithInfo = videos.map(v => {
-      if (v.type === 'hls' && segments.has(v.url)) {
-        return { ...v, segmentCount: segments.get(v.url).size };
-      }
-      return v;
-    });
-
-    // Filter to show useful videos (HLS and direct videos, not individual segments)
-    const filteredVideos = videosWithInfo.filter(v =>
+    // Filter to show useful videos
+    const filteredVideos = videos.filter(v =>
       v.type === 'hls' || v.type === 'mp4' || v.type === 'webm' || v.type === 'video'
     );
 
@@ -264,11 +223,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     (async () => {
       try {
-        const data = await downloadCapturedVideo(url, type, tabId);
+        let data;
+
+        if (type === 'hls') {
+          // Find the video info with segments
+          const videos = capturedVideos.get(tabId) || [];
+          const videoInfo = videos.find(v => v.url === url);
+
+          if (videoInfo && videoInfo.segments && videoInfo.segments.length > 0) {
+            console.log(`Using ${videoInfo.segments.length} pre-parsed segments`);
+            data = await downloadSegments(videoInfo.segments);
+          } else {
+            // Try to parse again
+            console.log('Re-parsing m3u8...');
+            const { segments, error } = await parseM3u8ForSegments(url);
+            if (segments.length > 0) {
+              data = await downloadSegments(segments);
+            } else {
+              throw new Error(error || 'セグメントが見つかりません');
+            }
+          }
+        } else {
+          data = await downloadDirect(url);
+        }
 
         // Convert to base64
         const blob = new Blob([data], {
-          type: type === 'hls' || type === 'segment' ? 'video/mp2t' : 'video/mp4'
+          type: type === 'hls' ? 'video/mp2t' : 'video/mp4'
         });
 
         const reader = new FileReader();
@@ -286,6 +267,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     return true;
   }
+
+  // Re-parse m3u8 on demand
+  if (request.action === 'reparse') {
+    const { url, tabId } = request;
+
+    (async () => {
+      const { segments, error } = await parseM3u8ForSegments(url);
+
+      // Update stored video info
+      const videos = capturedVideos.get(tabId) || [];
+      const videoInfo = videos.find(v => v.url === url);
+      if (videoInfo) {
+        videoInfo.segments = segments;
+        videoInfo.segmentCount = segments.length;
+        videoInfo.status = segments.length > 0 ? 'ready' : 'error';
+      }
+
+      sendResponse({ segments: segments.length, error });
+    })();
+
+    return true;
+  }
 });
 
-console.log('Video Downloader v3 - Network capture mode loaded');
+console.log('Video Downloader v3.1 - Auto-parse m3u8 mode');
