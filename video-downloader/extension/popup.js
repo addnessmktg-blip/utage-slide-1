@@ -1,44 +1,38 @@
-// Popup for Video Downloader v3.3 - With auto filename
+// Popup for Video Downloader v4.0 - IMAGE HACKER style UI
 
 let currentTabId = null;
 let pageTitle = '';
+let currentVideos = [];
 
 // Clean filename (remove invalid characters)
 function cleanFilename(name) {
   if (!name) return '';
   return name
-    .replace(/[<>:"/\\|?*]/g, '_')  // Invalid chars
-    .replace(/\s+/g, '_')            // Spaces to underscore
-    .replace(/_+/g, '_')             // Multiple underscores to single
-    .replace(/^_|_$/g, '')           // Trim underscores
-    .substring(0, 100);              // Limit length
+    .replace(/[<>:"/\\|?*]/g, '_')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
+    .substring(0, 100);
 }
 
-// Filter videos: hide HLS if MP4 exists from same source
+// Filter videos: hide HLS if MP4 exists
 function filterVideos(videos) {
   const hasMp4 = videos.some(v => v.type === 'mp4');
-
   if (hasMp4) {
-    // If MP4 exists, only show MP4s
     return videos.filter(v => v.type === 'mp4');
   }
-
-  // Otherwise show all, but prefer fewer segments
   return videos.sort((a, b) => {
-    // MP4/direct videos first
     if (a.type !== 'hls' && b.type === 'hls') return -1;
     if (a.type === 'hls' && b.type !== 'hls') return 1;
-    // Then by segment count (fewer = simpler)
     return (a.segmentCount || 0) - (b.segmentCount || 0);
   });
 }
 
-// Progress UI helpers
+// Progress UI
 function showProgress(text, percent) {
   const container = document.getElementById('progress');
   const fill = document.getElementById('progressFill');
   const textEl = document.getElementById('progressText');
-
   container.classList.add('active');
   fill.style.width = percent + '%';
   textEl.textContent = text;
@@ -48,18 +42,19 @@ function hideProgress() {
   document.getElementById('progress').classList.remove('active');
 }
 
-// Download video with custom filename
-async function downloadVideo(video, customFilename) {
-  // Use custom filename or generate timestamp-based one
-  let filename;
-  if (customFilename && customFilename.trim()) {
-    // Remove invalid characters from filename
-    filename = customFilename.trim().replace(/[<>:"/\\|?*]/g, '_');
-  } else {
-    const now = new Date();
-    const timestamp = now.toISOString().slice(0, 19).replace(/[T:]/g, '-');
-    filename = 'video_' + timestamp;
+// Get filename from input or page title
+function getFilename() {
+  const input = document.getElementById('filename');
+  const customName = input.value.trim();
+  if (customName) {
+    return customName.replace(/[<>:"/\\|?*]/g, '_');
   }
+  return pageTitle || 'video_' + Date.now();
+}
+
+// Download a single video
+async function downloadVideo(video) {
+  const filename = getFilename();
   const isHls = video.type === 'hls';
 
   showProgress('ダウンロード中...', 5);
@@ -75,7 +70,6 @@ async function downloadVideo(video, customFilename) {
     if (response.success) {
       showProgress('保存中...', 95);
 
-      // Convert base64 to blob
       const binaryString = atob(response.data);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
@@ -100,7 +94,7 @@ async function downloadVideo(video, customFilename) {
       });
 
     } else {
-      throw new Error(response.error || 'Download failed');
+      throw new Error(response.error || 'ダウンロード失敗');
     }
 
   } catch (err) {
@@ -109,11 +103,10 @@ async function downloadVideo(video, customFilename) {
   }
 }
 
-// Get status text (Japanese)
+// Get status text
 function getStatusText(video) {
   if (video.status === 'ready') {
-    const encryptedText = video.encrypted ? ' (暗号化)' : '';
-    return `${video.segmentCount}パート準備完了${encryptedText}`;
+    return `${video.segmentCount}パート準備完了`;
   } else if (video.status === 'parsing') {
     return '解析中...';
   } else if (video.status === 'auth_error') {
@@ -126,123 +119,102 @@ function getStatusText(video) {
   return '';
 }
 
-// Get status color
-function getStatusColor(video) {
-  if (video.status === 'ready' && video.segmentCount > 0) {
-    return '#4ade80'; // Green
-  } else if (video.status === 'auth_error' || video.status === 'parse_error') {
-    return '#f87171'; // Red
+// Update main download button
+function updateMainButton(videos) {
+  const btn = document.getElementById('mainDownload');
+  const count = videos.length;
+
+  if (count > 0) {
+    btn.disabled = false;
+    btn.innerHTML = `
+      Download ${count} Video${count > 1 ? 's' : ''}
+      <div class="sub-text">${count}本の動画を保存</div>
+    `;
+  } else {
+    btn.disabled = true;
+    btn.innerHTML = `
+      Download 0 Videos
+      <div class="sub-text">0本の動画を保存</div>
+    `;
   }
-  return '#fbbf24'; // Yellow
 }
 
-// Load captured videos from background
+// Load captured videos
 async function loadCapturedVideos() {
   const statusEl = document.getElementById('status');
   const videosEl = document.getElementById('videos');
+  const filenameInput = document.getElementById('filename');
 
-  statusEl.className = 'status scanning';
   statusEl.textContent = '読み込み中...';
   videosEl.innerHTML = '';
 
   try {
-    // Get current tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     currentTabId = tab.id;
     pageTitle = cleanFilename(tab.title || '');
 
-    // Get captured videos from background
+    // Auto-fill filename if empty
+    if (!filenameInput.value) {
+      filenameInput.value = pageTitle;
+    }
+
     const response = await chrome.runtime.sendMessage({
       action: 'getCapturedVideos',
       tabId: tab.id
     });
 
     const videos = response.videos || [];
-
-    // Filter videos (hide HLS if MP4 exists)
     const filteredVideos = filterVideos(videos);
+    currentVideos = filteredVideos;
+
+    updateMainButton(filteredVideos);
 
     if (filteredVideos.length === 0) {
-      statusEl.className = 'status';
-      statusEl.innerHTML = `
-        <div style="text-align: center;">
-          <div style="margin-bottom: 10px;">動画が見つかりません</div>
-          <div style="font-size: 11px; color: #94a3b8;">
-            ページを読み込むと自動でキャプチャされます
-          </div>
+      statusEl.textContent = '動画が見つかりません';
+      videosEl.innerHTML = `
+        <div class="no-videos">
+          <div class="no-videos-icon">🎬</div>
+          <div>ページを読み込むと自動でキャプチャされます</div>
         </div>
       `;
     } else {
-      statusEl.className = 'status found';
       statusEl.textContent = `${filteredVideos.length}個の動画が見つかりました`;
 
       filteredVideos.forEach((video, index) => {
         const item = document.createElement('div');
         item.className = 'video-item';
 
-        const typeEl = document.createElement('div');
-        typeEl.className = 'type';
-        typeEl.innerHTML = `
-          <span>${video.type.toUpperCase()}</span>
-          <span style="color: ${getStatusColor(video)}; margin-left: 8px;">
-            ${getStatusText(video)}
-          </span>
+        const statusColor = video.status === 'ready' || video.status === 'captured' ? '#22c55e' : '#eab308';
+
+        item.innerHTML = `
+          <div>
+            <span class="type-badge">${video.type.toUpperCase()}</span>
+            <span class="status" style="color: ${statusColor}">${getStatusText(video)}</span>
+          </div>
+          <div class="url">${video.url.substring(0, 60)}...</div>
         `;
 
-        const urlEl = document.createElement('div');
-        urlEl.className = 'url';
-        urlEl.textContent = video.url.length > 80 ? video.url.substring(0, 80) + '...' : video.url;
+        item.style.cursor = 'pointer';
+        item.onclick = () => downloadVideo(video);
+        item.title = 'クリックでダウンロード';
 
-        // Filename input (pre-filled with page title)
-        const filenameLabel = document.createElement('label');
-        filenameLabel.className = 'filename-label';
-        filenameLabel.textContent = 'ファイル名:';
-
-        const filenameInput = document.createElement('input');
-        filenameInput.type = 'text';
-        filenameInput.className = 'filename-input';
-        filenameInput.placeholder = '例: UTAGE講座_第1回';
-        filenameInput.id = `filename-${index}`;
-        // Auto-fill with page title
-        filenameInput.value = pageTitle;
-
-        const btn = document.createElement('button');
-        btn.className = 'download-btn';
-
-        if (video.status === 'ready' && video.segmentCount > 0) {
-          btn.textContent = `ダウンロード (${video.segmentCount}パート)`;
-          btn.onclick = () => {
-            const filename = document.getElementById(`filename-${index}`).value;
-            downloadVideo(video, filename);
-          };
-        } else if (video.type !== 'hls') {
-          btn.textContent = 'ダウンロード';
-          btn.onclick = () => {
-            const filename = document.getElementById(`filename-${index}`).value;
-            downloadVideo(video, filename);
-          };
-        } else {
-          btn.textContent = '利用不可';
-          btn.disabled = true;
-          btn.style.opacity = '0.5';
-        }
-
-        item.appendChild(typeEl);
-        item.appendChild(urlEl);
-        item.appendChild(filenameLabel);
-        item.appendChild(filenameInput);
-        item.appendChild(btn);
         videosEl.appendChild(item);
       });
     }
   } catch (err) {
-    statusEl.className = 'status error';
-    statusEl.textContent = 'Error: ' + err.message;
+    statusEl.textContent = 'エラー: ' + err.message;
   }
 }
 
-// Initial load
-loadCapturedVideos();
+// Main download button click
+document.getElementById('mainDownload').addEventListener('click', () => {
+  if (currentVideos.length > 0) {
+    downloadVideo(currentVideos[0]);
+  }
+});
 
 // Refresh button
 document.getElementById('refresh').addEventListener('click', loadCapturedVideos);
+
+// Initial load
+loadCapturedVideos();
