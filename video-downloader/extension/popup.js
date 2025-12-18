@@ -100,25 +100,19 @@ async function downloadVideo(video) {
       const fullPath = folder + '/' + filename + ext;
       console.log('Saving to:', fullPath);
 
-      chrome.downloads.download({
-        url: blobUrl,
-        filename: fullPath,
-        conflictAction: 'uniquify'
-      }, (downloadId) => {
-        if (chrome.runtime.lastError) {
-          console.error('Download error:', chrome.runtime.lastError);
-          alert('保存エラー: ' + chrome.runtime.lastError.message);
-          hideProgress();
-          URL.revokeObjectURL(blobUrl);
-          return;
-        }
-        console.log('Download started with ID:', downloadId);
-        showProgress('完了！', 100);
-        setTimeout(() => {
-          URL.revokeObjectURL(blobUrl);
-          hideProgress();
-        }, 2000);
-      });
+      // Use anchor tag download - more reliable for filename
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename + ext;  // Filename only (folders not supported with this method)
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      showProgress('完了！', 100);
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+        hideProgress();
+      }, 2000);
 
     } else {
       throw new Error(response.error || 'ダウンロード失敗');
