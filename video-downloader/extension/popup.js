@@ -15,13 +15,31 @@ function cleanFilename(name) {
     .substring(0, 100);
 }
 
-// Filter videos: hide HLS if MP4 exists
+// Filter videos: hide HLS if MP4 exists, remove duplicates
 function filterVideos(videos) {
   const hasMp4 = videos.some(v => v.type === 'mp4');
   if (hasMp4) {
     return videos.filter(v => v.type === 'mp4');
   }
-  return videos.sort((a, b) => {
+
+  // For HLS: deduplicate similar URLs (hls_variant vs hls_playlist from same source)
+  const seen = new Set();
+  const deduplicated = videos.filter(v => {
+    // Extract base identifier from URL (remove hls_variant/hls_playlist differences)
+    let key = v.url;
+    // For googlevideo URLs, use a simplified key
+    if (v.url.includes('googlevideo.com')) {
+      // Just keep one per domain+segment count combo
+      key = 'googlevideo_' + (v.segmentCount || 0);
+    }
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+
+  return deduplicated.sort((a, b) => {
     if (a.type !== 'hls' && b.type === 'hls') return -1;
     if (a.type === 'hls' && b.type !== 'hls') return 1;
     return (a.segmentCount || 0) - (b.segmentCount || 0);
