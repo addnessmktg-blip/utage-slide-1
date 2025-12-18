@@ -87,13 +87,47 @@
       color: #94a3b8;
       padding: 20px;
     }
+    .progress-container {
+      display: none;
+      margin-top: 15px;
+    }
+    .progress-container.active {
+      display: block;
+    }
+    .progress-bar {
+      height: 8px;
+      background: #0f3460;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4ade80, #22c55e);
+      width: 0%;
+      transition: width 0.3s;
+    }
+    .progress-text {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 5px;
+      text-align: center;
+    }
+    .download-btn {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    }
   </style>
 </head>
 <body>
-  <h1>Video Downloader Helper</h1>
+  <h1>Video Downloader</h1>
   <button id="refresh" class="refresh-btn">Scan Page for Videos</button>
   <div id="status" class="status scanning">Scanning page...</div>
   <div id="videos" class="video-list"></div>
+  <div id="progress" class="progress-container">
+    <div class="progress-bar">
+      <div id="progressFill" class="progress-fill"></div>
+    </div>
+    <div id="progressText" class="progress-text">Downloading...</div>
+  </div>
   <script src="popup.js"></script>
 </body>
 </html>
