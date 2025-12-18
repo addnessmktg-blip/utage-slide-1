@@ -1,6 +1,25 @@
-// Popup for Video Downloader v3.1 - Auto-parse m3u8 mode
+// Popup for Video Downloader v3.2 - With filename input
 
 let currentTabId = null;
+
+// Filter videos: hide HLS if MP4 exists from same source
+function filterVideos(videos) {
+  const hasMp4 = videos.some(v => v.type === 'mp4');
+
+  if (hasMp4) {
+    // If MP4 exists, only show MP4s
+    return videos.filter(v => v.type === 'mp4');
+  }
+
+  // Otherwise show all, but prefer fewer segments
+  return videos.sort((a, b) => {
+    // MP4/direct videos first
+    if (a.type !== 'hls' && b.type === 'hls') return -1;
+    if (a.type === 'hls' && b.type !== 'hls') return 1;
+    // Then by segment count (fewer = simpler)
+    return (a.segmentCount || 0) - (b.segmentCount || 0);
+  });
+}
 
 // Progress UI helpers
 function showProgress(text, percent) {
@@ -17,12 +36,18 @@ function hideProgress() {
   document.getElementById('progress').classList.remove('active');
 }
 
-// Download video
-async function downloadVideo(video) {
-  // Create timestamp-based filename
-  const now = new Date();
-  const timestamp = now.toISOString().slice(0, 19).replace(/[T:]/g, '-');
-  const filename = 'video_' + timestamp;
+// Download video with custom filename
+async function downloadVideo(video, customFilename) {
+  // Use custom filename or generate timestamp-based one
+  let filename;
+  if (customFilename && customFilename.trim()) {
+    // Remove invalid characters from filename
+    filename = customFilename.trim().replace(/[<>:"/\\|?*]/g, '_');
+  } else {
+    const now = new Date();
+    const timestamp = now.toISOString().slice(0, 19).replace(/[T:]/g, '-');
+    filename = 'video_' + timestamp;
+  }
   const isHls = video.type === 'hls';
 
   showProgress('ダウンロード中...', 5);
@@ -119,7 +144,10 @@ async function loadCapturedVideos() {
 
     const videos = response.videos || [];
 
-    if (videos.length === 0) {
+    // Filter videos (hide HLS if MP4 exists)
+    const filteredVideos = filterVideos(videos);
+
+    if (filteredVideos.length === 0) {
       statusEl.className = 'status';
       statusEl.innerHTML = `
         <div style="text-align: center;">
@@ -131,9 +159,9 @@ async function loadCapturedVideos() {
       `;
     } else {
       statusEl.className = 'status found';
-      statusEl.textContent = `${videos.length} video(s) found!`;
+      statusEl.textContent = `${filteredVideos.length}個の動画が見つかりました`;
 
-      videos.forEach((video) => {
+      filteredVideos.forEach((video, index) => {
         const item = document.createElement('div');
         item.className = 'video-item';
 
@@ -150,23 +178,42 @@ async function loadCapturedVideos() {
         urlEl.className = 'url';
         urlEl.textContent = video.url.length > 80 ? video.url.substring(0, 80) + '...' : video.url;
 
+        // Filename input
+        const filenameLabel = document.createElement('label');
+        filenameLabel.className = 'filename-label';
+        filenameLabel.textContent = 'ファイル名:';
+
+        const filenameInput = document.createElement('input');
+        filenameInput.type = 'text';
+        filenameInput.className = 'filename-input';
+        filenameInput.placeholder = '例: UTAGE講座_第1回';
+        filenameInput.id = `filename-${index}`;
+
         const btn = document.createElement('button');
         btn.className = 'download-btn';
 
         if (video.status === 'ready' && video.segmentCount > 0) {
-          btn.textContent = `Download (${video.segmentCount} parts)`;
-          btn.onclick = () => downloadVideo(video);
+          btn.textContent = `ダウンロード (${video.segmentCount}パート)`;
+          btn.onclick = () => {
+            const filename = document.getElementById(`filename-${index}`).value;
+            downloadVideo(video, filename);
+          };
         } else if (video.type !== 'hls') {
-          btn.textContent = 'Download';
-          btn.onclick = () => downloadVideo(video);
+          btn.textContent = 'ダウンロード';
+          btn.onclick = () => {
+            const filename = document.getElementById(`filename-${index}`).value;
+            downloadVideo(video, filename);
+          };
         } else {
-          btn.textContent = 'Not available';
+          btn.textContent = '利用不可';
           btn.disabled = true;
           btn.style.opacity = '0.5';
         }
 
         item.appendChild(typeEl);
         item.appendChild(urlEl);
+        item.appendChild(filenameLabel);
+        item.appendChild(filenameInput);
         item.appendChild(btn);
         videosEl.appendChild(item);
       });
