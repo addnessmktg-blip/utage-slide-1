@@ -42,19 +42,31 @@ function hideProgress() {
   document.getElementById('progress').classList.remove('active');
 }
 
-// Get filename from input or page title
-function getFilename() {
-  const input = document.getElementById('filename');
-  const customName = input.value.trim();
-  if (customName) {
-    return customName.replace(/[<>:"/\\|?*]/g, '_');
+// Get full path (folder/filename) from inputs
+function getFullPath() {
+  const folderInput = document.getElementById('foldername');
+  const filenameInput = document.getElementById('filename');
+
+  // Get folder name (use page title if empty)
+  let folder = folderInput.value.trim();
+  if (!folder) {
+    folder = pageTitle || 'downloads';
   }
-  return pageTitle || 'video_' + Date.now();
+  folder = folder.replace(/[<>:"/\\|?*]/g, '_');
+
+  // Get filename (required)
+  let filename = filenameInput.value.trim();
+  if (!filename) {
+    filename = 'video_' + Date.now();
+  }
+  filename = filename.replace(/[<>:"/\\|?*]/g, '_');
+
+  return { folder, filename };
 }
 
 // Download a single video
 async function downloadVideo(video) {
-  const filename = getFilename();
+  const { folder, filename } = getFullPath();
   const isHls = video.type === 'hls';
 
   showProgress('ダウンロード中...', 5);
@@ -81,10 +93,13 @@ async function downloadVideo(video) {
       const blob = new Blob([bytes], { type: mimeType });
       const blobUrl = URL.createObjectURL(blob);
 
+      // Create full path: folder/filename.ext
+      const fullPath = folder + '/' + filename + ext;
+
       chrome.downloads.download({
         url: blobUrl,
-        filename: filename + ext,
-        saveAs: true
+        filename: fullPath,
+        saveAs: false  // Don't show dialog, save directly
       }, () => {
         showProgress('完了！', 100);
         setTimeout(() => {
@@ -143,7 +158,7 @@ function updateMainButton(videos) {
 async function loadCapturedVideos() {
   const statusEl = document.getElementById('status');
   const videosEl = document.getElementById('videos');
-  const filenameInput = document.getElementById('filename');
+  const foldernameInput = document.getElementById('foldername');
 
   statusEl.textContent = '読み込み中...';
   videosEl.innerHTML = '';
@@ -153,9 +168,9 @@ async function loadCapturedVideos() {
     currentTabId = tab.id;
     pageTitle = cleanFilename(tab.title || '');
 
-    // Auto-fill filename if empty
-    if (!filenameInput.value) {
-      filenameInput.value = pageTitle;
+    // Auto-fill folder name if empty (use page title)
+    if (!foldernameInput.value) {
+      foldernameInput.value = pageTitle;
     }
 
     const response = await chrome.runtime.sendMessage({
