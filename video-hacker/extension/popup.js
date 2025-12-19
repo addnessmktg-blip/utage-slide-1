@@ -66,27 +66,30 @@ function filterVideos(videos) {
     return videos.filter(v => v.type === 'mp4');
   }
 
-  // For HLS: deduplicate similar URLs (hls_variant vs hls_playlist from same source)
-  const seen = new Set();
-  const deduplicated = videos.filter(v => {
-    // Extract base identifier from URL (remove hls_variant/hls_playlist differences)
-    let key = v.url;
-    // For googlevideo URLs, use a simplified key
+  // For HLS: keep only one per source (pick highest segment count)
+  const bySource = new Map();
+
+  videos.forEach(v => {
+    let sourceKey = v.url;
+
+    // For googlevideo URLs, group all as one source
     if (v.url.includes('googlevideo.com')) {
-      // Just keep one per domain+segment count combo
-      key = 'googlevideo_' + (v.segmentCount || 0);
+      sourceKey = 'googlevideo';
     }
-    if (seen.has(key)) {
-      return false;
+
+    const existing = bySource.get(sourceKey);
+    // Keep the one with more segments (higher quality)
+    if (!existing || (v.segmentCount || 0) > (existing.segmentCount || 0)) {
+      bySource.set(sourceKey, v);
     }
-    seen.add(key);
-    return true;
   });
+
+  const deduplicated = Array.from(bySource.values());
 
   return deduplicated.sort((a, b) => {
     if (a.type !== 'hls' && b.type === 'hls') return -1;
     if (a.type === 'hls' && b.type !== 'hls') return 1;
-    return (a.segmentCount || 0) - (b.segmentCount || 0);
+    return (b.segmentCount || 0) - (a.segmentCount || 0); // Higher first
   });
 }
 
@@ -291,8 +294,6 @@ async function loadCapturedVideos() {
         const item = document.createElement('div');
         item.className = 'video-item';
 
-        const statusColor = video.status === 'ready' || video.status === 'captured' ? '#22c55e' : '#eab308';
-
         // Find matching thumbnail (if any)
         const thumb = thumbnails[index] || thumbnails[0];
         const thumbnailHtml = thumb
@@ -300,16 +301,7 @@ async function loadCapturedVideos() {
           : `<div class="video-thumbnail-placeholder">🎬</div>`;
 
         item.innerHTML = `
-          <div class="video-content">
-            ${thumbnailHtml}
-            <div class="video-info">
-              <div class="video-header">
-                <span class="type-badge">${video.type.toUpperCase()}</span>
-                <span class="status" style="color: ${statusColor}">${getStatusText(video)}</span>
-              </div>
-              <div class="url">${video.url.substring(0, 40)}...</div>
-            </div>
-          </div>
+          ${thumbnailHtml}
           <div class="video-filename-row">
             <input type="text" class="video-filename-input" id="videoFilename${index}" placeholder="ファイル名を入力">
             <button class="video-download-btn" data-index="${index}">保存</button>
