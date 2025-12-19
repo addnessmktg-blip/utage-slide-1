@@ -1,0 +1,329 @@
+<style>
+    /* --- 全体設定 --- */
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        background-color: #050505 !important;
+    }
+
+    /* --- コンテナ --- */
+    .break-out-container {
+        position: absolute !important;
+        top: 0;
+        left: 0;
+        width: 100%;
+        min-height: 100vh;
+        z-index: 2147483647;
+        background-color: #050505;
+        padding: 60px 0;
+        box-sizing: border-box;
+        display: block;
+    }
+
+    /* --- デザイン設定 --- */
+    .inner-content {
+        width: 90%;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding-bottom: 100px;
+    }
+
+    .neon-header-wrapper {
+        text-align: center;
+        margin-bottom: 80px;
+        padding: 20px;
+    }
+
+    .neon-frame {
+        position: relative;
+        display: inline-block;
+        padding: 40px 80px;
+        background-color: rgba(0, 20, 20, 0.8);
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(0, 255, 255, 0.3);
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+        overflow: hidden;
+        border-radius: 4px;
+    }
+
+    .neon-frame span { position: absolute; display: block; }
+    .neon-frame span:nth-child(1) { top: 0; left: -100%; width: 100%; height: 4px; background: linear-gradient(90deg, transparent, #00ffff); animation: btn-anim1 2s linear infinite; }
+    @keyframes btn-anim1 { 0% { left: -100%; } 50%,100% { left: 100%; } }
+    .neon-frame span:nth-child(2) { top: -100%; right: 0; width: 4px; height: 100%; background: linear-gradient(180deg, transparent, #00ffff); animation: btn-anim2 2s linear infinite; animation-delay: 0.5s; }
+    @keyframes btn-anim2 { 0% { top: -100%; } 50%,100% { top: 100%; } }
+    .neon-frame span:nth-child(3) { bottom: 0; right: -100%; width: 100%; height: 4px; background: linear-gradient(270deg, transparent, #00ffff); animation: btn-anim3 2s linear infinite; animation-delay: 1s; }
+    @keyframes btn-anim3 { 0% { right: -100%; } 50%,100% { right: 100%; } }
+    .neon-frame span:nth-child(4) { bottom: -100%; left: 0; width: 4px; height: 100%; background: linear-gradient(360deg, transparent, #00ffff); animation: btn-anim4 2s linear infinite; animation-delay: 1.5s; }
+    @keyframes btn-anim4 { 0% { bottom: -100%; } 50%,100% { bottom: 100%; } }
+
+    .neon-title-main {
+        font-weight: 900;
+        font-size: clamp(32px, 5vw, 64px);
+        margin: 0 0 10px 0;
+        color: #fff;
+        letter-spacing: 2px;
+        text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 40px #ff00ff;
+        z-index: 10; position: relative;
+        line-height: 1.2;
+    }
+
+    .neon-title-sub {
+        font-weight: 700;
+        font-size: clamp(14px, 2vw, 20px);
+        color: #ccffff;
+        margin: 0;
+        letter-spacing: 1px;
+        text-shadow: 0 0 10px #00ffff;
+        z-index: 10; position: relative;
+    }
+
+    /* 5カード用グリッド：上段3つ、下段2つ（中央寄せ） */
+    .grid-wrapper {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 30px;
+    }
+
+    /* 下段2つを中央寄せ */
+    .grid-wrapper .neon-card:nth-child(4) {
+        grid-column: 1 / 2;
+        margin-left: auto;
+        width: calc(100% - 15px);
+    }
+    .grid-wrapper .neon-card:nth-child(5) {
+        grid-column: 3 / 4;
+        margin-right: auto;
+        width: calc(100% - 15px);
+    }
+
+    .neon-card {
+        background: #111;
+        border-radius: 24px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        text-decoration: none !important;
+        overflow: hidden;
+        aspect-ratio: 1 / 1;
+        width: 100%;
+        transition: all 0.3s ease;
+        --theme-color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .neon-card:hover {
+        transform: translateY(-8px);
+        border-color: var(--theme-color);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 20px var(--theme-color);
+    }
+
+    .card-image-area {
+        height: 40%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(to bottom, rgba(255,255,255,0.03), transparent);
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .tool-badge {
+        font-weight: 800;
+        font-size: clamp(20px, 2.5vw, 32px);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-transform: uppercase;
+        color: #fff;
+        text-shadow: 0 0 15px var(--theme-color);
+    }
+
+    .lesson-number {
+        font-weight: 900;
+        font-size: clamp(36px, 4vw, 56px);
+        color: var(--theme-color);
+        text-shadow: 0 0 20px var(--theme-color), 0 0 40px var(--theme-color);
+        letter-spacing: 2px;
+    }
+
+    .card-content {
+        padding: 24px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        justify-content: space-between;
+    }
+
+    .problem-tag {
+        color: var(--theme-color);
+        font-weight: bold;
+        font-size: clamp(11px, 1.1vw, 13px);
+        letter-spacing: 1px;
+        margin-bottom: 5px;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 4px 12px;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .card-title {
+        color: #fff;
+        font-size: clamp(14px, 1.5vw, 18px);
+        font-weight: bold;
+        line-height: 1.6;
+        margin: 0;
+        width: 100%;
+    }
+
+    .neon-btn {
+        width: 100%;
+        padding: 12px 0;
+        border-radius: 50px;
+        font-weight: bold;
+        font-size: 14px;
+        text-align: center;
+        transition: all 0.3s;
+        margin-top: auto;
+        background-color: transparent;
+        color: var(--theme-color);
+        border: 2px solid var(--theme-color);
+        box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        text-shadow: 0 0 5px rgba(0,0,0,0.8);
+    }
+
+    .neon-card:hover .neon-btn {
+        background-color: var(--theme-color);
+        color: #000;
+        box-shadow: 0 0 20px var(--theme-color);
+        border-color: var(--theme-color);
+        text-shadow: none;
+    }
+
+    .cta-wrapper {
+        margin-top: 80px;
+        padding: 40px 20px;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .cta-text {
+        color: #ccc;
+        font-size: 16px;
+        line-height: 1.8;
+        margin-bottom: 30px;
+        font-weight: 500;
+        text-shadow: 0 0 5px rgba(0,0,0,0.5);
+    }
+
+    .cta-button {
+        display: inline-block;
+        background-color: transparent;
+        color: #fff;
+        text-decoration: none;
+        padding: 16px 40px;
+        border-radius: 50px;
+        font-weight: 900;
+        font-size: 16px;
+        transition: all 0.3s;
+        border: 2px solid #fff;
+        box-shadow:
+            0 0 10px rgba(255, 255, 255, 0.3),
+            inset 0 0 10px rgba(255, 255, 255, 0.1);
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    }
+
+    .cta-button:hover {
+        background-color: #fff;
+        color: #000;
+        transform: translateY(-3px);
+        box-shadow:
+            0 0 30px rgba(255, 255, 255, 0.8),
+            0 0 60px rgba(255, 255, 255, 0.5);
+        text-shadow: none;
+    }
+
+    .flash-arrow {
+        display: inline-block;
+        animation: arrow-blink 1.5s infinite alternate;
+    }
+
+    @keyframes arrow-blink {
+        0% { opacity: 1; text-shadow: 0 0 10px #fff; transform: scale(1); }
+        100% { opacity: 0.2; text-shadow: none; transform: scale(0.9); }
+    }
+
+    .sp-only { display: none; }
+    .pc-only { display: inline; }
+
+    @media (max-width: 768px) {
+        .sp-only { display: inline; }
+        .pc-only { display: none; }
+
+        .break-out-container {
+            padding: 40px 0;
+        }
+        .neon-frame {
+            padding: 20px 10px;
+            width: 90%;
+        }
+        .grid-wrapper {
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+        .grid-wrapper .neon-card:nth-child(4),
+        .grid-wrapper .neon-card:nth-child(5) {
+            grid-column: auto;
+            margin-left: 0;
+            margin-right: 0;
+            width: 100%;
+        }
+        .neon-card {
+            aspect-ratio: auto;
+            min-height: auto;
+            height: auto;
+            padding-bottom: 24px;
+        }
+        .card-image-area {
+            height: 140px;
+        }
+        .tool-badge {
+            font-size: 26px;
+        }
+        .lesson-number {
+            font-size: 42px;
+        }
+        .card-content {
+            padding: 20px 20px 0 20px;
+            gap: 15px;
+        }
+        .problem-tag {
+            font-size: 12px;
+            margin-bottom: 0;
+        }
+        .card-title {
+            font-size: 17px;
+            margin-bottom: 10px;
+        }
+        .neon-btn {
+            width: 100%;
+            margin-top: 10px;
+        }
+        .cta-wrapper {
+            margin-top: 60px;
+            padding: 30px 15px;
+        }
+        .cta-text {
+            font-size: 14px;
+        }
+        .cta-button {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 14px 20px;
+        }
+    }
+</style>
