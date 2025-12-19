@@ -1,0 +1,344 @@
+// Popup for Video Downloader v4.0 - IMAGE HACKER style UI
+
+let currentTabId = null;
+let pageTitle = '';
+let currentVideos = [];
+
+// Listen for progress updates from background
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.action === 'downloadProgress') {
+    const { current, total, percent } = message;
+    showProgress(`ダウンロード中... ${current}/${total} (${percent}%)`, percent);
+  }
+});
+
+// IndexedDB helper - read directly (avoids message size limits)
+const DB_NAME = 'VideoHackerDB';
+const STORE_NAME = 'videoData';
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      }
+    };
+  });
+}
+
+async function getVideoDataDirect(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.get(id);
+    request.onsuccess = () => {
+      const result = request.result;
+      if (result) {
+        // Delete after retrieval
+        store.delete(id);
+      }
+      resolve(result);
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+// Clean filename (remove invalid characters)
+function cleanFilename(name) {
+  if (!name) return '';
+  return name
+    .replace(/[<>:"/\\|?*]/g, '_')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
+    .substring(0, 100);
+}
+
+// Filter videos: hide HLS if MP4 exists, remove duplicates
+function filterVideos(videos) {
+  const hasMp4 = videos.some(v => v.type === 'mp4');
+  if (hasMp4) {
+    return videos.filter(v => v.type === 'mp4');
+  }
+
+  // For HLS: keep only one per source
+  // For googlevideo: prefer the one with highest segment count (usually muxed stream)
+  const bySource = new Map();
+
+  videos.forEach(v => {
+    let sourceKey = v.url;
+
+    // For googlevideo URLs, group all as one source
+    if (v.url.includes('googlevideo.com')) {
+      sourceKey = 'googlevideo';
+    }
+
+    const existing = bySource.get(sourceKey);
+    if (!existing) {
+      bySource.set(sourceKey, v);
+    } else {
+      // Keep the one with more segments (usually muxed stream has more)
+      if ((v.segmentCount || 0) > (existing.segmentCount || 0)) {
+        bySource.set(sourceKey, v);
+      }
+    }
+  });
+
+  const deduplicated = Array.from(bySource.values());
+
+  return deduplicated.sort((a, b) => {
+    if (a.type !== 'hls' && b.type === 'hls') return -1;
+    if (a.type === 'hls' && b.type !== 'hls') return 1;
+    return (b.segmentCount || 0) - (a.segmentCount || 0); // Higher segment count first
+  });
+}
+
+// Progress UI
+function showProgress(text, percent) {
+  const container = document.getElementById('progress');
+  const fill = document.getElementById('progressFill');
+  const textEl = document.getElementById('progressText');
+  container.classList.add('active');
+  fill.style.width = percent + '%';
+  textEl.textContent = text;
+}
+
+function hideProgress() {
+  document.getElementById('progress').classList.remove('active');
+}
+
+// Get folder name from input
+function getFolder() {
+  const folderInput = document.getElementById('foldername');
+
+  // Get folder name (use page title if empty)
+  let folder = folderInput.value.trim();
+  if (!folder) {
+    folder = pageTitle || 'VIDEO_HACKER';
+  }
+  // Sanitize folder name
+  folder = folder.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').replace(/\.+$/g, '');
+
+  return folder;
+}
+
+// Download a single video with optional custom filename
+async function downloadVideo(video, customFilename = null) {
+  const folder = getFolder();
+  // Use custom filename, or generate default with timestamp
+  let filename = customFilename;
+  if (!filename) {
+    filename = 'video_' + Date.now();
+  }
+  // Sanitize filename
+  filename = filename.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').replace(/\.+$/g, '');
+
+  // Always use .mp4 extension (most players can handle it)
+  const ext = '.mp4';
+  const fullPath = folder + '/' + filename + ext;
+
+  showProgress('ダウンロード開始...', 1);
+
+  try {
+    // Step 1: Download segments (stored in IndexedDB)
+    const response = await chrome.runtime.sendMessage({
+      action: 'download',
+      url: video.url,
+      type: video.type,
+      tabId: currentTabId
+    });
+
+    if (!response.success) {
+      throw new Error(response.error || 'ダウンロード失敗');
+    }
+
+    console.log('Data stored in IndexedDB, ID:', response.dataId);
+    console.log('Size:', (response.size / 1024 / 1024).toFixed(2), 'MB');
+
+    showProgress('データ取得中...', 92);
+
+    // Step 2: Read directly from IndexedDB (avoids message size limits!)
+    const record = await getVideoDataDirect(response.dataId);
+
+    if (!record) {
+      throw new Error('データ取得失敗');
+    }
+
+    showProgress('ファイル作成中...', 95);
+
+    // Step 3: Create blob and download (data is ArrayBuffer)
+    const blob = new Blob([record.data], { type: record.mimeType });
+    const blobUrl = URL.createObjectURL(blob);
+
+    // Register filename with background script
+    await chrome.runtime.sendMessage({
+      action: 'registerDownload',
+      blobUrl: blobUrl,
+      filename: fullPath
+    });
+
+    // Download
+    chrome.downloads.download({
+      url: blobUrl,
+      filename: fullPath,
+      saveAs: false
+    }, (downloadId) => {
+      if (chrome.runtime.lastError) {
+        console.error('Download error:', chrome.runtime.lastError);
+        alert('エラー: ' + chrome.runtime.lastError.message);
+        hideProgress();
+      } else {
+        console.log('Download started:', downloadId);
+        showProgress('完了！', 100);
+        setTimeout(() => {
+          URL.revokeObjectURL(blobUrl);
+          hideProgress();
+        }, 2000);
+      }
+    });
+
+  } catch (err) {
+    alert('エラー: ' + err.message);
+    hideProgress();
+  }
+}
+
+// Get status text
+function getStatusText(video) {
+  if (video.status === 'ready') {
+    return `${video.segmentCount}パート準備完了`;
+  } else if (video.status === 'parsing') {
+    return '解析中...';
+  } else if (video.status === 'auth_error') {
+    return '認証エラー';
+  } else if (video.status === 'parse_error') {
+    return '解析エラー';
+  } else if (video.status === 'captured') {
+    return '取得済み';
+  }
+  return '';
+}
+
+// Update main download button
+function updateMainButton(videos) {
+  const btn = document.getElementById('mainDownload');
+  const count = videos.length;
+
+  if (count > 0) {
+    btn.disabled = false;
+    btn.innerHTML = `
+      Download ${count} Video${count > 1 ? 's' : ''}
+      <div class="sub-text">${count}本の動画を保存</div>
+    `;
+  } else {
+    btn.disabled = true;
+    btn.innerHTML = `
+      Download 0 Videos
+      <div class="sub-text">0本の動画を保存</div>
+    `;
+  }
+}
+
+// Load captured videos
+async function loadCapturedVideos() {
+  const statusEl = document.getElementById('status');
+  const videosEl = document.getElementById('videos');
+  const foldernameInput = document.getElementById('foldername');
+
+  statusEl.textContent = '読み込み中...';
+  videosEl.innerHTML = '';
+
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    currentTabId = tab.id;
+    pageTitle = cleanFilename(tab.title || '');
+
+    // Auto-fill folder name if empty (use page title)
+    if (!foldernameInput.value) {
+      foldernameInput.value = pageTitle;
+    }
+
+    const response = await chrome.runtime.sendMessage({
+      action: 'getCapturedVideos',
+      tabId: tab.id
+    });
+
+    const videos = response.videos || [];
+    const filteredVideos = filterVideos(videos);
+    currentVideos = filteredVideos;
+
+    updateMainButton(filteredVideos);
+
+    if (filteredVideos.length === 0) {
+      statusEl.textContent = '動画が見つかりません';
+      videosEl.innerHTML = `
+        <div class="no-videos">
+          <div class="no-videos-icon">🎬</div>
+          <div>ページを読み込むと自動でキャプチャされます</div>
+        </div>
+      `;
+    } else {
+      statusEl.textContent = `${filteredVideos.length}個の動画が見つかりました`;
+
+      // Try to capture thumbnails from the page
+      let thumbnails = [];
+      try {
+        const thumbResponse = await chrome.tabs.sendMessage(tab.id, { action: 'captureThumbnails' });
+        thumbnails = thumbResponse.thumbnails || [];
+        console.log('Captured thumbnails:', thumbnails.length);
+      } catch (e) {
+        console.log('Could not capture thumbnails:', e);
+      }
+
+      filteredVideos.forEach((video, index) => {
+        const item = document.createElement('div');
+        item.className = 'video-item';
+
+        // Find matching thumbnail (if any)
+        const thumb = thumbnails[index] || thumbnails[0];
+        const thumbnailHtml = thumb
+          ? `<img class="video-thumbnail" src="${thumb.thumbnail}" alt="thumbnail">`
+          : `<div class="video-thumbnail-placeholder">🎬</div>`;
+
+        item.innerHTML = `
+          ${thumbnailHtml}
+          <div class="video-filename-row">
+            <input type="text" class="video-filename-input" id="videoFilename${index}" placeholder="ファイル名を入力">
+            <button class="video-download-btn" data-index="${index}">保存</button>
+          </div>
+        `;
+
+        // Add click handler for the download button
+        const downloadBtn = item.querySelector('.video-download-btn');
+        downloadBtn.onclick = (e) => {
+          e.stopPropagation();
+          const filenameInput = item.querySelector('.video-filename-input');
+          const customFilename = filenameInput.value.trim();
+          downloadVideo(video, customFilename || null);
+        };
+
+        videosEl.appendChild(item);
+      });
+    }
+  } catch (err) {
+    statusEl.textContent = 'エラー: ' + err.message;
+  }
+}
+
+// Main download button click
+document.getElementById('mainDownload').addEventListener('click', () => {
+  if (currentVideos.length > 0) {
+    downloadVideo(currentVideos[0]);
+  }
+});
+
+// Refresh button
+document.getElementById('refresh').addEventListener('click', loadCapturedVideos);
+
+// Initial load
+loadCapturedVideos();
