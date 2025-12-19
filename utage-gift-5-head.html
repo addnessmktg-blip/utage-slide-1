@@ -30,9 +30,9 @@
         transform-style: preserve-3d;
         will-change: transform, opacity, box-shadow;
         animation:
-            tile-sweep 5s var(--intro-delay) cubic-bezier(0.22, 1, 0.36, 1) forwards,
-            tile-breathe 3s calc(5s + var(--intro-delay)) ease-in-out infinite,
-            tile-float var(--float-duration) calc(5s + var(--intro-delay)) ease-in-out infinite;
+            tile-sweep 7s var(--intro-delay) cubic-bezier(0.22, 1, 0.36, 1) forwards,
+            tile-breathe 3s calc(7s + var(--intro-delay)) ease-in-out infinite,
+            tile-float var(--float-duration) calc(7s + var(--intro-delay)) ease-in-out infinite;
     }
 
     @keyframes tile-sweep {
@@ -163,10 +163,32 @@
         padding-bottom: 100px;
     }
 
+    /* コンテンツ登場アニメーション */
+    @keyframes content-appear {
+        0% { opacity: 0; transform: translateY(30px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes card-appear {
+        0% { opacity: 0; transform: translateY(30px) scale(0.95); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
     .neon-header-wrapper {
         text-align: center;
         margin-bottom: 80px;
         padding: 20px;
+        opacity: 0;
+        transform: translateY(30px);
+        animation: content-appear 1.2s 7.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .grid-wrapper {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 30px;
+        opacity: 0;
+        transform: translateY(40px);
+        animation: content-appear 1s 7.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
 
     .neon-frame {
@@ -212,13 +234,6 @@
         z-index: 10; position: relative;
     }
 
-    /* 5カード用グリッド：上段3つ、下段2つ（中央寄せ） */
-    .grid-wrapper {
-        display: grid;
-        grid-template-columns: repeat(6, 1fr);
-        gap: 30px;
-    }
-
     /* 上段3つ：各2列分 */
     .grid-wrapper .neon-card:nth-child(1),
     .grid-wrapper .neon-card:nth-child(2),
@@ -248,7 +263,15 @@
         --theme-color: #fff;
         border: 1px solid rgba(255, 255, 255, 0.1);
         box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+        animation: card-appear 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
+    .neon-card:nth-child(1) { animation-delay: 7.6s; }
+    .neon-card:nth-child(2) { animation-delay: 7.7s; }
+    .neon-card:nth-child(3) { animation-delay: 7.8s; }
+    .neon-card:nth-child(4) { animation-delay: 7.9s; }
+    .neon-card:nth-child(5) { animation-delay: 8.0s; }
 
     .neon-card:hover {
         transform: translateY(-8px);
