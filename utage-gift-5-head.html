@@ -29,9 +29,9 @@
         opacity: 0;
         transform-style: preserve-3d;
         animation:
-            tile-sweep 5s var(--intro-delay) cubic-bezier(0.22, 1, 0.36, 1) forwards,
-            tile-breathe 3s calc(5s + var(--intro-delay)) ease-in-out infinite,
-            tile-float var(--float-duration) calc(5s + var(--intro-delay)) ease-in-out infinite;
+            tile-sweep 4.5s var(--intro-delay) cubic-bezier(0.22, 1, 0.36, 1) forwards,
+            tile-breathe 3s calc(4.5s + var(--intro-delay)) ease-in-out infinite,
+            tile-float var(--float-duration) calc(4.5s + var(--intro-delay)) ease-in-out infinite;
     }
 
     @keyframes tile-sweep {
@@ -115,14 +115,14 @@
         --end-transform: translate(-50%, -50%) translate3d(0, 0, -30px) rotateX(10deg) rotateY(10deg);
         --end-opacity: 0.25;
         display: flex; align-items: center; justify-content: center;
-        /* ロゴ専用：より明るいアニメーション */
+        /* ロゴ専用：着地時にフラッシュ → 落ち着く */
         animation:
-            logo-sweep 5s 0.25s cubic-bezier(0.22, 1, 0.36, 1) forwards,
-            logo-landing 0.6s 5.25s ease-out forwards,
-            tile-float 6s 5.85s ease-in-out infinite;
+            logo-sweep 4.5s 0s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+            logo-settle 0.8s 4.5s ease-out forwards,
+            tile-float 6s 5.3s ease-in-out infinite;
     }
 
-    /* ロゴ専用：落下中は非常に明るく */
+    /* ロゴ専用：落下中は明るく、着地でフラッシュ */
     @keyframes logo-sweep {
         0% {
             opacity: 0.6;
@@ -144,7 +144,7 @@
                 0 0 400px rgba(0,204,255,0.9),
                 inset 0 0 60px rgba(255,255,255,0.4);
         }
-        100% {
+        95% {
             opacity: 1;
             transform: translate(-50%, -50%) translate3d(0, 0, -30px) rotateX(10deg) rotateY(10deg);
             box-shadow:
@@ -153,28 +153,30 @@
                 0 0 400px rgba(0,204,255,0.9),
                 inset 0 0 60px rgba(255,255,255,0.4);
         }
-    }
-
-    /* 着地インパクト：一瞬フラッシュしてから落ち着く */
-    @keyframes logo-landing {
-        0% {
+        100% {
+            /* 着地フラッシュ！ */
+            opacity: 1;
+            transform: translate(-50%, -50%) translate3d(0, 0, -30px) rotateX(10deg) rotateY(10deg);
             box-shadow:
-                0 0 150px #00ccff,
-                0 0 300px #00ccff,
-                0 0 400px rgba(0,204,255,0.9),
-                inset 0 0 60px rgba(255,255,255,0.4);
-        }
-        30% {
-            /* フラッシュ：最大輝度 */
-            box-shadow:
-                0 0 200px #ffffff,
+                0 0 250px #ffffff,
                 0 0 400px #00ccff,
                 0 0 600px #00ccff,
-                0 0 800px rgba(0,204,255,0.7),
+                0 0 800px rgba(0,204,255,0.8),
+                inset 0 0 100px rgba(255,255,255,0.6);
+        }
+    }
+
+    /* フラッシュ後に落ち着く */
+    @keyframes logo-settle {
+        0% {
+            box-shadow:
+                0 0 250px #ffffff,
+                0 0 400px #00ccff,
+                0 0 600px #00ccff,
+                0 0 800px rgba(0,204,255,0.8),
                 inset 0 0 100px rgba(255,255,255,0.6);
         }
         100% {
-            /* 落ち着いた状態 */
             opacity: 0.2;
             box-shadow:
                 0 0 25px var(--tile-color),
@@ -185,7 +187,7 @@
 
     .tile-5 .tile-logo {
         width: 95%; height: auto; max-width: 280px;
-        animation: logo-glow 5s 0.25s forwards, logo-glow-settle 0.6s 5.25s forwards;
+        animation: logo-glow 4.5s 0s forwards, logo-glow-settle 0.8s 4.5s forwards;
     }
 
     @keyframes logo-glow {
@@ -196,33 +198,39 @@
                 drop-shadow(0 0 100px #00ccff)
                 drop-shadow(0 0 150px rgba(0,204,255,0.8));
         }
-        70%, 100% {
+        70% {
             filter:
                 drop-shadow(0 0 50px #ffffff)
                 drop-shadow(0 0 100px #00ccff)
                 drop-shadow(0 0 150px #00ccff)
                 drop-shadow(0 0 200px rgba(0,204,255,0.9));
+        }
+        95% {
+            filter:
+                drop-shadow(0 0 50px #ffffff)
+                drop-shadow(0 0 100px #00ccff)
+                drop-shadow(0 0 150px #00ccff)
+                drop-shadow(0 0 200px rgba(0,204,255,0.9));
+        }
+        100% {
+            /* 着地フラッシュ */
+            filter:
+                drop-shadow(0 0 100px #ffffff)
+                drop-shadow(0 0 180px #ffffff)
+                drop-shadow(0 0 250px #00ccff)
+                drop-shadow(0 0 350px rgba(0,204,255,1));
         }
     }
 
     @keyframes logo-glow-settle {
         0% {
             filter:
-                drop-shadow(0 0 50px #ffffff)
-                drop-shadow(0 0 100px #00ccff)
-                drop-shadow(0 0 150px #00ccff)
-                drop-shadow(0 0 200px rgba(0,204,255,0.9));
-        }
-        30% {
-            /* フラッシュ */
-            filter:
-                drop-shadow(0 0 80px #ffffff)
-                drop-shadow(0 0 150px #ffffff)
-                drop-shadow(0 0 200px #00ccff)
-                drop-shadow(0 0 300px rgba(0,204,255,1));
+                drop-shadow(0 0 100px #ffffff)
+                drop-shadow(0 0 180px #ffffff)
+                drop-shadow(0 0 250px #00ccff)
+                drop-shadow(0 0 350px rgba(0,204,255,1));
         }
         100% {
-            /* 落ち着いた状態 */
             filter:
                 drop-shadow(0 0 15px #00ccff)
                 drop-shadow(0 0 30px #00ccff)
@@ -296,7 +304,7 @@
         padding: 20px;
         opacity: 0;
         transform: translateY(30px);
-        animation: content-appear 1.2s 5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        animation: content-appear 1.2s 4.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
 
     .grid-wrapper {
@@ -305,7 +313,7 @@
         gap: 30px;
         opacity: 0;
         transform: translateY(40px);
-        animation: content-appear 1s 5.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        animation: content-appear 1s 4.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
 
     .neon-frame {
@@ -384,11 +392,11 @@
         transform: translateY(30px) scale(0.95);
         animation: card-appear 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
-    .neon-card:nth-child(1) { animation-delay: 5.3s; }
-    .neon-card:nth-child(2) { animation-delay: 5.4s; }
-    .neon-card:nth-child(3) { animation-delay: 5.5s; }
-    .neon-card:nth-child(4) { animation-delay: 5.6s; }
-    .neon-card:nth-child(5) { animation-delay: 5.7s; }
+    .neon-card:nth-child(1) { animation-delay: 4.8s; }
+    .neon-card:nth-child(2) { animation-delay: 4.9s; }
+    .neon-card:nth-child(3) { animation-delay: 5.0s; }
+    .neon-card:nth-child(4) { animation-delay: 5.1s; }
+    .neon-card:nth-child(5) { animation-delay: 5.2s; }
 
     .neon-card:hover {
         transform: translateY(-8px);
