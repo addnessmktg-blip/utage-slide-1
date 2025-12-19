@@ -113,16 +113,121 @@
         width: 252px; height: 252px; top: 50%; left: 50%;
         --start-transform: translate(-50%, -50%) translate3d(0, 0, 1000px) scale(3) rotateX(45deg) rotateY(45deg);
         --end-transform: translate(-50%, -50%) translate3d(0, 0, -30px) rotateX(10deg) rotateY(10deg);
-        --end-opacity: 0.14;
+        --end-opacity: 0.25;
         display: flex; align-items: center; justify-content: center;
+        /* ロゴ専用：より明るいアニメーション */
+        animation:
+            logo-sweep 5s 0.25s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+            logo-landing 0.6s 5.25s ease-out forwards,
+            tile-float 6s 5.85s ease-in-out infinite;
     }
+
+    /* ロゴ専用：落下中は非常に明るく */
+    @keyframes logo-sweep {
+        0% {
+            opacity: 0.6;
+            transform: translate(-50%, -50%) translate3d(0, 0, 1000px) scale(3) rotateX(45deg) rotateY(45deg);
+            box-shadow:
+                0 0 100px #00ccff,
+                0 0 200px #00ccff,
+                0 0 300px rgba(0,204,255,0.8),
+                inset 0 0 50px rgba(255,255,255,0.3);
+        }
+        20% {
+            opacity: 0.8;
+        }
+        70% {
+            opacity: 1;
+            box-shadow:
+                0 0 150px #00ccff,
+                0 0 300px #00ccff,
+                0 0 400px rgba(0,204,255,0.9),
+                inset 0 0 60px rgba(255,255,255,0.4);
+        }
+        100% {
+            opacity: 1;
+            transform: translate(-50%, -50%) translate3d(0, 0, -30px) rotateX(10deg) rotateY(10deg);
+            box-shadow:
+                0 0 150px #00ccff,
+                0 0 300px #00ccff,
+                0 0 400px rgba(0,204,255,0.9),
+                inset 0 0 60px rgba(255,255,255,0.4);
+        }
+    }
+
+    /* 着地インパクト：一瞬フラッシュしてから落ち着く */
+    @keyframes logo-landing {
+        0% {
+            box-shadow:
+                0 0 150px #00ccff,
+                0 0 300px #00ccff,
+                0 0 400px rgba(0,204,255,0.9),
+                inset 0 0 60px rgba(255,255,255,0.4);
+        }
+        30% {
+            /* フラッシュ：最大輝度 */
+            box-shadow:
+                0 0 200px #ffffff,
+                0 0 400px #00ccff,
+                0 0 600px #00ccff,
+                0 0 800px rgba(0,204,255,0.7),
+                inset 0 0 100px rgba(255,255,255,0.6);
+        }
+        100% {
+            /* 落ち着いた状態 */
+            opacity: 0.2;
+            box-shadow:
+                0 0 25px var(--tile-color),
+                0 0 50px rgba(0,204,255,0.3),
+                inset 0 0 15px rgba(255,255,255,0.05);
+        }
+    }
+
     .tile-5 .tile-logo {
         width: 95%; height: auto; max-width: 280px;
-        filter:
-            drop-shadow(0 0 20px #00ccff)
-            drop-shadow(0 0 40px #00ccff)
-            drop-shadow(0 0 60px #00ccff)
-            drop-shadow(0 0 80px rgba(0,204,255,0.5));
+        animation: logo-glow 5s 0.25s forwards, logo-glow-settle 0.6s 5.25s forwards;
+    }
+
+    @keyframes logo-glow {
+        0% {
+            filter:
+                drop-shadow(0 0 30px #00ccff)
+                drop-shadow(0 0 60px #00ccff)
+                drop-shadow(0 0 100px #00ccff)
+                drop-shadow(0 0 150px rgba(0,204,255,0.8));
+        }
+        70%, 100% {
+            filter:
+                drop-shadow(0 0 50px #ffffff)
+                drop-shadow(0 0 100px #00ccff)
+                drop-shadow(0 0 150px #00ccff)
+                drop-shadow(0 0 200px rgba(0,204,255,0.9));
+        }
+    }
+
+    @keyframes logo-glow-settle {
+        0% {
+            filter:
+                drop-shadow(0 0 50px #ffffff)
+                drop-shadow(0 0 100px #00ccff)
+                drop-shadow(0 0 150px #00ccff)
+                drop-shadow(0 0 200px rgba(0,204,255,0.9));
+        }
+        30% {
+            /* フラッシュ */
+            filter:
+                drop-shadow(0 0 80px #ffffff)
+                drop-shadow(0 0 150px #ffffff)
+                drop-shadow(0 0 200px #00ccff)
+                drop-shadow(0 0 300px rgba(0,204,255,1));
+        }
+        100% {
+            /* 落ち着いた状態 */
+            filter:
+                drop-shadow(0 0 15px #00ccff)
+                drop-shadow(0 0 30px #00ccff)
+                drop-shadow(0 0 45px rgba(0,204,255,0.4));
+        }
     }
     .tile-6 {
         --tile-color: #4da6ff; --intro-delay: 0.15s; --float-duration: 4.8s; --float-distance: -24px;
@@ -411,6 +516,13 @@
     .skip-animation .floating-tile {
         opacity: var(--end-opacity) !important;
         transform: var(--end-transform) !important;
+    }
+    .skip-animation .tile-5 {
+        opacity: 0.2 !important;
+        box-shadow: 0 0 25px #00ccff, 0 0 50px rgba(0,204,255,0.3) !important;
+    }
+    .skip-animation .tile-5 .tile-logo {
+        filter: drop-shadow(0 0 15px #00ccff) drop-shadow(0 0 30px #00ccff) !important;
     }
     .skip-animation .neon-card {
         transform: translateY(0) scale(1) !important;
