@@ -1,3 +1,12 @@
+<!-- ローディングTips -->
+<div class="loading-tips" id="loadingTips">
+    <div class="tip-icon" id="tipIcon">💡</div>
+    <div class="tip-text" id="tipText">AIを味方につけて、発信力を最大化しよう</div>
+</div>
+
+<!-- スキップボタン -->
+<button class="skip-btn" id="skipBtn">Skip ▶▶</button>
+
 <div class="floating-bg-container">
     <div class="floating-layer">
         <div class="floating-tile tile-1"></div>
@@ -18,16 +27,29 @@
         <div class="neon-header-wrapper">
             <div class="neon-frame">
                 <span></span><span></span><span></span><span></span>
-                <h1 class="neon-title-main">
+                <h1 class="neon-title-main glitch" data-text="AI活用実践レシピ 5選">
                     AI活用<br class="sp-only">実践レシピ 5選
                 </h1>
                 <p class="neon-title-sub">あなたの発信力を<br class="sp-only">最大化する5つのステップ</p>
             </div>
         </div>
 
+        <!-- プログレスバー -->
+        <div class="progress-wrapper">
+            <div class="progress-bar">
+                <div class="progress-step current" data-step="1"></div>
+                <div class="progress-step" data-step="2"></div>
+                <div class="progress-step" data-step="3"></div>
+                <div class="progress-step" data-step="4"></div>
+                <div class="progress-step" data-step="5"></div>
+            </div>
+            <div class="progress-text">STEP 1 からスタート！</div>
+        </div>
+
         <div class="grid-wrapper">
 
-            <a href="https://school.addness.co.jp/members/3f7Qx2oRHMDm/course/YZ0MtkabM3Fo/lesson/Q1ciJXVqnHks" class="neon-card" style="--theme-color: #00ff9d;">
+            <a href="https://school.addness.co.jp/members/3f7Qx2oRHMDm/course/YZ0MtkabM3Fo/lesson/Q1ciJXVqnHks" class="neon-card scroll-reveal" style="--theme-color: #00ff9d;">
+                <div class="particle-container"></div>
                 <div class="card-image-area">
                     <div class="lesson-number">121</div>
                 </div>
@@ -40,7 +62,8 @@
                 </div>
             </a>
 
-            <a href="https://school.addness.co.jp/members/3f7Qx2oRHMDm/course/YZ0MtkabM3Fo/lesson/ECkQUIkdnO5o" class="neon-card" style="--theme-color: #d946ef;">
+            <a href="https://school.addness.co.jp/members/3f7Qx2oRHMDm/course/YZ0MtkabM3Fo/lesson/ECkQUIkdnO5o" class="neon-card scroll-reveal" style="--theme-color: #d946ef;">
+                <div class="particle-container"></div>
                 <div class="card-image-area">
                     <div class="lesson-number">122</div>
                 </div>
@@ -53,7 +76,8 @@
                 </div>
             </a>
 
-            <a href="https://school.addness.co.jp/members/3f7Qx2oRHMDm/course/YZ0MtkabM3Fo/lesson/PjCDnCSoxnLK" class="neon-card" style="--theme-color: #00ccff;">
+            <a href="https://school.addness.co.jp/members/3f7Qx2oRHMDm/course/YZ0MtkabM3Fo/lesson/PjCDnCSoxnLK" class="neon-card scroll-reveal" style="--theme-color: #00ccff;">
+                <div class="particle-container"></div>
                 <div class="card-image-area">
                     <div class="lesson-number">123</div>
                 </div>
@@ -66,7 +90,8 @@
                 </div>
             </a>
 
-            <a href="https://school.addness.co.jp/members/3f7Qx2oRHMDm/course/YZ0MtkabM3Fo/lesson/rJS7W1qXadFg" class="neon-card" style="--theme-color: #ff8800;">
+            <a href="https://school.addness.co.jp/members/3f7Qx2oRHMDm/course/YZ0MtkabM3Fo/lesson/rJS7W1qXadFg" class="neon-card scroll-reveal" style="--theme-color: #ff8800;">
+                <div class="particle-container"></div>
                 <div class="card-image-area">
                     <div class="lesson-number">124</div>
                 </div>
@@ -79,7 +104,8 @@
                 </div>
             </a>
 
-            <a href="https://school.addness.co.jp/members/3f7Qx2oRHMDm/course/YZ0MtkabM3Fo/lesson/6lMGJahHp5SA" class="neon-card" style="--theme-color: #ff66b2;">
+            <a href="https://school.addness.co.jp/members/3f7Qx2oRHMDm/course/YZ0MtkabM3Fo/lesson/6lMGJahHp5SA" class="neon-card scroll-reveal" style="--theme-color: #ff66b2;">
+                <div class="particle-container"></div>
                 <div class="card-image-area">
                     <div class="lesson-number">125</div>
                 </div>
@@ -122,6 +148,90 @@
             }
         });
     }, 200);
+
+    // === スキップボタン ===
+    var skipBtn = document.getElementById('skipBtn');
+    var loadingTips = document.getElementById('loadingTips');
+    var animationComplete = false;
+
+    function skipAnimation() {
+        document.body.classList.add('skip-animation');
+        skipBtn.classList.add('hidden');
+        loadingTips.classList.add('hidden');
+        animationComplete = true;
+        // スクロールリビールも即座に表示
+        document.querySelectorAll('.scroll-reveal').forEach(function(el) {
+            el.classList.add('revealed');
+        });
+    }
+
+    skipBtn.addEventListener('click', skipAnimation);
+
+    // 5秒後にスキップボタンとTipsを非表示
+    setTimeout(function() {
+        if (!animationComplete) {
+            skipBtn.classList.add('hidden');
+            loadingTips.classList.add('hidden');
+            animationComplete = true;
+        }
+    }, 5500);
+
+    // === ローディングTips ===
+    var tips = [
+        { icon: '💡', text: 'AIを味方につけて、発信力を最大化しよう' },
+        { icon: '🚀', text: '5つのステップで確実にスキルアップ' },
+        { icon: '✨', text: '順番にクリアして成長を実感しよう' },
+        { icon: '🎯', text: '今日から始める、新しい自分への一歩' }
+    ];
+    var tipIndex = 0;
+    var tipIcon = document.getElementById('tipIcon');
+    var tipText = document.getElementById('tipText');
+
+    setInterval(function() {
+        if (!animationComplete) {
+            tipIndex = (tipIndex + 1) % tips.length;
+            tipIcon.textContent = tips[tipIndex].icon;
+            tipText.textContent = tips[tipIndex].text;
+        }
+    }, 2000);
+
+    // === パーティクル生成 ===
+    document.querySelectorAll('.neon-card').forEach(function(card) {
+        var container = card.querySelector('.particle-container');
+        if (!container) return;
+
+        card.addEventListener('mouseenter', function() {
+            // 既存のパーティクルを削除
+            container.innerHTML = '';
+            // 新しいパーティクルを生成
+            for (var i = 0; i < 12; i++) {
+                var particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.bottom = Math.random() * 30 + '%';
+                particle.style.animationDelay = (Math.random() * 0.5) + 's';
+                container.appendChild(particle);
+            }
+        });
+    });
+
+    // === スクロール連動アニメーション ===
+    function checkScroll() {
+        var scrollRevealElements = document.querySelectorAll('.scroll-reveal:not(.revealed)');
+        scrollRevealElements.forEach(function(el) {
+            var rect = el.getBoundingClientRect();
+            var windowHeight = window.innerHeight;
+            if (rect.top < windowHeight * 0.85) {
+                el.classList.add('revealed');
+            }
+        });
+    }
+
+    // 初期表示後にスクロールチェック開始
+    setTimeout(function() {
+        checkScroll();
+        window.addEventListener('scroll', checkScroll, { passive: true });
+    }, 6000);
 
     // スマホ用タップエフェクト
     var currentTapped = null;
