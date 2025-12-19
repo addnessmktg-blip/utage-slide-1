@@ -115,11 +115,11 @@
         --end-transform: translate(-50%, -50%) translate3d(0, 0, -30px) rotateX(10deg) rotateY(10deg);
         --end-opacity: 0.25;
         display: flex; align-items: center; justify-content: center;
-        /* ロゴ専用：明るく降りてきて、着地後スッと落ち着く */
+        /* ロゴ専用：明るく降りてきて、ゆらゆらしながら落ち着く */
         animation:
             logo-sweep 4.5s 0s cubic-bezier(0.22, 1, 0.36, 1) forwards,
-            logo-settle 1s 4.5s ease-out forwards,
-            tile-float 6s 5.5s ease-in-out infinite;
+            logo-settle 1.5s 4.5s ease-out forwards,
+            tile-float 6s 4.5s ease-in-out infinite;
     }
 
     /* ロゴ専用：落下中は明るく */
@@ -155,7 +155,7 @@
         }
     }
 
-    /* 着地後スッと落ち着く */
+    /* ゆらゆらしながら落ち着く */
     @keyframes logo-settle {
         0% {
             opacity: 1;
@@ -176,7 +176,7 @@
 
     .tile-5 .tile-logo {
         width: 95%; height: auto; max-width: 280px;
-        animation: logo-glow 4.5s 0s forwards, logo-glow-settle 1s 4.5s ease-out forwards;
+        animation: logo-glow 4.5s 0s forwards, logo-glow-settle 1.5s 4.5s ease-out forwards;
     }
 
     @keyframes logo-glow {
