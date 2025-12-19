@@ -118,13 +118,38 @@ async function parseM3u8ForSegments(url) {
     // Check if this is a master playlist (contains other m3u8)
     const m3u8Lines = lines.filter(l => l.trim().endsWith('.m3u8') && !l.startsWith('#'));
     if (m3u8Lines.length > 0) {
-      // Get the highest quality (usually last one)
-      let streamUrl = m3u8Lines[m3u8Lines.length - 1].trim();
-      if (!streamUrl.startsWith('http')) {
-        streamUrl = baseUrl + streamUrl;
+      // Find highest quality stream by parsing BANDWIDTH
+      let bestStreamUrl = null;
+      let bestBandwidth = 0;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (line.startsWith('#EXT-X-STREAM-INF')) {
+          // Parse bandwidth: #EXT-X-STREAM-INF:BANDWIDTH=1234567,...
+          const bandwidthMatch = line.match(/BANDWIDTH=(\d+)/);
+          const bandwidth = bandwidthMatch ? parseInt(bandwidthMatch[1]) : 0;
+
+          // Next line should be the stream URL
+          const nextLine = lines[i + 1]?.trim();
+          if (nextLine && !nextLine.startsWith('#')) {
+            if (bandwidth > bestBandwidth) {
+              bestBandwidth = bandwidth;
+              bestStreamUrl = nextLine;
+            }
+          }
+        }
       }
-      console.log('Found sub-playlist:', streamUrl);
-      return parseM3u8ForSegments(streamUrl);
+
+      // Fallback to last m3u8 if no bandwidth info found
+      if (!bestStreamUrl) {
+        bestStreamUrl = m3u8Lines[m3u8Lines.length - 1].trim();
+      }
+
+      if (!bestStreamUrl.startsWith('http')) {
+        bestStreamUrl = baseUrl + bestStreamUrl;
+      }
+      console.log('Selected highest quality stream:', bestStreamUrl, 'bandwidth:', bestBandwidth);
+      return parseM3u8ForSegments(bestStreamUrl);
     }
 
     // Check for encryption
