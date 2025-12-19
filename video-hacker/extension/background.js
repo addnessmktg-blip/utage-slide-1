@@ -116,16 +116,30 @@ async function parseM3u8ForSegments(url) {
     const lines = text.split('\n');
     const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
 
-    // Check if this is a master playlist (contains other m3u8)
-    const m3u8Lines = lines.filter(l => l.trim().endsWith('.m3u8') && !l.startsWith('#'));
-    if (m3u8Lines.length > 0) {
-      // Get the highest quality (usually last one)
-      let streamUrl = m3u8Lines[m3u8Lines.length - 1].trim();
-      if (!streamUrl.startsWith('http')) {
-        streamUrl = baseUrl + streamUrl;
+    // First, check if this playlist has actual video segments (not just references to other playlists)
+    // Segments are non-comment lines that don't end in .m3u8
+    const segmentLines = lines.filter(l => {
+      const trimmed = l.trim();
+      return trimmed && !trimmed.startsWith('#') && !trimmed.endsWith('.m3u8');
+    });
+
+    // If we have segments, parse them directly (don't recurse to audio playlist)
+    if (segmentLines.length > 0) {
+      console.log(`Found ${segmentLines.length} segment URLs directly`);
+      // Continue to segment parsing below
+    } else {
+      // No segments found, check for sub-playlists (master playlist)
+      const m3u8Lines = lines.filter(l => l.trim().endsWith('.m3u8') && !l.startsWith('#'));
+      if (m3u8Lines.length > 0) {
+        // For YouTube: pick the FIRST one (highest quality video)
+        // YouTube lists video qualities from highest to lowest
+        let streamUrl = m3u8Lines[0].trim();
+        if (!streamUrl.startsWith('http')) {
+          streamUrl = baseUrl + streamUrl;
+        }
+        console.log('Found sub-playlist (picking first/highest quality):', streamUrl);
+        return parseM3u8ForSegments(streamUrl);
       }
-      console.log('Found sub-playlist:', streamUrl);
-      return parseM3u8ForSegments(streamUrl);
     }
 
     // Check for encryption
@@ -558,4 +572,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-console.log('Video Downloader v4.5 - Reverted to simple parsing (works with YouTube)');
+console.log('Video Downloader v4.6 - Fixed: parse segments directly, skip audio playlist');
