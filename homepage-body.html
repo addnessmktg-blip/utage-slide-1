@@ -1,0 +1,154 @@
+<!-- スキップボタン -->
+<button class="skip-btn" id="skipBtn">Skip</button>
+
+<div class="floating-bg-container">
+    <div class="floating-layer">
+        <div class="floating-tile tile-1"></div>
+        <div class="floating-tile tile-2"></div>
+        <div class="floating-tile tile-3"></div>
+        <div class="floating-tile tile-4"></div>
+        <div class="floating-tile tile-5"><img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/vlOOFeKneeCu0XmCTZN3DdAahKltkGdNWx33Z5Mh.png" alt="AddNeSS" class="tile-logo"></div>
+        <div class="floating-tile tile-6"></div>
+        <div class="floating-tile tile-7"></div>
+        <div class="floating-tile tile-8"></div>
+        <div class="floating-tile tile-9"></div>
+    </div>
+</div>
+
+<div class="break-out-container">
+    <div class="inner-content">
+
+        <div class="neon-header-wrapper">
+            <div class="neon-frame">
+                <span></span><span></span><span></span><span></span>
+                <h1 class="neon-title-main">
+                    AI活用<br class="sp-only">実践レシピ 5選
+                </h1>
+                <p class="neon-title-sub">あなたの発信力を<br class="sp-only">最大化する5つのステップ</p>
+            </div>
+        </div>
+
+        <div class="grid-wrapper">
+
+            <a href="https://school.addness.co.jp/members/mxhtLn1K6Bx7/course/ysn6jZLjSV90/lesson/Wy910tQOrwPT" class="neon-card" style="--theme-color: #00ff9d;">
+                <div class="card-image-area">
+                    <div class="lesson-number">01</div>
+                </div>
+                <div class="card-content">
+                    <div class="problem-tag">STEP 1</div>
+                    <h3 class="card-title">
+                        SNS用デザイン・<br class="sp-only">サムネ・資料スライドが<br>"すぐ使える形"で揃い、<br>デザイン作業が即終わる
+                    </h3>
+                    <div class="neon-btn">レッスンを見る</div>
+                </div>
+            </a>
+
+            <a href="https://school.addness.co.jp/members/mxhtLn1K6Bx7/course/ysn6jZLjSV90/lesson/OIpqSx6mKpPk" class="neon-card" style="--theme-color: #d946ef;">
+                <div class="card-image-area">
+                    <div class="lesson-number">02</div>
+                </div>
+                <div class="card-content">
+                    <div class="problem-tag">STEP 2</div>
+                    <h3 class="card-title">
+                        自分専用の人物キャラ<br class="sp-only">（AI美女/人物ビジュアル）が完成し、<br>投稿の世界観が一気に整う
+                    </h3>
+                    <div class="neon-btn">レッスンを見る</div>
+                </div>
+            </a>
+
+            <a href="https://school.addness.co.jp/members/mxhtLn1K6Bx7/course/ysn6jZLjSV90/lesson/XHohFb8cyieN" class="neon-card" style="--theme-color: #00ccff;">
+                <div class="card-image-area">
+                    <div class="lesson-number">03</div>
+                </div>
+                <div class="card-content">
+                    <div class="problem-tag">STEP 3</div>
+                    <h3 class="card-title">
+                        撮影なしで使える<br class="sp-only">動画素材が揃い、<br>素材ゼロでも<br>動画が作れて投稿できる
+                    </h3>
+                    <div class="neon-btn">レッスンを見る</div>
+                </div>
+            </a>
+
+            <a href="https://school.addness.co.jp/members/mxhtLn1K6Bx7/course/ysn6jZLjSV90/lesson/uxkkPAEd06xz" class="neon-card" style="--theme-color: #ff8800;">
+                <div class="card-image-area">
+                    <div class="lesson-number">04</div>
+                </div>
+                <div class="card-content">
+                    <div class="problem-tag">STEP 4</div>
+                    <h3 class="card-title">
+                        マネタイズに直結する<br class="sp-only">文章（記事/台本）が<br>安定して作れるようになる
+                    </h3>
+                    <div class="neon-btn">レッスンを見る</div>
+                </div>
+            </a>
+
+            <a href="https://school.addness.co.jp/members/mxhtLn1K6Bx7/course/ysn6jZLjSV90/lesson/EYV05fjHHCKy" class="neon-card" style="--theme-color: #ff66b2;">
+                <div class="card-image-area">
+                    <div class="lesson-number">05</div>
+                </div>
+                <div class="card-content">
+                    <div class="problem-tag">STEP 5</div>
+                    <h3 class="card-title">
+                        そのまま投稿できる<br class="sp-only">AI漫画が完成し、<br>説明コンテンツを<br>漫画で量産できる
+                    </h3>
+                    <div class="neon-btn">レッスンを見る</div>
+                </div>
+            </a>
+
+        </div>
+
+    </div>
+</div>
+
+<script>
+(function() {
+    // UTAGE標準UI非表示
+    var style = document.createElement('style');
+    style.innerHTML = `
+        .btn-toolbar.py-4 { display: none !important; }
+        #next_btn { display: none !important; }
+        button.btn.btn-primary { display: none !important; }
+    `;
+    document.head.appendChild(style);
+
+    setInterval(function() {
+        var nextGroup = document.getElementById('next_btn');
+        if (nextGroup) {
+            var toolbar = nextGroup.closest('.btn-toolbar');
+            if (toolbar) toolbar.style.setProperty('display', 'none', 'important');
+        }
+    }, 500);
+
+    // スキップボタン
+    var skipBtn = document.getElementById('skipBtn');
+    skipBtn.addEventListener('click', function() {
+        document.body.classList.add('skip-animation');
+        skipBtn.classList.add('hidden');
+    });
+
+    // 4.5秒後にスキップボタン非表示
+    setTimeout(function() {
+        skipBtn.classList.add('hidden');
+    }, 5000);
+
+    // スマホ用タップエフェクト
+    var currentTapped = null;
+    document.addEventListener('touchstart', function(e) {
+        var card = e.target.closest('.neon-card');
+        if (currentTapped && currentTapped !== card) {
+            currentTapped.classList.remove('tapped');
+        }
+        if (card) {
+            card.classList.add('tapped');
+            currentTapped = card;
+        }
+    }, { passive: true });
+
+    document.addEventListener('touchend', function() {
+        if (currentTapped) {
+            currentTapped.classList.remove('tapped');
+            currentTapped = null;
+        }
+    }, { passive: true });
+})();
+</script>
