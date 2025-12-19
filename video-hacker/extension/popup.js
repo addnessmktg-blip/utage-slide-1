@@ -130,8 +130,8 @@ async function downloadVideo(video, customFilename = null) {
   // Sanitize filename
   filename = filename.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').replace(/\.+$/g, '');
 
-  const isHls = video.type === 'hls';
-  const ext = isHls ? '.ts' : '.mp4';
+  // Always use .mp4 extension (most players can handle it)
+  const ext = '.mp4';
   const fullPath = folder + '/' + filename + ext;
 
   showProgress('ダウンロード開始...', 1);
