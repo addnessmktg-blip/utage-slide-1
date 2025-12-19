@@ -115,17 +115,17 @@
         --end-transform: translate(-50%, -50%) translate3d(0, 0, -30px) rotateX(10deg) rotateY(10deg);
         --end-opacity: 0.25;
         display: flex; align-items: center; justify-content: center;
-        /* ロゴ専用：着地時にフラッシュ → 落ち着く */
+        /* ロゴ専用：明るく降りてきて、着地後スッと落ち着く */
         animation:
             logo-sweep 4.5s 0s cubic-bezier(0.22, 1, 0.36, 1) forwards,
-            logo-settle 0.8s 4.5s ease-out forwards,
-            tile-float 6s 5.3s ease-in-out infinite;
+            logo-settle 1s 4.5s ease-out forwards,
+            tile-float 6s 5.5s ease-in-out infinite;
     }
 
-    /* ロゴ専用：落下中は明るく、着地でフラッシュ */
+    /* ロゴ専用：落下中は明るく */
     @keyframes logo-sweep {
         0% {
-            opacity: 0.6;
+            opacity: 0.7;
             transform: translate(-50%, -50%) translate3d(0, 0, 1000px) scale(3) rotateX(45deg) rotateY(45deg);
             box-shadow:
                 0 0 100px #00ccff,
@@ -133,8 +133,8 @@
                 0 0 300px rgba(0,204,255,0.8),
                 inset 0 0 50px rgba(255,255,255,0.3);
         }
-        20% {
-            opacity: 0.8;
+        30% {
+            opacity: 0.9;
         }
         70% {
             opacity: 1;
@@ -144,7 +144,7 @@
                 0 0 400px rgba(0,204,255,0.9),
                 inset 0 0 60px rgba(255,255,255,0.4);
         }
-        95% {
+        100% {
             opacity: 1;
             transform: translate(-50%, -50%) translate3d(0, 0, -30px) rotateX(10deg) rotateY(10deg);
             box-shadow:
@@ -153,28 +153,17 @@
                 0 0 400px rgba(0,204,255,0.9),
                 inset 0 0 60px rgba(255,255,255,0.4);
         }
-        100% {
-            /* 着地フラッシュ！ */
-            opacity: 1;
-            transform: translate(-50%, -50%) translate3d(0, 0, -30px) rotateX(10deg) rotateY(10deg);
-            box-shadow:
-                0 0 250px #ffffff,
-                0 0 400px #00ccff,
-                0 0 600px #00ccff,
-                0 0 800px rgba(0,204,255,0.8),
-                inset 0 0 100px rgba(255,255,255,0.6);
-        }
     }
 
-    /* フラッシュ後に落ち着く */
+    /* 着地後スッと落ち着く */
     @keyframes logo-settle {
         0% {
+            opacity: 1;
             box-shadow:
-                0 0 250px #ffffff,
-                0 0 400px #00ccff,
-                0 0 600px #00ccff,
-                0 0 800px rgba(0,204,255,0.8),
-                inset 0 0 100px rgba(255,255,255,0.6);
+                0 0 150px #00ccff,
+                0 0 300px #00ccff,
+                0 0 400px rgba(0,204,255,0.9),
+                inset 0 0 60px rgba(255,255,255,0.4);
         }
         100% {
             opacity: 0.2;
@@ -187,48 +176,33 @@
 
     .tile-5 .tile-logo {
         width: 95%; height: auto; max-width: 280px;
-        animation: logo-glow 4.5s 0s forwards, logo-glow-settle 0.8s 4.5s forwards;
+        animation: logo-glow 4.5s 0s forwards, logo-glow-settle 1s 4.5s ease-out forwards;
     }
 
     @keyframes logo-glow {
         0% {
             filter:
-                drop-shadow(0 0 30px #00ccff)
-                drop-shadow(0 0 60px #00ccff)
-                drop-shadow(0 0 100px #00ccff)
-                drop-shadow(0 0 150px rgba(0,204,255,0.8));
+                drop-shadow(0 0 40px #00ccff)
+                drop-shadow(0 0 80px #00ccff)
+                drop-shadow(0 0 120px #00ccff)
+                drop-shadow(0 0 160px rgba(0,204,255,0.8));
         }
-        70% {
+        70%, 100% {
             filter:
-                drop-shadow(0 0 50px #ffffff)
-                drop-shadow(0 0 100px #00ccff)
-                drop-shadow(0 0 150px #00ccff)
-                drop-shadow(0 0 200px rgba(0,204,255,0.9));
-        }
-        95% {
-            filter:
-                drop-shadow(0 0 50px #ffffff)
-                drop-shadow(0 0 100px #00ccff)
-                drop-shadow(0 0 150px #00ccff)
-                drop-shadow(0 0 200px rgba(0,204,255,0.9));
-        }
-        100% {
-            /* 着地フラッシュ */
-            filter:
-                drop-shadow(0 0 100px #ffffff)
-                drop-shadow(0 0 180px #ffffff)
-                drop-shadow(0 0 250px #00ccff)
-                drop-shadow(0 0 350px rgba(0,204,255,1));
+                drop-shadow(0 0 60px #ffffff)
+                drop-shadow(0 0 120px #00ccff)
+                drop-shadow(0 0 180px #00ccff)
+                drop-shadow(0 0 240px rgba(0,204,255,0.9));
         }
     }
 
     @keyframes logo-glow-settle {
         0% {
             filter:
-                drop-shadow(0 0 100px #ffffff)
-                drop-shadow(0 0 180px #ffffff)
-                drop-shadow(0 0 250px #00ccff)
-                drop-shadow(0 0 350px rgba(0,204,255,1));
+                drop-shadow(0 0 60px #ffffff)
+                drop-shadow(0 0 120px #00ccff)
+                drop-shadow(0 0 180px #00ccff)
+                drop-shadow(0 0 240px rgba(0,204,255,0.9));
         }
         100% {
             filter:
