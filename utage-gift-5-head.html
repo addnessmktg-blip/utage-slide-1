@@ -24,12 +24,13 @@
     .floating-tile {
         position: absolute;
         border-radius: 24px;
-        background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 100%);
+        background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.02) 50%, transparent 100%);
         border: 2px solid var(--tile-color);
         opacity: 0;
         transform-style: preserve-3d;
         animation:
             tile-sweep 5s var(--intro-delay) cubic-bezier(0.22, 1, 0.36, 1) forwards,
+            tile-breathe 3s calc(5s + var(--intro-delay)) ease-in-out infinite,
             tile-float var(--float-duration) calc(5s + var(--intro-delay)) ease-in-out infinite;
     }
 
@@ -37,12 +38,39 @@
         0% {
             opacity: 0;
             transform: var(--start-transform);
-            box-shadow: 0 0 40px var(--tile-color);
+            box-shadow:
+                0 0 60px var(--tile-color),
+                0 0 120px var(--tile-color),
+                inset 0 0 30px rgba(255,255,255,0.1);
+        }
+        60% {
+            box-shadow:
+                0 0 80px var(--tile-color),
+                0 0 160px var(--tile-color),
+                inset 0 0 40px rgba(255,255,255,0.15);
         }
         100% {
             opacity: var(--end-opacity);
             transform: var(--end-transform);
-            box-shadow: 0 0 15px var(--tile-color);
+            box-shadow:
+                0 0 30px var(--tile-color),
+                0 0 60px rgba(255,255,255,0.05),
+                inset 0 0 20px rgba(255,255,255,0.05);
+        }
+    }
+
+    @keyframes tile-breathe {
+        0%, 100% {
+            box-shadow:
+                0 0 30px var(--tile-color),
+                0 0 60px rgba(255,255,255,0.05),
+                inset 0 0 20px rgba(255,255,255,0.05);
+        }
+        50% {
+            box-shadow:
+                0 0 50px var(--tile-color),
+                0 0 100px var(--tile-color),
+                inset 0 0 30px rgba(255,255,255,0.1);
         }
     }
 
@@ -90,7 +118,11 @@
     }
     .tile-5 .tile-logo {
         width: 95%; height: auto; max-width: 280px;
-        filter: drop-shadow(0 0 15px #00ccff) drop-shadow(0 0 30px #00ccff) drop-shadow(0 0 45px #00ccff);
+        filter:
+            drop-shadow(0 0 20px #00ccff)
+            drop-shadow(0 0 40px #00ccff)
+            drop-shadow(0 0 60px #00ccff)
+            drop-shadow(0 0 80px rgba(0,204,255,0.5));
     }
     .tile-6 {
         --tile-color: #4da6ff; --intro-delay: 0.15s; --float-duration: 4.8s; --float-distance: -24px;
@@ -369,46 +401,6 @@
         pointer-events: none;
     }
 
-    /* --- プログレスバー --- */
-    .progress-wrapper {
-        margin-bottom: 40px;
-        opacity: 0;
-        transform: translateY(20px);
-        animation: content-appear 0.8s 5.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-    }
-    .progress-bar {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 8px;
-    }
-    .progress-step {
-        width: 50px;
-        height: 6px;
-        background: rgba(255,255,255,0.2);
-        border-radius: 3px;
-        position: relative;
-        overflow: hidden;
-    }
-    .progress-step.completed {
-        background: linear-gradient(90deg, #00ff9d, #00ccff);
-        box-shadow: 0 0 10px rgba(0,255,157,0.5);
-    }
-    .progress-step.current {
-        background: rgba(255,255,255,0.3);
-        animation: pulse-step 1.5s infinite;
-    }
-    @keyframes pulse-step {
-        0%, 100% { box-shadow: 0 0 5px rgba(255,255,255,0.3); }
-        50% { box-shadow: 0 0 15px rgba(0,255,255,0.6); }
-    }
-    .progress-text {
-        color: rgba(255,255,255,0.6);
-        font-size: 12px;
-        margin-top: 12px;
-        text-align: center;
-    }
-
     /* スキップ時のアニメーション無効化 */
     .skip-animation * {
         animation-duration: 0s !important;
@@ -429,7 +421,6 @@
 
     @media (max-width: 768px) {
         .skip-btn { bottom: 20px; right: 20px; padding: 10px 20px; font-size: 12px; }
-        .progress-step { width: 40px; }
         .sp-only { display: inline; }
         .pc-only { display: none; }
 
