@@ -123,23 +123,25 @@ async function parseM3u8ForSegments(url) {
       return trimmed && !trimmed.startsWith('#') && !trimmed.endsWith('.m3u8');
     });
 
-    // If we have segments, parse them directly (don't recurse to audio playlist)
-    if (segmentLines.length > 0) {
-      console.log(`Found ${segmentLines.length} segment URLs directly`);
-      // Continue to segment parsing below
-    } else {
-      // No segments found, check for sub-playlists (master playlist)
-      const m3u8Lines = lines.filter(l => l.trim().endsWith('.m3u8') && !l.startsWith('#'));
-      if (m3u8Lines.length > 0) {
-        // For YouTube: pick the FIRST one (highest quality video)
-        // YouTube lists video qualities from highest to lowest
-        let streamUrl = m3u8Lines[0].trim();
-        if (!streamUrl.startsWith('http')) {
-          streamUrl = baseUrl + streamUrl;
-        }
-        console.log('Found sub-playlist (picking first/highest quality):', streamUrl);
-        return parseM3u8ForSegments(streamUrl);
+    // Check for sub-playlists (master playlist)
+    const m3u8Lines = lines.filter(l => l.trim().endsWith('.m3u8') && !l.startsWith('#'));
+
+    // If this is a master playlist (has .m3u8 references but we need to pick one)
+    // AND we don't have segments yet, recurse to the highest quality sub-playlist
+    if (m3u8Lines.length > 0 && segmentLines.length === 0) {
+      // YouTube lists qualities from LOW to HIGH, so pick LAST one (highest quality)
+      let streamUrl = m3u8Lines[m3u8Lines.length - 1].trim();
+      if (!streamUrl.startsWith('http')) {
+        streamUrl = baseUrl + streamUrl;
       }
+      console.log(`Found ${m3u8Lines.length} sub-playlists, picking LAST (highest quality):`, streamUrl);
+      return parseM3u8ForSegments(streamUrl);
+    }
+
+    // If we have segments, use them directly (even if there are also .m3u8 references like audio)
+    if (segmentLines.length > 0) {
+      console.log(`Found ${segmentLines.length} segment URLs directly, using these`);
+      // Continue to segment parsing below
     }
 
     // Check for encryption
@@ -572,4 +574,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-console.log('Video Downloader v4.6 - Fixed: parse segments directly, skip audio playlist');
+console.log('Video Downloader v4.7 - Pick LAST sub-playlist (highest quality)');
