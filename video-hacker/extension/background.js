@@ -101,16 +101,21 @@ function initTab(tabId) {
 }
 
 // Parse m3u8 and get ALL segment URLs with encryption info
-// SIMPLE VERSION - works with YouTube/googlevideo
+// Supports both MPEG-TS and fMP4 (with initialization segment)
 async function parseM3u8ForSegments(url) {
   try {
     console.log('Parsing m3u8:', url);
     const response = await fetch(url);
     const text = await response.text();
 
+    // Log full playlist for debugging
+    console.log('=== FULL PLAYLIST ===');
+    console.log(text);
+    console.log('=== END PLAYLIST ===');
+
     if (text.includes('<!') || text.includes('<html')) {
       console.log('Got HTML instead of m3u8');
-      return { segments: [], error: 'auth', encrypted: false, keyUrl: null };
+      return { segments: [], error: 'auth', encrypted: false, keyUrl: null, initUrl: null };
     }
 
     const lines = text.split('\n');
@@ -142,6 +147,21 @@ async function parseM3u8ForSegments(url) {
     if (segmentLines.length > 0) {
       console.log(`Found ${segmentLines.length} segment URLs directly, using these`);
       // Continue to segment parsing below
+    }
+
+    // Check for initialization segment (fMP4 format) - #EXT-X-MAP
+    let initUrl = null;
+    for (const line of lines) {
+      if (line.startsWith('#EXT-X-MAP')) {
+        const uriMatch = line.match(/URI="([^"]+)"/);
+        if (uriMatch) {
+          initUrl = uriMatch[1];
+          if (!initUrl.startsWith('http')) {
+            initUrl = baseUrl + initUrl;
+          }
+          console.log('Found initialization segment (fMP4):', initUrl);
+        }
+      }
     }
 
     // Check for encryption
@@ -182,11 +202,11 @@ async function parseM3u8ForSegments(url) {
       }
     }
 
-    console.log(`Found ${segments.length} segments in playlist (encrypted: ${encrypted})`);
-    return { segments, error: null, encrypted, keyUrl, keyIV };
+    console.log(`Found ${segments.length} segments in playlist (encrypted: ${encrypted}, hasInit: ${!!initUrl})`);
+    return { segments, error: null, encrypted, keyUrl, keyIV, initUrl };
   } catch (e) {
     console.error('Error parsing m3u8:', e);
-    return { segments: [], error: e.message, encrypted: false, keyUrl: null };
+    return { segments: [], error: e.message, encrypted: false, keyUrl: null, initUrl: null };
   }
 }
 
@@ -216,7 +236,7 @@ async function addCapturedVideo(tabId, url, type, initiator) {
   // If it's HLS, immediately parse to get all segments
   if (type === 'hls') {
     videoInfo.status = 'parsing';
-    const { segments, error, encrypted, keyUrl, keyIV } = await parseM3u8ForSegments(url);
+    const { segments, error, encrypted, keyUrl, keyIV, initUrl } = await parseM3u8ForSegments(url);
 
     if (segments.length > 0) {
       videoInfo.segments = segments;
@@ -224,8 +244,9 @@ async function addCapturedVideo(tabId, url, type, initiator) {
       videoInfo.encrypted = encrypted;
       videoInfo.keyUrl = keyUrl;
       videoInfo.keyIV = keyIV;
+      videoInfo.initUrl = initUrl; // Store initialization segment URL
       videoInfo.status = 'ready';
-      console.log(`HLS ready: ${segments.length} segments, encrypted: ${encrypted}`);
+      console.log(`HLS ready: ${segments.length} segments, encrypted: ${encrypted}, hasInit: ${!!initUrl}`);
     } else {
       videoInfo.status = error === 'auth' ? 'auth_error' : 'parse_error';
       console.log('HLS parse failed:', error);
@@ -340,8 +361,8 @@ function generateIV(index, explicitIV) {
   return iv;
 }
 
-// Download segments (with optional decryption)
-async function downloadSegments(segments, onProgress, encryptionInfo = null, progressCallback = null) {
+// Download segments (with optional decryption and initialization segment)
+async function downloadSegments(segments, onProgress, encryptionInfo = null, progressCallback = null, initUrl = null) {
   console.log('Downloading', segments.length, 'segments');
 
   let key = null;
@@ -353,6 +374,24 @@ async function downloadSegments(segments, onProgress, encryptionInfo = null, pro
   const chunks = [];
   let failed = 0;
   let totalBytes = 0;
+
+  // Download initialization segment first if present (fMP4 format)
+  if (initUrl) {
+    console.log('Downloading initialization segment (fMP4)...');
+    try {
+      const initResponse = await fetch(initUrl);
+      if (initResponse.ok) {
+        const initData = new Uint8Array(await initResponse.arrayBuffer());
+        chunks.push(initData);
+        totalBytes += initData.length;
+        console.log(`Init segment: ${initData.length} bytes, first 4 bytes: ${Array.from(initData.slice(0, 4)).map(b => b.toString(16).padStart(2, '0')).join(' ')}`);
+      } else {
+        console.error('Failed to download init segment:', initResponse.status);
+      }
+    } catch (e) {
+      console.error('Init segment error:', e.message);
+    }
+  }
 
   // Download in batches to avoid memory issues
   const BATCH_SIZE = 10;
@@ -368,6 +407,17 @@ async function downloadSegments(segments, onProgress, encryptionInfo = null, pro
       if (response.ok) {
         let buffer = await response.arrayBuffer();
         let data = new Uint8Array(buffer);
+
+        // Log first segment details for debugging
+        if (i === 0) {
+          console.log(`First segment: ${data.length} bytes, first 4 bytes: ${Array.from(data.slice(0, 4)).map(b => b.toString(16).padStart(2, '0')).join(' ')}`);
+          // 0x47 = MPEG-TS, 0x00000001 or ftyp/moof = fMP4
+          if (data[0] === 0x47) {
+            console.log('Segment format: MPEG-TS');
+          } else {
+            console.log('Segment format: fMP4 or other');
+          }
+        }
 
         // Decrypt if we have a key
         if (key) {
@@ -405,7 +455,7 @@ async function downloadSegments(segments, onProgress, encryptionInfo = null, pro
     }
   }
 
-  console.log(`Downloaded ${chunks.length}/${segments.length} segments (${failed} failed)`);
+  console.log(`Downloaded ${chunks.length}/${segments.length + (initUrl ? 1 : 0)} segments (${failed} failed)`);
 
   if (chunks.length === 0) {
     throw new Error('セグメントをダウンロードできませんでした');
@@ -478,10 +528,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }).catch(() => {}); // Ignore errors if popup is closed
         };
 
+        let isFmp4 = false;
+
         if (type === 'hls') {
           // ALWAYS re-parse m3u8 to get fresh segment URLs (they expire!)
           console.log('Parsing m3u8 for fresh segment URLs...');
-          const { segments, error, encrypted, keyUrl, keyIV } = await parseM3u8ForSegments(url);
+          const { segments, error, encrypted, keyUrl, keyIV, initUrl } = await parseM3u8ForSegments(url);
 
           if (segments.length > 0) {
             console.log(`Got ${segments.length} fresh segments`);
@@ -489,7 +541,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             if (encryptionInfo) {
               console.log('Stream is encrypted, will decrypt segments');
             }
-            data = await downloadSegments(segments, null, encryptionInfo, progressCallback);
+            if (initUrl) {
+              console.log('Stream has initialization segment (fMP4 format)');
+              isFmp4 = true;
+            }
+            data = await downloadSegments(segments, null, encryptionInfo, progressCallback, initUrl);
           } else {
             throw new Error(error || 'セグメントが見つかりません');
           }
@@ -502,7 +558,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
         // Store in IndexedDB (avoids message size limits)
         const dataId = 'video_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        const mimeType = type === 'hls' ? 'video/mp2t' : 'video/mp4';
+        // Use video/mp4 for fMP4 format, video/mp2t for MPEG-TS
+        const mimeType = (type === 'hls' && !isFmp4) ? 'video/mp2t' : 'video/mp4';
 
         // Store ArrayBuffer directly (NOT Array.from which fails for large data)
         await storeVideoData(dataId, data.buffer, mimeType);
@@ -574,4 +631,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-console.log('Video Downloader v4.7 - Pick LAST sub-playlist (highest quality)');
+console.log('Video Downloader v4.8 - fMP4 init segment support + detailed logging');
