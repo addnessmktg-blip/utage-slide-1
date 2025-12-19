@@ -277,18 +277,39 @@ async function loadCapturedVideos() {
     } else {
       statusEl.textContent = `${filteredVideos.length}個の動画が見つかりました`;
 
+      // Try to capture thumbnails from the page
+      let thumbnails = [];
+      try {
+        const thumbResponse = await chrome.tabs.sendMessage(tab.id, { action: 'captureThumbnails' });
+        thumbnails = thumbResponse.thumbnails || [];
+        console.log('Captured thumbnails:', thumbnails.length);
+      } catch (e) {
+        console.log('Could not capture thumbnails:', e);
+      }
+
       filteredVideos.forEach((video, index) => {
         const item = document.createElement('div');
         item.className = 'video-item';
 
         const statusColor = video.status === 'ready' || video.status === 'captured' ? '#22c55e' : '#eab308';
 
+        // Find matching thumbnail (if any)
+        const thumb = thumbnails[index] || thumbnails[0];
+        const thumbnailHtml = thumb
+          ? `<img class="video-thumbnail" src="${thumb.thumbnail}" alt="thumbnail">`
+          : `<div class="video-thumbnail-placeholder">🎬</div>`;
+
         item.innerHTML = `
-          <div class="video-header">
-            <span class="type-badge">${video.type.toUpperCase()}</span>
-            <span class="status" style="color: ${statusColor}">${getStatusText(video)}</span>
+          <div class="video-content">
+            ${thumbnailHtml}
+            <div class="video-info">
+              <div class="video-header">
+                <span class="type-badge">${video.type.toUpperCase()}</span>
+                <span class="status" style="color: ${statusColor}">${getStatusText(video)}</span>
+              </div>
+              <div class="url">${video.url.substring(0, 40)}...</div>
+            </div>
           </div>
-          <div class="url">${video.url.substring(0, 60)}...</div>
           <div class="video-filename-row">
             <input type="text" class="video-filename-input" id="videoFilename${index}" placeholder="ファイル名を入力">
             <button class="video-download-btn" data-index="${index}">保存</button>
