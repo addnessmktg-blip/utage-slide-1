@@ -100,6 +100,16 @@ function initTab(tabId) {
   }
 }
 
+// Check if codec string indicates both video and audio (muxed stream)
+function isMuxedStream(codecs) {
+  if (!codecs) return false;
+  // Video codecs typically start with: avc1, hvc1, hev1, vp9, av01
+  // Audio codecs typically start with: mp4a, ac-3, ec-3, opus
+  const hasVideo = /avc1|hvc1|hev1|vp9|av01/i.test(codecs);
+  const hasAudio = /mp4a|ac-3|ec-3|opus/i.test(codecs);
+  return hasVideo && hasAudio;
+}
+
 // Parse m3u8 and get ALL segment URLs with encryption info
 async function parseM3u8ForSegments(url) {
   try {
@@ -128,22 +138,44 @@ async function parseM3u8ForSegments(url) {
           // Parse bandwidth
           const bandwidthMatch = line.match(/BANDWIDTH=(\d+)/);
           const bandwidth = bandwidthMatch ? parseInt(bandwidthMatch[1]) : 0;
-          streamLines.push({ url: nextLine, bandwidth });
+          // Parse codecs to detect muxed vs demuxed streams
+          const codecsMatch = line.match(/CODECS="([^"]+)"/);
+          const codecs = codecsMatch ? codecsMatch[1] : null;
+          const isMuxed = isMuxedStream(codecs);
+          streamLines.push({ url: nextLine, bandwidth, codecs, isMuxed });
+          console.log(`Stream: bandwidth=${bandwidth}, codecs=${codecs}, muxed=${isMuxed}`);
         }
       }
     }
 
     if (streamLines.length > 0) {
-      // Sort by bandwidth and pick highest
-      streamLines.sort((a, b) => b.bandwidth - a.bandwidth);
-      let bestStream = streamLines[0];
+      // Prefer muxed streams (video+audio) over demuxed (video-only)
+      // Among muxed or demuxed, pick highest bandwidth
+      const muxedStreams = streamLines.filter(s => s.isMuxed);
+      const demuxedStreams = streamLines.filter(s => !s.isMuxed);
+
+      let bestStream;
+      if (muxedStreams.length > 0) {
+        // Pick highest bandwidth muxed stream
+        muxedStreams.sort((a, b) => b.bandwidth - a.bandwidth);
+        bestStream = muxedStreams[0];
+        console.log('Found', muxedStreams.length, 'muxed (video+audio) streams, selecting highest quality');
+      } else {
+        // No muxed streams, fall back to highest bandwidth demuxed
+        // This will be video-only for YouTube
+        demuxedStreams.sort((a, b) => b.bandwidth - a.bandwidth);
+        bestStream = demuxedStreams[0];
+        console.log('WARNING: No muxed streams found, using demuxed (video-only)');
+        console.log('File size will be smaller and may not have audio');
+      }
+
       let bestStreamUrl = bestStream.url;
 
       if (!bestStreamUrl.startsWith('http')) {
         bestStreamUrl = baseUrl + bestStreamUrl;
       }
       console.log('Found', streamLines.length, 'quality options');
-      console.log('Selected highest quality:', bestStream.bandwidth, 'bps');
+      console.log('Selected stream:', bestStream.bandwidth, 'bps, muxed:', bestStream.isMuxed);
       console.log('Stream URL:', bestStreamUrl);
       return parseM3u8ForSegments(bestStreamUrl);
     }
@@ -587,4 +619,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-console.log('Video Downloader v4.2 - Direct download (no base64)');
+console.log('Video Downloader v4.4 - Prefers muxed streams (video+audio)');

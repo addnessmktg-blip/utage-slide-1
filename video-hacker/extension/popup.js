@@ -67,7 +67,7 @@ function filterVideos(videos) {
   }
 
   // For HLS: keep only one per source
-  // Priority: hls_variant (master playlist) > others
+  // For googlevideo: prefer the one with highest segment count (usually muxed stream)
   const bySource = new Map();
 
   videos.forEach(v => {
@@ -82,11 +82,8 @@ function filterVideos(videos) {
     if (!existing) {
       bySource.set(sourceKey, v);
     } else {
-      // Prefer hls_variant (master playlist) - it has quality options
-      const isVariant = v.url.includes('hls_variant');
-      const existingIsVariant = existing.url.includes('hls_variant');
-
-      if (isVariant && !existingIsVariant) {
+      // Keep the one with more segments (usually muxed stream has more)
+      if ((v.segmentCount || 0) > (existing.segmentCount || 0)) {
         bySource.set(sourceKey, v);
       }
     }
@@ -97,7 +94,7 @@ function filterVideos(videos) {
   return deduplicated.sort((a, b) => {
     if (a.type !== 'hls' && b.type === 'hls') return -1;
     if (a.type === 'hls' && b.type !== 'hls') return 1;
-    return 0;
+    return (b.segmentCount || 0) - (a.segmentCount || 0); // Higher segment count first
   });
 }
 
