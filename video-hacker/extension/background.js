@@ -489,30 +489,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         };
 
         if (type === 'hls') {
-          // Find the video info with segments
-          const videos = capturedVideos.get(tabId) || [];
-          const videoInfo = videos.find(v => v.url === url);
+          // ALWAYS re-parse m3u8 to get fresh segment URLs (they expire!)
+          console.log('Parsing m3u8 for fresh segment URLs...');
+          const { segments, error, encrypted, keyUrl, keyIV } = await parseM3u8ForSegments(url);
 
-          if (videoInfo && videoInfo.segments && videoInfo.segments.length > 0) {
-            console.log(`Using ${videoInfo.segments.length} pre-parsed segments`);
-            const encryptionInfo = videoInfo.encrypted ? {
-              keyUrl: videoInfo.keyUrl,
-              keyIV: videoInfo.keyIV
-            } : null;
+          if (segments.length > 0) {
+            console.log(`Got ${segments.length} fresh segments`);
+            const encryptionInfo = encrypted ? { keyUrl, keyIV } : null;
             if (encryptionInfo) {
               console.log('Stream is encrypted, will decrypt segments');
             }
-            data = await downloadSegments(videoInfo.segments, null, encryptionInfo, progressCallback);
+            data = await downloadSegments(segments, null, encryptionInfo, progressCallback);
           } else {
-            // Try to parse again
-            console.log('Re-parsing m3u8...');
-            const { segments, error, encrypted, keyUrl, keyIV } = await parseM3u8ForSegments(url);
-            if (segments.length > 0) {
-              const encryptionInfo = encrypted ? { keyUrl, keyIV } : null;
-              data = await downloadSegments(segments, null, encryptionInfo, progressCallback);
-            } else {
-              throw new Error(error || 'セグメントが見つかりません');
-            }
+            throw new Error(error || 'セグメントが見つかりません');
           }
         } else {
           data = await downloadDirect(url);
