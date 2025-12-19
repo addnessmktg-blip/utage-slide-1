@@ -100,24 +100,13 @@ function initTab(tabId) {
   }
 }
 
-// Check if codec string indicates both video and audio (muxed stream)
-function isMuxedStream(codecs) {
-  if (!codecs) return false;
-  // Video codecs typically start with: avc1, hvc1, hev1, vp9, av01
-  // Audio codecs typically start with: mp4a, ac-3, ec-3, opus
-  const hasVideo = /avc1|hvc1|hev1|vp9|av01/i.test(codecs);
-  const hasAudio = /mp4a|ac-3|ec-3|opus/i.test(codecs);
-  return hasVideo && hasAudio;
-}
-
 // Parse m3u8 and get ALL segment URLs with encryption info
+// SIMPLE VERSION - works with YouTube/googlevideo
 async function parseM3u8ForSegments(url) {
   try {
     console.log('Parsing m3u8:', url);
     const response = await fetch(url);
     const text = await response.text();
-    console.log('M3U8 content length:', text.length);
-    console.log('M3U8 first 500 chars:', text.substring(0, 500));
 
     if (text.includes('<!') || text.includes('<html')) {
       console.log('Got HTML instead of m3u8');
@@ -127,57 +116,16 @@ async function parseM3u8ForSegments(url) {
     const lines = text.split('\n');
     const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
 
-    // Check if this is a master playlist (contains other m3u8 or stream URLs)
-    // Also check for URLs without .m3u8 extension (googlevideo uses different patterns)
-    const streamLines = [];
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (line.startsWith('#EXT-X-STREAM-INF')) {
-        const nextLine = lines[i + 1]?.trim();
-        if (nextLine && !nextLine.startsWith('#')) {
-          // Parse bandwidth
-          const bandwidthMatch = line.match(/BANDWIDTH=(\d+)/);
-          const bandwidth = bandwidthMatch ? parseInt(bandwidthMatch[1]) : 0;
-          // Parse codecs to detect muxed vs demuxed streams
-          const codecsMatch = line.match(/CODECS="([^"]+)"/);
-          const codecs = codecsMatch ? codecsMatch[1] : null;
-          const isMuxed = isMuxedStream(codecs);
-          streamLines.push({ url: nextLine, bandwidth, codecs, isMuxed });
-          console.log(`Stream: bandwidth=${bandwidth}, codecs=${codecs}, muxed=${isMuxed}`);
-        }
+    // Check if this is a master playlist (contains other m3u8)
+    const m3u8Lines = lines.filter(l => l.trim().endsWith('.m3u8') && !l.startsWith('#'));
+    if (m3u8Lines.length > 0) {
+      // Get the highest quality (usually last one)
+      let streamUrl = m3u8Lines[m3u8Lines.length - 1].trim();
+      if (!streamUrl.startsWith('http')) {
+        streamUrl = baseUrl + streamUrl;
       }
-    }
-
-    if (streamLines.length > 0) {
-      // Prefer muxed streams (video+audio) over demuxed (video-only)
-      // Among muxed or demuxed, pick highest bandwidth
-      const muxedStreams = streamLines.filter(s => s.isMuxed);
-      const demuxedStreams = streamLines.filter(s => !s.isMuxed);
-
-      let bestStream;
-      if (muxedStreams.length > 0) {
-        // Pick highest bandwidth muxed stream
-        muxedStreams.sort((a, b) => b.bandwidth - a.bandwidth);
-        bestStream = muxedStreams[0];
-        console.log('Found', muxedStreams.length, 'muxed (video+audio) streams, selecting highest quality');
-      } else {
-        // No muxed streams, fall back to highest bandwidth demuxed
-        // This will be video-only for YouTube
-        demuxedStreams.sort((a, b) => b.bandwidth - a.bandwidth);
-        bestStream = demuxedStreams[0];
-        console.log('WARNING: No muxed streams found, using demuxed (video-only)');
-        console.log('File size will be smaller and may not have audio');
-      }
-
-      let bestStreamUrl = bestStream.url;
-
-      if (!bestStreamUrl.startsWith('http')) {
-        bestStreamUrl = baseUrl + bestStreamUrl;
-      }
-      console.log('Found', streamLines.length, 'quality options');
-      console.log('Selected stream:', bestStream.bandwidth, 'bps, muxed:', bestStream.isMuxed);
-      console.log('Stream URL:', bestStreamUrl);
-      return parseM3u8ForSegments(bestStreamUrl);
+      console.log('Found sub-playlist:', streamUrl);
+      return parseM3u8ForSegments(streamUrl);
     }
 
     // Check for encryption
@@ -405,22 +353,11 @@ async function downloadSegments(segments, onProgress, encryptionInfo = null, pro
         let buffer = await response.arrayBuffer();
         let data = new Uint8Array(buffer);
 
-        // Log first few segment sizes for debugging
-        if (i < 5) {
-          console.log(`Segment ${i + 1}: ${data.length} bytes, first bytes: ${Array.from(data.slice(0, 4)).map(b => b.toString(16).padStart(2, '0')).join(' ')}`);
-        }
-
-        // Check if this looks like video data (TS sync byte is 0x47)
-        if (data.length > 0 && data[0] !== 0x47 && !key) {
-          console.log(`Segment ${i + 1}: First byte is ${data[0].toString(16)}, not 0x47 (may be encrypted)`);
-        }
-
         // Decrypt if we have a key
         if (key) {
           const iv = generateIV(i, encryptionInfo.keyIV);
           try {
             data = await decryptSegment(buffer, key, iv);
-            // Verify decryption worked (check for TS sync byte)
             if (i % 50 === 0) {
               console.log(`Segment ${i + 1}/${segments.length}: Decrypted, size: ${data.length}`);
             }
@@ -432,6 +369,11 @@ async function downloadSegments(segments, onProgress, encryptionInfo = null, pro
 
         totalBytes += data.length;
         chunks.push(data);
+
+        // Log progress every 50 segments
+        if (i % 50 === 0) {
+          console.log(`Progress: ${i + 1}/${segments.length} segments, ${(totalBytes / 1024 / 1024).toFixed(1)} MB`);
+        }
       } else {
         failed++;
         console.log(`Segment ${i + 1} failed: ${response.status}`);
@@ -492,14 +434,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     const videos = capturedVideos.get(tabId) || [];
 
     console.log(`getCapturedVideos for tab ${tabId}: found ${videos.length} videos`);
-    console.log('All tabs with videos:', Array.from(capturedVideos.keys()));
 
     // Filter to show useful videos
     const filteredVideos = videos.filter(v =>
       v.type === 'hls' || v.type === 'mp4' || v.type === 'webm' || v.type === 'video'
     );
 
-    console.log(`Returning ${filteredVideos.length} filtered videos`);
     sendResponse({ videos: filteredVideos });
     return true;
   }
@@ -514,7 +454,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // Progress callback - send updates to popup
         const progressCallback = (current, total) => {
           const percent = Math.round((current / total) * 100);
-          // Send progress to all extension pages
           chrome.runtime.sendMessage({
             action: 'downloadProgress',
             current,
@@ -619,4 +558,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-console.log('Video Downloader v4.4 - Prefers muxed streams (video+audio)');
+console.log('Video Downloader v4.5 - Reverted to simple parsing (works with YouTube)');
