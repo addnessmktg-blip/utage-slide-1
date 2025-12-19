@@ -30,9 +30,9 @@
         transform-style: preserve-3d;
         will-change: transform, opacity, box-shadow;
         animation:
-            tile-sweep 7s var(--intro-delay) cubic-bezier(0.22, 1, 0.36, 1) forwards,
-            tile-breathe 3s calc(7s + var(--intro-delay)) ease-in-out infinite,
-            tile-float var(--float-duration) calc(7s + var(--intro-delay)) ease-in-out infinite;
+            tile-sweep 5s var(--intro-delay) cubic-bezier(0.22, 1, 0.36, 1) forwards,
+            tile-breathe 3s calc(5s + var(--intro-delay)) ease-in-out infinite,
+            tile-float var(--float-duration) calc(5s + var(--intro-delay)) ease-in-out infinite;
     }
 
     @keyframes tile-sweep {
@@ -179,7 +179,7 @@
         padding: 20px;
         opacity: 0;
         transform: translateY(30px);
-        animation: content-appear 1.2s 7.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        animation: content-appear 1.2s 5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
 
     .grid-wrapper {
@@ -188,7 +188,7 @@
         gap: 30px;
         opacity: 0;
         transform: translateY(40px);
-        animation: content-appear 1s 7.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        animation: content-appear 1s 5.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
 
     .neon-frame {
@@ -267,11 +267,11 @@
         transform: translateY(30px) scale(0.95);
         animation: card-appear 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
-    .neon-card:nth-child(1) { animation-delay: 7.6s; }
-    .neon-card:nth-child(2) { animation-delay: 7.7s; }
-    .neon-card:nth-child(3) { animation-delay: 7.8s; }
-    .neon-card:nth-child(4) { animation-delay: 7.9s; }
-    .neon-card:nth-child(5) { animation-delay: 8.0s; }
+    .neon-card:nth-child(1) { animation-delay: 5.3s; }
+    .neon-card:nth-child(2) { animation-delay: 5.4s; }
+    .neon-card:nth-child(3) { animation-delay: 5.5s; }
+    .neon-card:nth-child(4) { animation-delay: 5.6s; }
+    .neon-card:nth-child(5) { animation-delay: 5.7s; }
 
     .neon-card:hover {
         transform: translateY(-8px);
