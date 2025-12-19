@@ -106,6 +106,8 @@ async function parseM3u8ForSegments(url) {
     console.log('Parsing m3u8:', url);
     const response = await fetch(url);
     const text = await response.text();
+    console.log('M3U8 content length:', text.length);
+    console.log('M3U8 first 500 chars:', text.substring(0, 500));
 
     if (text.includes('<!') || text.includes('<html')) {
       console.log('Got HTML instead of m3u8');
@@ -115,40 +117,34 @@ async function parseM3u8ForSegments(url) {
     const lines = text.split('\n');
     const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
 
-    // Check if this is a master playlist (contains other m3u8)
-    const m3u8Lines = lines.filter(l => l.trim().endsWith('.m3u8') && !l.startsWith('#'));
-    if (m3u8Lines.length > 0) {
-      // Find highest quality stream by parsing BANDWIDTH
-      let bestStreamUrl = null;
-      let bestBandwidth = 0;
-
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (line.startsWith('#EXT-X-STREAM-INF')) {
-          // Parse bandwidth: #EXT-X-STREAM-INF:BANDWIDTH=1234567,...
+    // Check if this is a master playlist (contains other m3u8 or stream URLs)
+    // Also check for URLs without .m3u8 extension (googlevideo uses different patterns)
+    const streamLines = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.startsWith('#EXT-X-STREAM-INF')) {
+        const nextLine = lines[i + 1]?.trim();
+        if (nextLine && !nextLine.startsWith('#')) {
+          // Parse bandwidth
           const bandwidthMatch = line.match(/BANDWIDTH=(\d+)/);
           const bandwidth = bandwidthMatch ? parseInt(bandwidthMatch[1]) : 0;
-
-          // Next line should be the stream URL
-          const nextLine = lines[i + 1]?.trim();
-          if (nextLine && !nextLine.startsWith('#')) {
-            if (bandwidth > bestBandwidth) {
-              bestBandwidth = bandwidth;
-              bestStreamUrl = nextLine;
-            }
-          }
+          streamLines.push({ url: nextLine, bandwidth });
         }
       }
+    }
 
-      // Fallback to last m3u8 if no bandwidth info found
-      if (!bestStreamUrl) {
-        bestStreamUrl = m3u8Lines[m3u8Lines.length - 1].trim();
-      }
+    if (streamLines.length > 0) {
+      // Sort by bandwidth and pick highest
+      streamLines.sort((a, b) => b.bandwidth - a.bandwidth);
+      let bestStream = streamLines[0];
+      let bestStreamUrl = bestStream.url;
 
       if (!bestStreamUrl.startsWith('http')) {
         bestStreamUrl = baseUrl + bestStreamUrl;
       }
-      console.log('Selected highest quality stream:', bestStreamUrl, 'bandwidth:', bestBandwidth);
+      console.log('Found', streamLines.length, 'quality options');
+      console.log('Selected highest quality:', bestStream.bandwidth, 'bps');
+      console.log('Stream URL:', bestStreamUrl);
       return parseM3u8ForSegments(bestStreamUrl);
     }
 
@@ -360,6 +356,7 @@ async function downloadSegments(segments, onProgress, encryptionInfo = null, pro
 
   const chunks = [];
   let failed = 0;
+  let totalBytes = 0;
 
   // Download in batches to avoid memory issues
   const BATCH_SIZE = 10;
@@ -376,6 +373,11 @@ async function downloadSegments(segments, onProgress, encryptionInfo = null, pro
         let buffer = await response.arrayBuffer();
         let data = new Uint8Array(buffer);
 
+        // Log first few segment sizes for debugging
+        if (i < 5) {
+          console.log(`Segment ${i + 1}: ${data.length} bytes, first bytes: ${Array.from(data.slice(0, 4)).map(b => b.toString(16).padStart(2, '0')).join(' ')}`);
+        }
+
         // Check if this looks like video data (TS sync byte is 0x47)
         if (data.length > 0 && data[0] !== 0x47 && !key) {
           console.log(`Segment ${i + 1}: First byte is ${data[0].toString(16)}, not 0x47 (may be encrypted)`);
@@ -388,7 +390,7 @@ async function downloadSegments(segments, onProgress, encryptionInfo = null, pro
             data = await decryptSegment(buffer, key, iv);
             // Verify decryption worked (check for TS sync byte)
             if (i % 50 === 0) {
-              console.log(`Segment ${i + 1}/${segments.length}: Decrypted`);
+              console.log(`Segment ${i + 1}/${segments.length}: Decrypted, size: ${data.length}`);
             }
           } catch (e) {
             console.error(`Segment ${i + 1}: Decryption failed, using raw data`);
@@ -396,6 +398,7 @@ async function downloadSegments(segments, onProgress, encryptionInfo = null, pro
           }
         }
 
+        totalBytes += data.length;
         chunks.push(data);
       } else {
         failed++;
