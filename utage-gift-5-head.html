@@ -81,20 +81,23 @@
     /* 5カード用グリッド：上段3つ、下段2つ（中央寄せ） */
     .grid-wrapper {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(6, 1fr);
         gap: 30px;
+    }
+
+    /* 上段3つ：各2列分 */
+    .grid-wrapper .neon-card:nth-child(1),
+    .grid-wrapper .neon-card:nth-child(2),
+    .grid-wrapper .neon-card:nth-child(3) {
+        grid-column: span 2;
     }
 
     /* 下段2つを中央寄せ */
     .grid-wrapper .neon-card:nth-child(4) {
-        grid-column: 1 / 2;
-        margin-left: auto;
-        width: calc(100% - 15px);
+        grid-column: 2 / span 2;
     }
     .grid-wrapper .neon-card:nth-child(5) {
-        grid-column: 3 / 4;
-        margin-right: auto;
-        width: calc(100% - 15px);
+        grid-column: 4 / span 2;
     }
 
     .neon-card {
@@ -202,61 +205,6 @@
         text-shadow: none;
     }
 
-    .cta-wrapper {
-        margin-top: 80px;
-        padding: 40px 20px;
-        text-align: center;
-        background: rgba(255, 255, 255, 0.02);
-        border-radius: 24px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .cta-text {
-        color: #ccc;
-        font-size: 16px;
-        line-height: 1.8;
-        margin-bottom: 30px;
-        font-weight: 500;
-        text-shadow: 0 0 5px rgba(0,0,0,0.5);
-    }
-
-    .cta-button {
-        display: inline-block;
-        background-color: transparent;
-        color: #fff;
-        text-decoration: none;
-        padding: 16px 40px;
-        border-radius: 50px;
-        font-weight: 900;
-        font-size: 16px;
-        transition: all 0.3s;
-        border: 2px solid #fff;
-        box-shadow:
-            0 0 10px rgba(255, 255, 255, 0.3),
-            inset 0 0 10px rgba(255, 255, 255, 0.1);
-        text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
-    }
-
-    .cta-button:hover {
-        background-color: #fff;
-        color: #000;
-        transform: translateY(-3px);
-        box-shadow:
-            0 0 30px rgba(255, 255, 255, 0.8),
-            0 0 60px rgba(255, 255, 255, 0.5);
-        text-shadow: none;
-    }
-
-    .flash-arrow {
-        display: inline-block;
-        animation: arrow-blink 1.5s infinite alternate;
-    }
-
-    @keyframes arrow-blink {
-        0% { opacity: 1; text-shadow: 0 0 10px #fff; transform: scale(1); }
-        100% { opacity: 0.2; text-shadow: none; transform: scale(0.9); }
-    }
-
     .sp-only { display: none; }
     .pc-only { display: inline; }
 
@@ -275,12 +223,12 @@
             grid-template-columns: 1fr;
             gap: 24px;
         }
+        .grid-wrapper .neon-card:nth-child(1),
+        .grid-wrapper .neon-card:nth-child(2),
+        .grid-wrapper .neon-card:nth-child(3),
         .grid-wrapper .neon-card:nth-child(4),
         .grid-wrapper .neon-card:nth-child(5) {
-            grid-column: auto;
-            margin-left: 0;
-            margin-right: 0;
-            width: 100%;
+            grid-column: span 6;
         }
         .neon-card {
             aspect-ratio: auto;
@@ -312,18 +260,6 @@
         .neon-btn {
             width: 100%;
             margin-top: 10px;
-        }
-        .cta-wrapper {
-            margin-top: 60px;
-            padding: 30px 15px;
-        }
-        .cta-text {
-            font-size: 14px;
-        }
-        .cta-button {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 14px 20px;
         }
     }
 </style>
