@@ -1,11 +1,5 @@
-<!-- ローディングTips -->
-<div class="loading-tips" id="loadingTips">
-    <div class="tip-icon" id="tipIcon">💡</div>
-    <div class="tip-text" id="tipText">AIを味方につけて、発信力を最大化しよう</div>
-</div>
-
 <!-- スキップボタン -->
-<button class="skip-btn" id="skipBtn">Skip ▶▶</button>
+<button class="skip-btn" id="skipBtn">Skip</button>
 
 <div class="floating-bg-container">
     <div class="floating-layer">
@@ -27,7 +21,7 @@
         <div class="neon-header-wrapper">
             <div class="neon-frame">
                 <span></span><span></span><span></span><span></span>
-                <h1 class="neon-title-main glitch" data-text="AI活用実践レシピ 5選">
+                <h1 class="neon-title-main">
                     AI活用<br class="sp-only">実践レシピ 5選
                 </h1>
                 <p class="neon-title-sub">あなたの発信力を<br class="sp-only">最大化する5つのステップ</p>
@@ -48,8 +42,7 @@
 
         <div class="grid-wrapper">
 
-            <a href="https://school.addness.co.jp/members/3f7Qx2oRHMDm/course/YZ0MtkabM3Fo/lesson/Q1ciJXVqnHks" class="neon-card scroll-reveal" style="--theme-color: #00ff9d;">
-                <div class="particle-container"></div>
+            <a href="https://school.addness.co.jp/members/3f7Qx2oRHMDm/course/YZ0MtkabM3Fo/lesson/Q1ciJXVqnHks" class="neon-card" style="--theme-color: #00ff9d;">
                 <div class="card-image-area">
                     <div class="lesson-number">121</div>
                 </div>
@@ -62,8 +55,7 @@
                 </div>
             </a>
 
-            <a href="https://school.addness.co.jp/members/3f7Qx2oRHMDm/course/YZ0MtkabM3Fo/lesson/ECkQUIkdnO5o" class="neon-card scroll-reveal" style="--theme-color: #d946ef;">
-                <div class="particle-container"></div>
+            <a href="https://school.addness.co.jp/members/3f7Qx2oRHMDm/course/YZ0MtkabM3Fo/lesson/ECkQUIkdnO5o" class="neon-card" style="--theme-color: #d946ef;">
                 <div class="card-image-area">
                     <div class="lesson-number">122</div>
                 </div>
@@ -76,8 +68,7 @@
                 </div>
             </a>
 
-            <a href="https://school.addness.co.jp/members/3f7Qx2oRHMDm/course/YZ0MtkabM3Fo/lesson/PjCDnCSoxnLK" class="neon-card scroll-reveal" style="--theme-color: #00ccff;">
-                <div class="particle-container"></div>
+            <a href="https://school.addness.co.jp/members/3f7Qx2oRHMDm/course/YZ0MtkabM3Fo/lesson/PjCDnCSoxnLK" class="neon-card" style="--theme-color: #00ccff;">
                 <div class="card-image-area">
                     <div class="lesson-number">123</div>
                 </div>
@@ -90,8 +81,7 @@
                 </div>
             </a>
 
-            <a href="https://school.addness.co.jp/members/3f7Qx2oRHMDm/course/YZ0MtkabM3Fo/lesson/rJS7W1qXadFg" class="neon-card scroll-reveal" style="--theme-color: #ff8800;">
-                <div class="particle-container"></div>
+            <a href="https://school.addness.co.jp/members/3f7Qx2oRHMDm/course/YZ0MtkabM3Fo/lesson/rJS7W1qXadFg" class="neon-card" style="--theme-color: #ff8800;">
                 <div class="card-image-area">
                     <div class="lesson-number">124</div>
                 </div>
@@ -104,8 +94,7 @@
                 </div>
             </a>
 
-            <a href="https://school.addness.co.jp/members/3f7Qx2oRHMDm/course/YZ0MtkabM3Fo/lesson/6lMGJahHp5SA" class="neon-card scroll-reveal" style="--theme-color: #ff66b2;">
-                <div class="particle-container"></div>
+            <a href="https://school.addness.co.jp/members/3f7Qx2oRHMDm/course/YZ0MtkabM3Fo/lesson/6lMGJahHp5SA" class="neon-card" style="--theme-color: #ff66b2;">
                 <div class="card-image-area">
                     <div class="lesson-number">125</div>
                 </div>
@@ -125,6 +114,7 @@
 
 <script>
 (function() {
+    // UTAGE標準UI非表示
     var style = document.createElement('style');
     style.innerHTML = `
         .btn-toolbar.py-4 { display: none !important; }
@@ -139,125 +129,34 @@
             var toolbar = nextGroup.closest('.btn-toolbar');
             if (toolbar) toolbar.style.setProperty('display', 'none', 'important');
         }
-        var buttons = document.querySelectorAll('button.btn');
-        buttons.forEach(function(btn) {
-            if (btn.innerText.indexOf('前へ') > -1) {
-                btn.style.setProperty('display', 'none', 'important');
-                var parent = btn.closest('.btn-toolbar');
-                if (parent) parent.style.setProperty('display', 'none', 'important');
-            }
-        });
-    }, 200);
+    }, 500);
 
-    // === スキップボタン ===
+    // スキップボタン
     var skipBtn = document.getElementById('skipBtn');
-    var loadingTips = document.getElementById('loadingTips');
-    var animationComplete = false;
-
-    function skipAnimation() {
+    skipBtn.addEventListener('click', function() {
         document.body.classList.add('skip-animation');
         skipBtn.classList.add('hidden');
-        loadingTips.classList.add('hidden');
-        animationComplete = true;
-        // スクロールリビールも即座に表示
-        document.querySelectorAll('.scroll-reveal').forEach(function(el) {
-            el.classList.add('revealed');
-        });
-    }
-
-    skipBtn.addEventListener('click', skipAnimation);
-
-    // 5秒後にスキップボタンとTipsを非表示
-    setTimeout(function() {
-        if (!animationComplete) {
-            skipBtn.classList.add('hidden');
-            loadingTips.classList.add('hidden');
-            animationComplete = true;
-        }
-    }, 5500);
-
-    // === ローディングTips ===
-    var tips = [
-        { icon: '💡', text: 'AIを味方につけて、発信力を最大化しよう' },
-        { icon: '🚀', text: '5つのステップで確実にスキルアップ' },
-        { icon: '✨', text: '順番にクリアして成長を実感しよう' },
-        { icon: '🎯', text: '今日から始める、新しい自分への一歩' }
-    ];
-    var tipIndex = 0;
-    var tipIcon = document.getElementById('tipIcon');
-    var tipText = document.getElementById('tipText');
-
-    setInterval(function() {
-        if (!animationComplete) {
-            tipIndex = (tipIndex + 1) % tips.length;
-            tipIcon.textContent = tips[tipIndex].icon;
-            tipText.textContent = tips[tipIndex].text;
-        }
-    }, 2000);
-
-    // === パーティクル生成 ===
-    document.querySelectorAll('.neon-card').forEach(function(card) {
-        var container = card.querySelector('.particle-container');
-        if (!container) return;
-
-        card.addEventListener('mouseenter', function() {
-            // 既存のパーティクルを削除
-            container.innerHTML = '';
-            // 新しいパーティクルを生成
-            for (var i = 0; i < 12; i++) {
-                var particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.left = Math.random() * 100 + '%';
-                particle.style.bottom = Math.random() * 30 + '%';
-                particle.style.animationDelay = (Math.random() * 0.5) + 's';
-                container.appendChild(particle);
-            }
-        });
     });
 
-    // === スクロール連動アニメーション ===
-    function checkScroll() {
-        var scrollRevealElements = document.querySelectorAll('.scroll-reveal:not(.revealed)');
-        scrollRevealElements.forEach(function(el) {
-            var rect = el.getBoundingClientRect();
-            var windowHeight = window.innerHeight;
-            if (rect.top < windowHeight * 0.85) {
-                el.classList.add('revealed');
-            }
-        });
-    }
-
-    // 初期表示後にスクロールチェック開始
+    // 5秒後にスキップボタン非表示
     setTimeout(function() {
-        checkScroll();
-        window.addEventListener('scroll', checkScroll, { passive: true });
-    }, 6000);
+        skipBtn.classList.add('hidden');
+    }, 5500);
 
     // スマホ用タップエフェクト
     var currentTapped = null;
-
     document.addEventListener('touchstart', function(e) {
         var card = e.target.closest('.neon-card');
-
-        // 前のカードのtappedを解除
         if (currentTapped && currentTapped !== card) {
             currentTapped.classList.remove('tapped');
         }
-
         if (card) {
             card.classList.add('tapped');
             currentTapped = card;
         }
     }, { passive: true });
 
-    document.addEventListener('touchend', function(e) {
-        if (currentTapped) {
-            currentTapped.classList.remove('tapped');
-            currentTapped = null;
-        }
-    }, { passive: true });
-
-    document.addEventListener('touchcancel', function(e) {
+    document.addEventListener('touchend', function() {
         if (currentTapped) {
             currentTapped.classList.remove('tapped');
             currentTapped = null;
