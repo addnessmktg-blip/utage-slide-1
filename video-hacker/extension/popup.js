@@ -202,16 +202,26 @@ async function downloadVideo(video, customFilename = null) {
     showProgress('データ取得中...', 92);
 
     // Step 2: Read directly from IndexedDB (avoids message size limits!)
-    const record = await getVideoDataDirect(response.dataId);
-
-    if (!record) {
-      throw new Error('データ取得失敗');
+    console.log('Reading from IndexedDB:', response.dataId);
+    let record;
+    try {
+      record = await getVideoDataDirect(response.dataId);
+    } catch (dbError) {
+      console.error('IndexedDB error:', dbError);
+      throw new Error('IndexedDB読み取りエラー: ' + dbError.message);
     }
 
+    if (!record) {
+      console.error('IndexedDB record not found:', response.dataId);
+      throw new Error('データ取得失敗 - ポップアップを開いたままお待ちください');
+    }
+
+    console.log('Got record from IndexedDB, size:', record.data.byteLength);
     showProgress('ファイル作成中...', 95);
 
     // Step 3: Create blob and download (data is ArrayBuffer)
     const blob = new Blob([record.data], { type: record.mimeType });
+    console.log('Created blob, size:', blob.size, 'type:', blob.type);
     const blobUrl = URL.createObjectURL(blob);
 
     // Register filename with background script
