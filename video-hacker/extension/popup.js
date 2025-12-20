@@ -68,8 +68,8 @@ function filterVideos(videos) {
 
   // For HLS: keep only one per source
   // Priority:
-  // 1. Videos with initUrl (fMP4 format = higher quality)
-  // 2. hls_variant URLs (master playlist with quality selection)
+  // 1. hls_variant URLs (master playlist - allows quality/codec selection)
+  // 2. Videos with initUrl (fMP4 format = higher quality)
   // 3. Higher segment count
   const bySource = new Map();
 
@@ -85,21 +85,27 @@ function filterVideos(videos) {
     if (!existing) {
       bySource.set(sourceKey, v);
     } else {
-      // Prefer videos with initUrl (fMP4 = higher quality format)
-      const hasInit = !!v.initUrl;
-      const existingHasInit = !!existing.initUrl;
+      // Check if either is hls_variant (master playlist)
+      const isVariant = v.url.includes('hls_variant');
+      const existingIsVariant = existing.url.includes('hls_variant');
 
-      if (hasInit && !existingHasInit) {
+      // ALWAYS prefer hls_variant (master playlist) - it allows codec selection
+      if (isVariant && !existingIsVariant) {
+        console.log('Preferring hls_variant over hls_playlist');
         bySource.set(sourceKey, v);
-      } else if (!hasInit && existingHasInit) {
-        // Keep existing (it has init)
+      } else if (!isVariant && existingIsVariant) {
+        // Keep existing (it's hls_variant)
+        console.log('Keeping existing hls_variant');
       } else {
-        // Both have or don't have init - prefer hls_variant
-        const isVariant = v.url.includes('hls_variant');
-        const existingIsVariant = existing.url.includes('hls_variant');
+        // Neither or both are variant - use other criteria
+        // Prefer videos with initUrl (fMP4 = higher quality format)
+        const hasInit = !!v.initUrl;
+        const existingHasInit = !!existing.initUrl;
 
-        if (isVariant && !existingIsVariant) {
+        if (hasInit && !existingHasInit) {
           bySource.set(sourceKey, v);
+        } else if (!hasInit && existingHasInit) {
+          // Keep existing (it has init)
         } else if ((v.segmentCount || 0) > (existing.segmentCount || 0)) {
           bySource.set(sourceKey, v);
         }
@@ -109,9 +115,20 @@ function filterVideos(videos) {
 
   const deduplicated = Array.from(bySource.values());
 
+  // Log which video was selected
+  deduplicated.forEach(v => {
+    const isVariant = v.url.includes('hls_variant');
+    console.log(`Selected video: ${isVariant ? 'hls_variant' : 'hls_playlist'}, segments: ${v.segmentCount}, hasInit: ${!!v.initUrl}`);
+  });
+
   return deduplicated.sort((a, b) => {
     if (a.type !== 'hls' && b.type === 'hls') return -1;
     if (a.type === 'hls' && b.type !== 'hls') return 1;
+    // Prefer hls_variant (master playlist)
+    const aIsVariant = a.url.includes('hls_variant');
+    const bIsVariant = b.url.includes('hls_variant');
+    if (aIsVariant && !bIsVariant) return -1;
+    if (!aIsVariant && bIsVariant) return 1;
     // Prefer videos with initUrl
     if (a.initUrl && !b.initUrl) return -1;
     if (!a.initUrl && b.initUrl) return 1;

@@ -160,6 +160,11 @@ async function parseM3u8ForSegments(url) {
             const bandwidth = bandwidthMatch ? parseInt(bandwidthMatch[1]) : 0;
             const resolution = resolutionMatch ? resolutionMatch[1] : '';
 
+            // Check if this is a muxed stream (has audio) or demuxed (video only)
+            // Demuxed streams have AUDIO="..." attribute
+            const audioGroupMatch = line.match(/AUDIO="([^"]+)"/);
+            const isMuxed = !audioGroupMatch; // No AUDIO group = muxed stream
+
             // Determine codec type
             const isH264 = codecs.includes('avc1');
             const isVP9 = codecs.includes('vp09') || codecs.includes('vp9');
@@ -170,36 +175,57 @@ async function parseM3u8ForSegments(url) {
               bandwidth,
               resolution,
               isH264,
-              isVP9
+              isVP9,
+              isMuxed
             });
           }
         }
       }
 
-      // If we parsed stream info, prefer H.264 for QuickTime compatibility
+      // If we parsed stream info, prefer muxed H.264 for QuickTime compatibility
       if (streams.length > 0) {
         console.log(`Found ${streams.length} streams with codec info:`);
         streams.forEach((s, i) => {
-          console.log(`  ${i + 1}. ${s.resolution || 'N/A'} - ${s.isH264 ? 'H.264' : s.isVP9 ? 'VP9' : 'unknown'} - ${s.codecs} - ${(s.bandwidth / 1000000).toFixed(1)} Mbps`);
+          const audioStatus = s.isMuxed ? 'muxed (video+audio)' : 'demuxed (video only)';
+          console.log(`  ${i + 1}. ${s.resolution || 'N/A'} - ${s.isH264 ? 'H.264' : s.isVP9 ? 'VP9' : 'unknown'} - ${audioStatus} - ${(s.bandwidth / 1000000).toFixed(1)} Mbps`);
         });
 
-        // Filter H.264 streams
-        const h264Streams = streams.filter(s => s.isH264);
+        // Priority: muxed H.264 > muxed VP9 > demuxed H.264 > demuxed VP9
+        // Muxed streams have audio included - essential for playback!
 
-        if (h264Streams.length > 0) {
-          // Pick highest bandwidth H.264 stream
-          h264Streams.sort((a, b) => b.bandwidth - a.bandwidth);
-          const selected = h264Streams[0];
-          console.log(`✓ Selected H.264 stream: ${selected.resolution} (${selected.codecs}) - QuickTime compatible`);
-          return parseM3u8ForSegments(selected.url);
-        } else {
-          // No H.264, fall back to highest bandwidth VP9
-          console.log('⚠ No H.264 streams found, falling back to VP9 (may not play in QuickTime)');
-          streams.sort((a, b) => b.bandwidth - a.bandwidth);
-          const selected = streams[0];
-          console.log(`Selected: ${selected.resolution} (${selected.codecs})`);
+        // 1. Try muxed H.264 first (best for QuickTime)
+        const muxedH264 = streams.filter(s => s.isMuxed && s.isH264);
+        if (muxedH264.length > 0) {
+          muxedH264.sort((a, b) => b.bandwidth - a.bandwidth);
+          const selected = muxedH264[0];
+          console.log(`✓ Selected muxed H.264 stream: ${selected.resolution} (${selected.codecs}) - QuickTime compatible with audio`);
           return parseM3u8ForSegments(selected.url);
         }
+
+        // 2. Try any muxed stream (at least has audio)
+        const muxedStreams = streams.filter(s => s.isMuxed);
+        if (muxedStreams.length > 0) {
+          muxedStreams.sort((a, b) => b.bandwidth - a.bandwidth);
+          const selected = muxedStreams[0];
+          console.log(`⚠ Selected muxed stream (non-H.264): ${selected.resolution} (${selected.codecs}) - has audio`);
+          return parseM3u8ForSegments(selected.url);
+        }
+
+        // 3. No muxed streams - try demuxed H.264 (video only, no audio!)
+        const h264Streams = streams.filter(s => s.isH264);
+        if (h264Streams.length > 0) {
+          h264Streams.sort((a, b) => b.bandwidth - a.bandwidth);
+          const selected = h264Streams[0];
+          console.log(`⚠ Selected demuxed H.264 stream: ${selected.resolution} - WARNING: No audio!`);
+          return parseM3u8ForSegments(selected.url);
+        }
+
+        // 4. Fall back to highest bandwidth (likely VP9, video only)
+        console.log('⚠ No H.264 streams found, falling back to VP9 (may not play in QuickTime, no audio)');
+        streams.sort((a, b) => b.bandwidth - a.bandwidth);
+        const selected = streams[0];
+        console.log(`Selected: ${selected.resolution} (${selected.codecs})`);
+        return parseM3u8ForSegments(selected.url);
       }
 
       // Fallback: no stream info parsed, use last playlist (highest quality)
@@ -699,4 +725,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-console.log('Video Downloader v5.0 - Prefer H.264 codec for QuickTime compatibility');
+console.log('Video Downloader v5.1 - Prefer muxed H.264 streams (video+audio) for QuickTime');
