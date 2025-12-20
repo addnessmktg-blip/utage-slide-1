@@ -1,0 +1,658 @@
+<style>
+  /* ===== UTAGE UI非表示 & 全画面化 ===== */
+
+  /* サイドバー非表示（UTAGE固有セレクタ） */
+  #bd-docs-nav,
+  .sidebar,
+  nav.bg-light.sidebar {
+    display: none !important;
+  }
+
+  /* ナビゲーションバー非表示 */
+  .navbar.navbar-expand-md.navbar-dark.fixed-top {
+    display: none !important;
+  }
+
+  /* フッター非表示 */
+  footer.footer {
+    display: none !important;
+  }
+
+  /* パンくずリスト・ボタン類非表示 */
+  nav[aria-label="breadcrumb"],
+  .btn-toolbar,
+  #next_btn,
+  h4.mb-4 {
+    display: none !important;
+  }
+
+  /* メインコンテンツを全幅に */
+  main,
+  main > .container-fluid,
+  main > .container-fluid > .row,
+  main > .container-fluid > .row > [class*="col-"] {
+    max-width: 100% !important;
+    width: 100% !important;
+    flex: 0 0 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* bodyのパディング調整（fixed-topナビバー用の余白を削除） */
+  body {
+    padding-top: 0 !important;
+  }
+
+  /* Bootstrap列ベースのサイドバー非表示（汎用） */
+  @media (min-width: 768px) {
+    .row > .col-3,
+    .row > .col-md-3,
+    .row > .col-lg-3,
+    .row > .col-xl-3 {
+      display: none !important;
+    }
+
+    .row > .col-9,
+    .row > .col-md-9,
+    .row > .col-lg-9,
+    .row > .col-xl-9 {
+      flex: 0 0 100% !important;
+      max-width: 100% !important;
+      width: 100% !important;
+    }
+  }
+</style>
+
+<script>
+  /* ▼▼▼ 万が一CSSで消えない時のためのJavaScript保険 ▼▼▼ */
+  document.addEventListener('DOMContentLoaded', function() {
+    // 画面幅がPCサイズの時だけ実行
+    if (window.innerWidth >= 768) {
+      // "col-md-3" などのサイドバー要素を探す
+      var sidebars = document.querySelectorAll('.col-md-3, .col-lg-3');
+      var contents = document.querySelectorAll('.col-md-9, .col-lg-9');
+
+      // サイドバーを消す
+      sidebars.forEach(function(el) {
+        el.style.display = 'none';
+      });
+
+      // メインコンテンツを広げる
+      contents.forEach(function(el) {
+        el.style.maxWidth = '100%';
+        el.style.flex = '0 0 100%';
+      });
+    }
+  });
+</script>
+
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  /* --- 戻るボタン専用スタイル --- */
+  .top-nav-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px 20px 0 20px;
+    text-align: left;
+  }
+  .top-back-link {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none !important;
+    color: #64748b;
+    font-weight: 700;
+    font-size: 14px;
+    background: #f1f5f9;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: 0.2s;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .top-back-link:hover { background: #e2e8f0; color: #334155; }
+
+  /* --- 動画セクションスタイル --- */
+  .hero-video-section {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: linear-gradient(to bottom, #ffffff 0%, #fef3c7 100%);
+    padding: 20px 20px 60px 20px;
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  /* コンテンツ幅制限 */
+  .hero-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  /* バッジ（VIDEO LECTURE） */
+  .hero-badge {
+    display: inline-block;
+    background: #fef3c7;
+    color: #d97706;
+    padding: 6px 16px;
+    border-radius: 50px;
+    font-weight: 800;
+    font-size: 12px;
+    margin-bottom: 20px;
+    letter-spacing: 0.05em;
+    border: 1px solid #fcd34d;
+    box-shadow: 0 2px 10px rgba(217, 119, 6, 0.1);
+  }
+
+  /* キャッチコピー */
+  .hero-title {
+    font-size: 24px;
+    font-weight: 900;
+    background: linear-gradient(90deg, #1e293b, #475569);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0 0 30px 0;
+    line-height: 1.4;
+  }
+  /* スマホで文字サイズ調整 */
+  @media (max-width: 480px) {
+    .hero-title { font-size: 20px; }
+  }
+
+  /* --- 光る動画フレーム --- */
+  .glowing-frame-wrapper {
+    position: relative;
+    z-index: 1;
+    border-radius: 24px;
+    padding: 3px;
+    background: linear-gradient(45deg, #f59e0b, #d97706, #b45309);
+    box-shadow: 0 20px 60px rgba(217, 119, 6, 0.25);
+    transition: transform 0.3s ease;
+  }
+
+  /* ホバー時の浮き上がりアクション */
+  .glowing-frame-wrapper:hover {
+    transform: scale(1.01) translateY(-2px);
+    box-shadow: 0 30px 70px rgba(217, 119, 6, 0.35);
+  }
+
+  /* 動画のアスペクト比固定（16:9） */
+  .video-inner {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%;
+    background: #0f172a;
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  .video-inner iframe,
+  .video-inner video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+
+  /* 下への接続デザイン（矢印） */
+  .scroll-indicator {
+    margin-top: 30px;
+    font-size: 24px;
+    color: #cbd5e1;
+    animation: bounce 2s infinite;
+  }
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+    40% {transform: translateY(-10px);}
+    60% {transform: translateY(-5px);}
+  }
+</style>
+
+<div class="top-nav-container">
+  <a href="https://school.addness.co.jp/members/PRxxWTx3aAM8/home" class="top-back-link">← 一覧に戻る</a>
+</div>
+
+<div class="hero-video-section">
+  <div class="hero-container">
+
+    <span class="hero-badge">🎥 TUTORIAL MOVIE</span>
+
+    <h2 class="hero-title">
+      3分でわかる。<br>
+      AIで「30日分の投稿」を<br>一気に量産する方法
+    </h2>
+
+    <div class="glowing-frame-wrapper">
+      <div class="video-inner">
+
+        <iframe src="https://www.youtube.com/embed/XXXXXX" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
+        </div>
+    </div>
+
+    <div class="scroll-indicator">⌄</div>
+
+  </div>
+</div>
+
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  /* スコープを限定してスタイル崩れを防ぐ */
+  #utage-detail-wrapper {
+    font-family: 'Noto Sans JP', sans-serif;
+    color: #334155;
+    line-height: 1.6;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px 60px 20px;
+  }
+  #utage-detail-wrapper * { box-sizing: border-box; }
+
+  /* ヘッダー */
+  #utage-detail-wrapper .detail-header {
+    background: linear-gradient(135deg, #ffffff 0%, #fef3c7 100%);
+    border: 1px solid #fde68a;
+    border-radius: 24px;
+    padding: 40px 20px;
+    text-align: center;
+    margin-bottom: 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+    position: relative;
+    overflow: hidden;
+  }
+  /* 上部の装飾バー */
+  #utage-detail-wrapper .header-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 6px;
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+  }
+
+  #utage-detail-wrapper .tag-pill {
+    display: inline-block;
+    background: #fef3c7;
+    color: #b45309;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 6px 12px;
+    border-radius: 50px;
+    margin-bottom: 20px;
+  }
+  #utage-detail-wrapper .detail-title {
+    font-size: 28px;
+    font-weight: 900;
+    color: #0f172a;
+    margin: 0 0 16px 0;
+    line-height: 1.5;
+  }
+  /* ハイライト（マーカー） */
+  #utage-detail-wrapper .highlight-text {
+    background: linear-gradient(transparent 60%, #fcd34d 60%);
+    padding: 0 4px;
+    display: inline;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  /* セクション共通 */
+  #utage-detail-wrapper .detail-section { margin-bottom: 50px; }
+
+  /* 悩みリスト */
+  #utage-detail-wrapper .pain-box {
+    background: #fff;
+    border: 2px solid #cbd5e1;
+    border-radius: 16px;
+    padding: 30px;
+  }
+  #utage-detail-wrapper .section-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0 0 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  #utage-detail-wrapper .check-list { list-style: none; padding: 0; margin: 0; }
+  #utage-detail-wrapper .check-list li {
+    margin-bottom: 12px;
+    padding-left: 28px;
+    position: relative;
+    font-weight: 700;
+    color: #475569;
+    font-size: 15px;
+  }
+  #utage-detail-wrapper .check-list li::before {
+    content: "😫";
+    position: absolute;
+    left: 0;
+    font-size: 16px;
+    top: 2px;
+  }
+
+  /* 解決策（グラデーションカード） */
+  #utage-detail-wrapper .solution-card {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #fff;
+    border-radius: 24px;
+    padding: 40px 20px;
+    text-align: center;
+    box-shadow: 0 15px 40px rgba(217, 119, 6, 0.2);
+  }
+  #utage-detail-wrapper .solution-sub { opacity: 0.9; font-weight: 700; margin-bottom: 10px; display: block;}
+  #utage-detail-wrapper .solution-main { font-size: 32px; font-weight: 900; margin: 0 0 20px 0; line-height: 1.3; }
+  #utage-detail-wrapper .solution-kana { font-size: 0.7em; font-weight: 700; }
+  #utage-detail-wrapper .solution-desc { font-size: 15px; line-height: 1.8; margin-bottom: 0; opacity: 0.95; }
+
+  /* 3ステップ */
+  #utage-detail-wrapper .steps-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  @media (min-width: 768px) { #utage-detail-wrapper .steps-grid { grid-template-columns: 1fr 1fr 1fr; } }
+
+  #utage-detail-wrapper .step-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: left;
+  }
+  #utage-detail-wrapper .step-num {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 40px;
+    height: 40px;
+    background: #fef3c7;
+    color: #b45309;
+    font-weight: 900;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+  #utage-detail-wrapper .step-title { font-weight: 800; margin: 0 0 10px 0; color: #1e293b; }
+  #utage-detail-wrapper .step-desc { font-size: 13px; color: #64748b; margin: 0; }
+
+  /* 初心者アドバイスボックス */
+  #utage-detail-wrapper .advice-box {
+    background: #fffbeb;
+    border: 2px dashed #fbbf24;
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  #utage-detail-wrapper .advice-icon {
+    font-size: 24px;
+    background: #fcd34d;
+    color: #78350f;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  #utage-detail-wrapper .advice-content h3 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    color: #92400e;
+    font-weight: 800;
+  }
+  #utage-detail-wrapper .advice-content p {
+    margin: 0;
+    font-size: 14px;
+    color: #78350f;
+    font-weight: 500;
+  }
+
+  /* プロンプトエリア */
+  #utage-detail-wrapper .prompt-box {
+    background: #0f172a;
+    border-radius: 16px;
+    padding: 4px;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15);
+  }
+  #utage-detail-wrapper .prompt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+  }
+  #utage-detail-wrapper .prompt-label { color: #fff; font-weight: 700; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+  #utage-detail-wrapper .copy-button {
+    background: #f59e0b;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    transition: 0.2s;
+    white-space: nowrap;
+  }
+  #utage-detail-wrapper .copy-button:hover { background: #d97706; }
+
+  #utage-detail-wrapper .prompt-content {
+    background: #000;
+    color: #e2e8f0;
+    padding: 20px;
+    border-radius: 12px;
+    font-family: monospace;
+    font-size: 13px;
+    white-space: pre-wrap;
+    margin: 0;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+
+  /* フッターナビ */
+  #utage-detail-wrapper .footer-nav {
+    text-align: center;
+    margin-top: 60px;
+    padding-top: 40px;
+    border-top: 1px solid #e2e8f0;
+  }
+  #utage-detail-wrapper .notebook-btn {
+    display: inline-block;
+    background: #d97706;
+    color: #fff;
+    text-decoration: none !important;
+    padding: 14px 40px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 16px;
+    box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);
+    transition: 0.2s;
+    max-width: 100%;
+    width: auto;
+  }
+  #utage-detail-wrapper .notebook-btn:hover {
+    background: #b45309;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(217, 119, 6, 0.4);
+  }
+
+  /* ▼▼▼ スマホ最適化（メディアクエリ） ▼▼▼ */
+  @media (max-width: 767px) {
+    #utage-detail-wrapper .detail-title {
+      font-size: 22px;
+      line-height: 1.4;
+    }
+
+    #utage-detail-wrapper .header-bar { height: 4px; }
+    #utage-detail-wrapper .detail-header { padding: 30px 15px; }
+
+    #utage-detail-wrapper .pain-box { padding: 20px; }
+
+    #utage-detail-wrapper .solution-main { font-size: 24px; margin-bottom: 15px;}
+    #utage-detail-wrapper .solution-desc { text-align: left; }
+    #utage-detail-wrapper .solution-desc br { display: none; }
+
+    #utage-detail-wrapper .prompt-header {
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    #utage-detail-wrapper .copy-button {
+      width: 100%;
+      text-align: center;
+      padding: 10px;
+    }
+    #utage-detail-wrapper .prompt-content {
+      font-size: 12px;
+      padding: 15px;
+    }
+
+    #utage-detail-wrapper .advice-box {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 10px;
+    }
+    #utage-detail-wrapper .advice-icon { margin-bottom: 5px; }
+
+    #utage-detail-wrapper .notebook-btn {
+      width: 100%;
+      padding: 16px 20px;
+    }
+  }
+
+</style>
+
+<div id="utage-detail-wrapper">
+
+  <header class="detail-header">
+    <div class="header-bar"></div>
+    <span class="tag-pill">AI活用・SNS運用メソッド</span>
+    <h1 class="detail-title">
+      ネタ切れという概念を消去。<br>
+      <span class="highlight-text">「無限投稿メーカー」</span>を<br>
+      味方につけよう
+    </h1>
+    <p style="color:#64748b; font-weight:500; margin:0; font-size:14px;">文章生成AI「Claude」活用ガイド</p>
+  </header>
+
+  <section class="detail-section">
+    <div class="pain-box">
+      <h2 class="section-title" style="color:#334155;">💡 こんな悩みありませんか？</h2>
+      <ul class="check-list">
+        <li>「今日も投稿しなきゃ…」でもネタが浮かばずフリーズ</li>
+        <li>頑張って書いても、また似たような内容になってしまう</li>
+        <li>伸びる「フック」や「構成」が分からず、投稿が続かない</li>
+      </ul>
+      <div style="margin-top:20px; text-align:center; font-size:14px; font-weight:700;">
+        投稿作成はマラソンです。<br class="sp-show">毎回ゼロから走るのは、<span style="color:#d97706;">息切れして当然</span>です。
+      </div>
+    </div>
+  </section>
+
+  <section class="detail-section">
+    <div class="solution-card">
+      <span class="solution-sub">解決策</span>
+      <h2 class="solution-main">
+        Claude<br>
+        <span class="solution-kana">（クロード）</span>
+      </h2>
+      <p class="solution-desc">
+        名前は覚えなくてOK。役割は<strong>「敏腕放送作家」</strong>です。<br>
+        あなたは「大枠のテーマ」を決めるだけ。あとはClaudeが、<br>
+        視聴者を惹きつけるフック、構成、CTAまで一気に書き上げます。
+      </p>
+    </div>
+  </section>
+
+  <section class="detail-section">
+    <h2 class="section-title" style="justify-content:center;">量産体制を作る3ステップ</h2>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <h3 class="step-title">ターゲットとジャンルを伝える</h3>
+        <p class="step-desc">「誰に向けた、何の発信なのか」をClaudeに認識させます。ここがブレると響かない投稿に。</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <h3 class="step-title">30日分のネタ出しをさせる</h3>
+        <p class="step-desc">いきなり本文ではなく、まず「タイトルの羅列」を出させて方向性を確認します。</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <h3 class="step-title">台本・キャプションに変換</h3>
+        <p class="step-desc">気に入ったタイトルを選び、「投稿用の構成にして」と指示するだけで完成。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="detail-section">
+    <div class="prompt-box">
+      <div class="prompt-header">
+        <div class="prompt-label">✍️ 投稿カレンダー＆台本一括作成プロンプト</div>
+        <button onclick="copyPromptClaude()" id="copyBtnClaude" class="copy-button">コピーする</button>
+      </div>
+      <pre id="promptTextClaude" class="prompt-content">【投稿カレンダー＆台本一括作成プロンプト】
+
+あなたはプロのSNSコンテンツクリエイターです。
+私の以下の発信ジャンルに基づいて、30日分の投稿アイデアと、その具体的な構成案を作成してください。
+
+【前提情報】
+・ジャンル： [例：30代からの英語学習]
+・ターゲット： [例：仕事で英語が必要になったが時間がない会社員]
+・ゴール： [例：まずはフォローしてもらう、LINE登録へ促す]
+
+【出力してほしいもの】
+まず、30日分の「キャッチーな投稿タイトル」を表形式で出してください。
+
+その後、その中から特に伸びそうなタイトルを3つ選び、以下の構成で詳細な台本を作成してください。
+
+・タイトル（画像1枚目）： インパクトのある言葉
+・フック（冒頭）： 「あ、私のことだ」と思わせる共感や問いかけ
+・本文（解決策）： 箇条書きで分かりやすく
+・まとめ・CTA： 保存やコメントを促す言葉
+・キャプション用ハッシュタグ案： 10個</pre>
+    </div>
+  </section>
+
+  <section class="detail-section">
+    <div class="advice-box">
+      <div class="advice-icon">💡</div>
+      <div class="advice-content">
+        <h3>初心者へのアドバイス</h3>
+        <p>AIが出した文章は、そのままでも80点。でも最後の20点、<strong>「あなたらしさ」</strong>を一滴だけ加えてください。語尾を自分の口調に変えたり、体験談を一言足すだけで、AIの「型」があなただけの「オリジナル」に化けます。</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer-nav">
+    <p style="font-weight:700; color:#94a3b8; margin-bottom:20px;">AIに投稿作成を依頼する</p>
+    <a href="https://claude.ai/" target="_blank" class="notebook-btn">Claude 公式サイトを開く ↗</a>
+  </div>
+
+</div>
+
+<script>
+  function copyPromptClaude() {
+    var text = document.getElementById('promptTextClaude').innerText;
+    var btn = document.getElementById('copyBtnClaude');
+
+    // 安全なコピー処理
+    var textarea = document.createElement('textarea');
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+
+    var originalText = btn.innerText;
+    btn.innerText = "完了！";
+    btn.style.background = "#10b981";
+
+    setTimeout(function() {
+      btn.innerText = originalText;
+      btn.style.background = "#f59e0b";
+    }, 2000);
+  }
+</script>
