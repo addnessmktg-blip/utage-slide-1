@@ -83,30 +83,29 @@
         z-index: 10; position: relative;
     }
 
-    /* --- SKIPボタン --- */
-    .skip-button-wrapper {
-        text-align: center;
-        margin-bottom: 40px;
-    }
-
-    .skip-button {
-        display: inline-block;
-        background-color: transparent;
-        color: #888;
-        text-decoration: none;
-        padding: 12px 30px;
-        border-radius: 50px;
-        font-weight: 600;
+    /* --- アニメーションSKIPボタン --- */
+    .skip-animation-btn {
+        position: absolute;
+        bottom: 30px;
+        right: 30px;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: #aaa;
+        border: 1px solid #555;
+        padding: 10px 24px;
+        border-radius: 30px;
         font-size: 14px;
-        transition: all 0.3s;
-        border: 1px solid #444;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 10;
+        backdrop-filter: blur(5px);
     }
 
-    .skip-button:hover {
+    .skip-animation-btn:hover {
         color: #fff;
         border-color: #00ffff;
-        background-color: rgba(0, 255, 255, 0.1);
-        box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+        background-color: rgba(0, 255, 255, 0.15);
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
     }
 
     .grid-wrapper {
@@ -212,61 +211,6 @@
         text-shadow: none;
     }
 
-    .cta-wrapper {
-        margin-top: 80px;
-        padding: 40px 20px;
-        text-align: center;
-        background: rgba(255, 255, 255, 0.02);
-        border-radius: 24px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .cta-text {
-        color: #ccc;
-        font-size: 16px;
-        line-height: 1.8;
-        margin-bottom: 30px;
-        font-weight: 500;
-        text-shadow: 0 0 5px rgba(0,0,0,0.5);
-    }
-
-    .cta-button {
-        display: inline-block;
-        background-color: transparent;
-        color: #fff;
-        text-decoration: none;
-        padding: 16px 40px;
-        border-radius: 50px;
-        font-weight: 900;
-        font-size: 16px;
-        transition: all 0.3s;
-        border: 2px solid #fff;
-        box-shadow:
-            0 0 10px rgba(255, 255, 255, 0.3),
-            inset 0 0 10px rgba(255, 255, 255, 0.1);
-        text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
-    }
-
-    .cta-button:hover {
-        background-color: #fff;
-        color: #000;
-        transform: translateY(-3px);
-        box-shadow:
-            0 0 30px rgba(255, 255, 255, 0.8),
-            0 0 60px rgba(255, 255, 255, 0.5);
-        text-shadow: none;
-    }
-
-    .flash-arrow {
-        display: inline-block;
-        animation: arrow-blink 1.5s infinite alternate;
-    }
-
-    @keyframes arrow-blink {
-        0% { opacity: 1; text-shadow: 0 0 10px #fff; transform: scale(1); }
-        100% { opacity: 0.2; text-shadow: none; transform: scale(0.9); }
-    }
-
     .sp-only { display: none; }
     .pc-only { display: inline; }
 
@@ -281,12 +225,11 @@
             padding: 20px 10px;
             width: 90%;
         }
-        .skip-button-wrapper {
-            margin-bottom: 30px;
-        }
-        .skip-button {
-            font-size: 13px;
-            padding: 10px 24px;
+        .skip-animation-btn {
+            bottom: 20px;
+            right: 20px;
+            padding: 8px 18px;
+            font-size: 12px;
         }
         .grid-wrapper {
             grid-template-columns: 1fr;
@@ -319,18 +262,6 @@
         .neon-btn {
             width: 100%;
             margin-top: 10px;
-        }
-        .cta-wrapper {
-            margin-top: 60px;
-            padding: 30px 15px;
-        }
-        .cta-text {
-            font-size: 14px;
-        }
-        .cta-button {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 14px 20px;
         }
     }
 </style>
