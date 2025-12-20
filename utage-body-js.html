@@ -1,0 +1,226 @@
+<script>
+(function() {
+    // レイアウト調整のメイン関数
+    function adjustLayout() {
+
+        // --- 1. ネオンページ（TOP）かどうかの判定 ---
+        var neonContainer = document.querySelector('.break-out-container');
+
+        if (neonContainer) {
+            // === TOPページの場合 ===
+            document.body.style.overflow = 'auto';
+            document.documentElement.style.overflow = 'auto';
+            document.body.style.backgroundColor = '#050505';
+
+            var headers = document.querySelectorAll('header, footer, .navbar, nav');
+            headers.forEach(function(el) { el.style.display = 'none'; });
+
+            // ------------------------------------------------
+            // 【追加】UTAGEの背景要素を完全に削除
+            // ------------------------------------------------
+
+            // 1. UTAGEの背景画像・装飾要素を探して削除
+            var bgElements = document.querySelectorAll([
+                '[class*="background"]',
+                '[class*="bg-"]',
+                '[class*="backdrop"]',
+                '[class*="overlay"]',
+                '[class*="decoration"]',
+                '[class*="pattern"]',
+                '.floating-bg-container ~ *:not(.break-out-container)',
+                'body > div:not(.floating-bg-container):not(.break-out-container)'
+            ].join(','));
+
+            bgElements.forEach(function(el) {
+                // 自分が作った要素は除外
+                if (!el.closest('.break-out-container') &&
+                    !el.classList.contains('break-out-container') &&
+                    !el.classList.contains('floating-bg-container') &&
+                    !el.closest('.floating-bg-container')) {
+                    el.style.background = 'transparent';
+                    el.style.backgroundImage = 'none';
+                }
+            });
+
+            // 2. body直下の不要なdivを非表示（floating-bg-containerとbreak-out-container以外）
+            var bodyChildren = document.body.children;
+            for (var i = 0; i < bodyChildren.length; i++) {
+                var child = bodyChildren[i];
+                if (child.tagName === 'DIV' &&
+                    !child.classList.contains('floating-bg-container') &&
+                    !child.classList.contains('break-out-container') &&
+                    !child.querySelector('.break-out-container') &&
+                    !child.querySelector('.floating-bg-container')) {
+
+                    // スタイルやスクリプトは残す
+                    if (child.tagName !== 'STYLE' && child.tagName !== 'SCRIPT') {
+                        child.style.display = 'none';
+                    }
+                }
+            }
+
+            // 3. インラインスタイルで背景が設定されている要素も透明化
+            var allElements = document.querySelectorAll('*');
+            allElements.forEach(function(el) {
+                if (el.style.backgroundImage && el.style.backgroundImage !== 'none') {
+                    if (!el.closest('.break-out-container') &&
+                        !el.closest('.floating-bg-container') &&
+                        !el.classList.contains('neon-card') &&
+                        !el.classList.contains('neon-frame') &&
+                        !el.classList.contains('cta-wrapper')) {
+                        el.style.backgroundImage = 'none';
+                    }
+                }
+            });
+
+            // 4. TOPページ用のCSS注入
+            if (!document.getElementById('neon-top-cleanup-style')) {
+                var style = document.createElement('style');
+                style.id = 'neon-top-cleanup-style';
+                style.innerHTML = `
+                    /* UTAGEの背景要素を強制非表示 */
+                    body > div:not(.floating-bg-container):not(.break-out-container):not([class*="floating"]):not([class*="neon"]) {
+                        background: transparent !important;
+                        background-image: none !important;
+                    }
+
+                    /* 装飾系クラスを透明化 */
+                    [class*="background"]:not(.floating-bg-container),
+                    [class*="bg-image"],
+                    [class*="backdrop"],
+                    [class*="hero-bg"],
+                    [class*="section-bg"],
+                    [class*="page-bg"] {
+                        background: transparent !important;
+                        background-image: none !important;
+                        opacity: 0 !important;
+                        visibility: hidden !important;
+                    }
+
+                    /* position:fixedの背景レイヤーを消す */
+                    body > div[style*="position: fixed"]:not(.floating-bg-container),
+                    body > div[style*="position:fixed"]:not(.floating-bg-container) {
+                        display: none !important;
+                    }
+
+                    /* z-indexが低い背景レイヤーを消す */
+                    body > div[style*="z-index"]:not(.floating-bg-container):not(.break-out-container) {
+                        display: none !important;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+
+        } else {
+            // === 視聴ページ（中身）の場合 ===
+
+            // ------------------------------------------------
+            // 【追加修正】しぶといタイトル(h4)を消す処理
+            // ------------------------------------------------
+
+            // 1. パンくずリストを消す
+            var breadcrumbs = document.querySelectorAll('.breadcrumb, nav[aria-label="breadcrumb"], ol.breadcrumb');
+            breadcrumbs.forEach(function(el) { el.style.display = 'none'; });
+
+            // 2. システムが出力するページタイトル（h1〜h4）を消す
+            // ★修正点：h4を追加し、class="mb-4" を持っているやつを狙い撃ちします
+            var systemTitles = document.querySelectorAll('h1, h2, h3, h4');
+
+            systemTitles.forEach(function(title) {
+                // 自分の作ったコンテンツ（#utage-detail-wrapper）の中にあるタイトルは消さないように除外
+                if (!title.closest('#utage-detail-wrapper') && !title.closest('.hero-video-section')) {
+
+                    // UTAGE標準のタイトルっぽい特徴（mb-4クラスや、パンくずリストの近くにある）を持っていたら消す
+                    if (title.classList.contains('mb-4') || title.previousElementSibling?.tagName === 'NAV') {
+                        title.style.display = 'none';
+                        title.style.setProperty('display', 'none', 'important'); // 強制非表示
+                    }
+
+                    // 念の為、画面のかなり上（300px以内）にあって、画像を含まないタイトルも消す
+                    var rect = title.getBoundingClientRect();
+                    if (rect.top < 300 && !title.querySelector('img')) {
+                        title.style.display = 'none';
+                    }
+                }
+            });
+
+            // 3. 全画面化スタイルの注入（ここでもCSSでh4を消す念押し）
+            if (!document.getElementById('force-full-width-style')) {
+                var style = document.createElement('style');
+                style.id = 'force-full-width-style';
+                style.innerHTML = `
+                    /* 不要パーツの一括削除 */
+                    header, .navbar, #bd-docs-nav, .breadcrumb, nav[aria-label="breadcrumb"] {
+                        display: none !important;
+                    }
+
+                    /* ★追加：UTAGE標準のタイトル(h4)をCSSでも消す */
+                    .py-3 > h4,
+                    .py-md-4 > h4,
+                    h4.mb-4:not(#utage-detail-wrapper h4) {
+                        display: none !important;
+                    }
+
+                    /* コンテナ全開設定 */
+                    .container, .container-fluid, .row, #app > div {
+                        max-width: 100% !important;
+                        width: 100% !important;
+                        margin: 0 !important;
+                        padding-left: 0 !important;
+                        padding-right: 0 !important;
+                    }
+
+                    /* メインコンテンツ全開設定 */
+                    main, [role="main"], div[class*="col-"] {
+                        flex: 0 0 100% !important;
+                        max-width: 100% !important;
+                        width: 100% !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                    }
+
+                    /* 本文のデザイン調整 */
+                    .card-body, .card, article {
+                        width: 100% !important;
+                        max-width: 1200px !important;
+                        margin: 0 auto !important;
+                        padding: 0 !important; /* 余白は自分のコードで管理するので0に */
+                        background: transparent !important;
+                        box-shadow: none !important;
+                        border: none !important;
+                    }
+
+                    /* 動画を中央配置 */
+                    iframe, video {
+                        width: 100% !important;
+                        aspect-ratio: 16 / 9;
+                        margin: 20px auto !important;
+                        display: block !important;
+                    }
+                `;
+                document.body.appendChild(style);
+            }
+        }
+    }
+
+    // 実行トリガー
+    window.addEventListener('load', adjustLayout);
+    var checkCount = 0;
+    var intervalId = setInterval(function() {
+        adjustLayout();
+        checkCount++;
+        if (checkCount > 20) clearInterval(intervalId); // 回数を増やして確実に消す
+    }, 100);
+    adjustLayout();
+
+    // DOMの変更を監視して、後から追加される要素も消す
+    var observer = new MutationObserver(function(mutations) {
+        adjustLayout();
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+})();
+</script>
