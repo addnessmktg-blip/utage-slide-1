@@ -689,24 +689,38 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           data = await downloadDirect(url);
         }
 
-        console.log('Download complete, storing in IndexedDB...');
+        console.log('Download complete!');
         console.log(`Data size: ${(data.length / 1024 / 1024).toFixed(2)} MB`);
 
-        // Store in IndexedDB (avoids message size limits)
-        const dataId = 'video_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        // Use video/mp4 for fMP4 format, video/mp2t for MPEG-TS
+        // Determine MIME type
         const mimeType = (type === 'hls' && !isFmp4) ? 'video/mp2t' : 'video/mp4';
 
-        // Store ArrayBuffer directly (NOT Array.from which fails for large data)
-        await storeVideoData(dataId, data.buffer, mimeType);
-        console.log('Stored in IndexedDB with ID:', dataId);
+        // Create blob directly in background and download
+        const blob = new Blob([data], { type: mimeType });
+        const blobUrl = URL.createObjectURL(blob);
 
-        // Send just the reference ID to popup
-        sendResponse({
-          success: true,
-          dataId: dataId,
-          mimeType: mimeType,
-          size: data.length
+        // Use the filename from the request, or generate one
+        const downloadFilename = filename || `video_${Date.now()}.mp4`;
+
+        // Register the filename
+        pendingDownloads.set(blobUrl, downloadFilename);
+        console.log('[VIDEO HACKER] Starting download:', downloadFilename);
+
+        // Trigger download directly from background
+        chrome.downloads.download({
+          url: blobUrl,
+          filename: downloadFilename,
+          saveAs: false
+        }, (downloadId) => {
+          if (chrome.runtime.lastError) {
+            console.error('[VIDEO HACKER] Download error:', chrome.runtime.lastError);
+            sendResponse({ success: false, error: chrome.runtime.lastError.message });
+          } else {
+            console.log('[VIDEO HACKER] Download started, ID:', downloadId);
+            // Clean up blob URL after a delay
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+            sendResponse({ success: true, downloadId: downloadId, size: data.length });
+          }
         });
 
       } catch (err) {
@@ -767,4 +781,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-console.log('Video Downloader v5.2 - Capture master playlists for proper codec selection');
+console.log('Video Downloader v5.3 - Direct download from background (no popup dependency)');
