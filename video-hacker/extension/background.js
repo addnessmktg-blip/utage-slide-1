@@ -80,14 +80,42 @@ const VIDEO_PATTERNS = [
   /\.webm(\?|$)/i
 ];
 
+// YouTube HLS master playlist patterns
+const YOUTUBE_MASTER_PATTERNS = [
+  /manifest\.googlevideo\.com.*hls_variant/i,
+  /\/api\/manifest\/hls_variant\//i,
+  /googlevideo\.com.*\/hls_playlist\//i  // Sometimes the master is here
+];
+
 // Check if URL looks like a video
 function isVideoUrl(url) {
-  return VIDEO_PATTERNS.some(pattern => pattern.test(url));
+  // Check standard video patterns
+  if (VIDEO_PATTERNS.some(pattern => pattern.test(url))) {
+    return true;
+  }
+  // Also capture YouTube HLS master playlists
+  if (YOUTUBE_MASTER_PATTERNS.some(pattern => pattern.test(url))) {
+    return true;
+  }
+  return false;
+}
+
+// Check if this is a YouTube master playlist (not media playlist)
+function isYouTubeMasterPlaylist(url) {
+  // Master playlists don't have /itag/XXX/ in the URL
+  if (url.includes('googlevideo.com') && !url.includes('/itag/')) {
+    return true;
+  }
+  // Or explicitly contains hls_variant in the path
+  if (/\/api\/manifest\/hls_variant\//i.test(url)) {
+    return true;
+  }
+  return false;
 }
 
 // Get video type from URL
 function getVideoType(url) {
-  if (/\.m3u8(\?|$)/i.test(url)) return 'hls';
+  if (/\.m3u8(\?|$)/i.test(url) || YOUTUBE_MASTER_PATTERNS.some(p => p.test(url))) return 'hls';
   if (/\.mp4(\?|$)/i.test(url)) return 'mp4';
   if (/\.webm(\?|$)/i.test(url)) return 'webm';
   return 'video';
@@ -314,6 +342,9 @@ async function addCapturedVideo(tabId, url, type, initiator) {
     return;
   }
 
+  // Check if this is a YouTube master playlist
+  const isMaster = isYouTubeMasterPlaylist(url);
+
   const videoInfo = {
     url,
     type,
@@ -324,31 +355,42 @@ async function addCapturedVideo(tabId, url, type, initiator) {
     status: 'captured',
     encrypted: false,
     keyUrl: null,
-    keyIV: null
+    keyIV: null,
+    isMasterPlaylist: isMaster
   };
 
   // If it's HLS, immediately parse to get all segments
   if (type === 'hls') {
     videoInfo.status = 'parsing';
-    const { segments, error, encrypted, keyUrl, keyIV, initUrl } = await parseM3u8ForSegments(url);
 
-    if (segments.length > 0) {
-      videoInfo.segments = segments;
-      videoInfo.segmentCount = segments.length;
-      videoInfo.encrypted = encrypted;
-      videoInfo.keyUrl = keyUrl;
-      videoInfo.keyIV = keyIV;
-      videoInfo.initUrl = initUrl; // Store initialization segment URL
+    if (isMaster) {
+      // For master playlists, just mark as ready - we'll parse during download
+      // This allows proper codec selection at download time
+      console.log('✓ Captured YouTube MASTER playlist (will select codec at download time)');
       videoInfo.status = 'ready';
-      console.log(`HLS ready: ${segments.length} segments, encrypted: ${encrypted}, hasInit: ${!!initUrl}`);
+      videoInfo.segmentCount = -1; // Indicate master playlist
     } else {
-      videoInfo.status = error === 'auth' ? 'auth_error' : 'parse_error';
-      console.log('HLS parse failed:', error);
+      // For media playlists, parse to get segments
+      const { segments, error, encrypted, keyUrl, keyIV, initUrl } = await parseM3u8ForSegments(url);
+
+      if (segments.length > 0) {
+        videoInfo.segments = segments;
+        videoInfo.segmentCount = segments.length;
+        videoInfo.encrypted = encrypted;
+        videoInfo.keyUrl = keyUrl;
+        videoInfo.keyIV = keyIV;
+        videoInfo.initUrl = initUrl; // Store initialization segment URL
+        videoInfo.status = 'ready';
+        console.log(`HLS media playlist: ${segments.length} segments, encrypted: ${encrypted}, hasInit: ${!!initUrl}`);
+      } else {
+        videoInfo.status = error === 'auth' ? 'auth_error' : 'parse_error';
+        console.log('HLS parse failed:', error);
+      }
     }
   }
 
   videos.push(videoInfo);
-  console.log(`Captured ${type}:`, url.substring(0, 100));
+  console.log(`Captured ${type} (${isMaster ? 'MASTER' : 'media'}):`, url.substring(0, 100));
 }
 
 // Listen for network requests
@@ -725,4 +767,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-console.log('Video Downloader v5.1 - Prefer muxed H.264 streams (video+audio) for QuickTime');
+console.log('Video Downloader v5.2 - Capture master playlists for proper codec selection');

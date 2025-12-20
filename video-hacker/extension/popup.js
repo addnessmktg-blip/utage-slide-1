@@ -68,9 +68,10 @@ function filterVideos(videos) {
 
   // For HLS: keep only one per source
   // Priority:
-  // 1. hls_variant URLs (master playlist - allows quality/codec selection)
-  // 2. Videos with initUrl (fMP4 format = higher quality)
-  // 3. Higher segment count
+  // 1. Master playlists (isMasterPlaylist = true) - allows codec selection
+  // 2. hls_variant URLs (fallback for master detection)
+  // 3. Videos with initUrl (fMP4 format = higher quality)
+  // 4. Higher segment count
   const bySource = new Map();
 
   videos.forEach(v => {
@@ -85,19 +86,19 @@ function filterVideos(videos) {
     if (!existing) {
       bySource.set(sourceKey, v);
     } else {
-      // Check if either is hls_variant (master playlist)
-      const isVariant = v.url.includes('hls_variant');
-      const existingIsVariant = existing.url.includes('hls_variant');
+      // Check if either is a master playlist
+      const isMaster = v.isMasterPlaylist || (v.url.includes('hls_variant') && !v.url.includes('/itag/'));
+      const existingIsMaster = existing.isMasterPlaylist || (existing.url.includes('hls_variant') && !existing.url.includes('/itag/'));
 
-      // ALWAYS prefer hls_variant (master playlist) - it allows codec selection
-      if (isVariant && !existingIsVariant) {
-        console.log('Preferring hls_variant over hls_playlist');
+      // ALWAYS prefer master playlist - it allows codec selection for muxed streams
+      if (isMaster && !existingIsMaster) {
+        console.log('✓ Preferring MASTER playlist over media playlist');
         bySource.set(sourceKey, v);
-      } else if (!isVariant && existingIsVariant) {
-        // Keep existing (it's hls_variant)
-        console.log('Keeping existing hls_variant');
+      } else if (!isMaster && existingIsMaster) {
+        // Keep existing (it's master)
+        console.log('Keeping existing master playlist');
       } else {
-        // Neither or both are variant - use other criteria
+        // Neither or both are master - use other criteria
         // Prefer videos with initUrl (fMP4 = higher quality format)
         const hasInit = !!v.initUrl;
         const existingHasInit = !!existing.initUrl;
@@ -117,18 +118,18 @@ function filterVideos(videos) {
 
   // Log which video was selected
   deduplicated.forEach(v => {
-    const isVariant = v.url.includes('hls_variant');
-    console.log(`Selected video: ${isVariant ? 'hls_variant' : 'hls_playlist'}, segments: ${v.segmentCount}, hasInit: ${!!v.initUrl}`);
+    const isMaster = v.isMasterPlaylist || (v.url.includes('hls_variant') && !v.url.includes('/itag/'));
+    console.log(`Selected video: ${isMaster ? 'MASTER' : 'media'} playlist, segments: ${v.segmentCount}, hasInit: ${!!v.initUrl}`);
   });
 
   return deduplicated.sort((a, b) => {
     if (a.type !== 'hls' && b.type === 'hls') return -1;
     if (a.type === 'hls' && b.type !== 'hls') return 1;
-    // Prefer hls_variant (master playlist)
-    const aIsVariant = a.url.includes('hls_variant');
-    const bIsVariant = b.url.includes('hls_variant');
-    if (aIsVariant && !bIsVariant) return -1;
-    if (!aIsVariant && bIsVariant) return 1;
+    // Prefer master playlists
+    const aIsMaster = a.isMasterPlaylist || (a.url.includes('hls_variant') && !a.url.includes('/itag/'));
+    const bIsMaster = b.isMasterPlaylist || (b.url.includes('hls_variant') && !b.url.includes('/itag/'));
+    if (aIsMaster && !bIsMaster) return -1;
+    if (!aIsMaster && bIsMaster) return 1;
     // Prefer videos with initUrl
     if (a.initUrl && !b.initUrl) return -1;
     if (!a.initUrl && b.initUrl) return 1;
@@ -249,6 +250,9 @@ async function downloadVideo(video, customFilename = null) {
 // Get status text
 function getStatusText(video) {
   if (video.status === 'ready') {
+    if (video.isMasterPlaylist || video.segmentCount === -1) {
+      return '高画質モード準備完了';
+    }
     return `${video.segmentCount}パート準備完了`;
   } else if (video.status === 'parsing') {
     return '解析中...';

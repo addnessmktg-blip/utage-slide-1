@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "VIDEO HACKER",
-  "version": "5.1.0",
+  "version": "5.2.0",
   "description": "VIDEO HACKER - MP4/HLS対応（YouTube非対応）",
   "permissions": [
     "activeTab",
