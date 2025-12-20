@@ -80,42 +80,14 @@ const VIDEO_PATTERNS = [
   /\.webm(\?|$)/i
 ];
 
-// YouTube HLS master playlist patterns
-const YOUTUBE_MASTER_PATTERNS = [
-  /manifest\.googlevideo\.com.*hls_variant/i,
-  /\/api\/manifest\/hls_variant\//i,
-  /googlevideo\.com.*\/hls_playlist\//i  // Sometimes the master is here
-];
-
 // Check if URL looks like a video
 function isVideoUrl(url) {
-  // Check standard video patterns
-  if (VIDEO_PATTERNS.some(pattern => pattern.test(url))) {
-    return true;
-  }
-  // Also capture YouTube HLS master playlists
-  if (YOUTUBE_MASTER_PATTERNS.some(pattern => pattern.test(url))) {
-    return true;
-  }
-  return false;
-}
-
-// Check if this is a YouTube master playlist (not media playlist)
-function isYouTubeMasterPlaylist(url) {
-  // Master playlists don't have /itag/XXX/ in the URL
-  if (url.includes('googlevideo.com') && !url.includes('/itag/')) {
-    return true;
-  }
-  // Or explicitly contains hls_variant in the path
-  if (/\/api\/manifest\/hls_variant\//i.test(url)) {
-    return true;
-  }
-  return false;
+  return VIDEO_PATTERNS.some(pattern => pattern.test(url));
 }
 
 // Get video type from URL
 function getVideoType(url) {
-  if (/\.m3u8(\?|$)/i.test(url) || YOUTUBE_MASTER_PATTERNS.some(p => p.test(url))) return 'hls';
+  if (/\.m3u8(\?|$)/i.test(url)) return 'hls';
   if (/\.mp4(\?|$)/i.test(url)) return 'mp4';
   if (/\.webm(\?|$)/i.test(url)) return 'webm';
   return 'video';
@@ -129,161 +101,30 @@ function initTab(tabId) {
 }
 
 // Parse m3u8 and get ALL segment URLs with encryption info
-// Supports both MPEG-TS and fMP4 (with initialization segment)
-// Prefers H.264 (avc1) codec for QuickTime compatibility
 async function parseM3u8ForSegments(url) {
   try {
     console.log('Parsing m3u8:', url);
     const response = await fetch(url);
     const text = await response.text();
 
-    // Log full playlist for debugging
-    console.log('=== FULL PLAYLIST ===');
-    console.log(text);
-    console.log('=== END PLAYLIST ===');
-
     if (text.includes('<!') || text.includes('<html')) {
       console.log('Got HTML instead of m3u8');
-      return { segments: [], error: 'auth', encrypted: false, keyUrl: null, initUrl: null };
+      return { segments: [], error: 'auth', encrypted: false, keyUrl: null };
     }
 
     const lines = text.split('\n');
     const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
 
-    // First, check if this playlist has actual video segments (not just references to other playlists)
-    // Segments are non-comment lines that don't end in .m3u8
-    const segmentLines = lines.filter(l => {
-      const trimmed = l.trim();
-      return trimmed && !trimmed.startsWith('#') && !trimmed.endsWith('.m3u8');
-    });
-
-    // Check for sub-playlists (master playlist)
+    // Check if this is a master playlist (contains other m3u8)
     const m3u8Lines = lines.filter(l => l.trim().endsWith('.m3u8') && !l.startsWith('#'));
-
-    // If this is a master playlist (has .m3u8 references but we need to pick one)
-    // AND we don't have segments yet, recurse to the best quality sub-playlist
-    if (m3u8Lines.length > 0 && segmentLines.length === 0) {
-      // Parse EXT-X-STREAM-INF to get codec info for each stream
-      const streams = [];
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (line.startsWith('#EXT-X-STREAM-INF')) {
-          // Parse attributes
-          const codecsMatch = line.match(/CODECS="([^"]+)"/);
-          const bandwidthMatch = line.match(/BANDWIDTH=(\d+)/);
-          const resolutionMatch = line.match(/RESOLUTION=(\d+x\d+)/);
-
-          // Find the URL on the next line
-          let streamUrl = null;
-          for (let j = i + 1; j < lines.length; j++) {
-            const nextLine = lines[j].trim();
-            if (nextLine && !nextLine.startsWith('#')) {
-              streamUrl = nextLine;
-              break;
-            }
-          }
-
-          if (streamUrl) {
-            const codecs = codecsMatch ? codecsMatch[1] : '';
-            const bandwidth = bandwidthMatch ? parseInt(bandwidthMatch[1]) : 0;
-            const resolution = resolutionMatch ? resolutionMatch[1] : '';
-
-            // Check if this is a muxed stream (has audio) or demuxed (video only)
-            // Demuxed streams have AUDIO="..." attribute
-            const audioGroupMatch = line.match(/AUDIO="([^"]+)"/);
-            const isMuxed = !audioGroupMatch; // No AUDIO group = muxed stream
-
-            // Determine codec type
-            const isH264 = codecs.includes('avc1');
-            const isVP9 = codecs.includes('vp09') || codecs.includes('vp9');
-
-            streams.push({
-              url: streamUrl.startsWith('http') ? streamUrl : baseUrl + streamUrl,
-              codecs,
-              bandwidth,
-              resolution,
-              isH264,
-              isVP9,
-              isMuxed
-            });
-          }
-        }
-      }
-
-      // If we parsed stream info, prefer muxed H.264 for QuickTime compatibility
-      if (streams.length > 0) {
-        console.log(`Found ${streams.length} streams with codec info:`);
-        streams.forEach((s, i) => {
-          const audioStatus = s.isMuxed ? 'muxed (video+audio)' : 'demuxed (video only)';
-          console.log(`  ${i + 1}. ${s.resolution || 'N/A'} - ${s.isH264 ? 'H.264' : s.isVP9 ? 'VP9' : 'unknown'} - ${audioStatus} - ${(s.bandwidth / 1000000).toFixed(1)} Mbps`);
-        });
-
-        // Priority: muxed H.264 > muxed VP9 > demuxed H.264 > demuxed VP9
-        // Muxed streams have audio included - essential for playback!
-
-        // 1. Try muxed H.264 first (best for QuickTime)
-        const muxedH264 = streams.filter(s => s.isMuxed && s.isH264);
-        if (muxedH264.length > 0) {
-          muxedH264.sort((a, b) => b.bandwidth - a.bandwidth);
-          const selected = muxedH264[0];
-          console.log(`✓ Selected muxed H.264 stream: ${selected.resolution} (${selected.codecs}) - QuickTime compatible with audio`);
-          return parseM3u8ForSegments(selected.url);
-        }
-
-        // 2. Try any muxed stream (at least has audio)
-        const muxedStreams = streams.filter(s => s.isMuxed);
-        if (muxedStreams.length > 0) {
-          muxedStreams.sort((a, b) => b.bandwidth - a.bandwidth);
-          const selected = muxedStreams[0];
-          console.log(`⚠ Selected muxed stream (non-H.264): ${selected.resolution} (${selected.codecs}) - has audio`);
-          return parseM3u8ForSegments(selected.url);
-        }
-
-        // 3. No muxed streams - try demuxed H.264 (video only, no audio!)
-        const h264Streams = streams.filter(s => s.isH264);
-        if (h264Streams.length > 0) {
-          h264Streams.sort((a, b) => b.bandwidth - a.bandwidth);
-          const selected = h264Streams[0];
-          console.log(`⚠ Selected demuxed H.264 stream: ${selected.resolution} - WARNING: No audio!`);
-          return parseM3u8ForSegments(selected.url);
-        }
-
-        // 4. Fall back to highest bandwidth (likely VP9, video only)
-        console.log('⚠ No H.264 streams found, falling back to VP9 (may not play in QuickTime, no audio)');
-        streams.sort((a, b) => b.bandwidth - a.bandwidth);
-        const selected = streams[0];
-        console.log(`Selected: ${selected.resolution} (${selected.codecs})`);
-        return parseM3u8ForSegments(selected.url);
-      }
-
-      // Fallback: no stream info parsed, use last playlist (highest quality)
+    if (m3u8Lines.length > 0) {
+      // Get the highest quality (usually last one)
       let streamUrl = m3u8Lines[m3u8Lines.length - 1].trim();
       if (!streamUrl.startsWith('http')) {
         streamUrl = baseUrl + streamUrl;
       }
-      console.log(`Found ${m3u8Lines.length} sub-playlists (no codec info), picking LAST:`, streamUrl);
+      console.log('Found sub-playlist:', streamUrl);
       return parseM3u8ForSegments(streamUrl);
-    }
-
-    // If we have segments, use them directly (even if there are also .m3u8 references like audio)
-    if (segmentLines.length > 0) {
-      console.log(`Found ${segmentLines.length} segment URLs directly, using these`);
-      // Continue to segment parsing below
-    }
-
-    // Check for initialization segment (fMP4 format) - #EXT-X-MAP
-    let initUrl = null;
-    for (const line of lines) {
-      if (line.startsWith('#EXT-X-MAP')) {
-        const uriMatch = line.match(/URI="([^"]+)"/);
-        if (uriMatch) {
-          initUrl = uriMatch[1];
-          if (!initUrl.startsWith('http')) {
-            initUrl = baseUrl + initUrl;
-          }
-          console.log('Found initialization segment (fMP4):', initUrl);
-        }
-      }
     }
 
     // Check for encryption
@@ -324,11 +165,11 @@ async function parseM3u8ForSegments(url) {
       }
     }
 
-    console.log(`Found ${segments.length} segments in playlist (encrypted: ${encrypted}, hasInit: ${!!initUrl})`);
-    return { segments, error: null, encrypted, keyUrl, keyIV, initUrl };
+    console.log(`Found ${segments.length} segments in playlist (encrypted: ${encrypted})`);
+    return { segments, error: null, encrypted, keyUrl, keyIV };
   } catch (e) {
     console.error('Error parsing m3u8:', e);
-    return { segments: [], error: e.message, encrypted: false, keyUrl: null, initUrl: null };
+    return { segments: [], error: e.message, encrypted: false, keyUrl: null };
   }
 }
 
@@ -342,9 +183,6 @@ async function addCapturedVideo(tabId, url, type, initiator) {
     return;
   }
 
-  // Check if this is a YouTube master playlist
-  const isMaster = isYouTubeMasterPlaylist(url);
-
   const videoInfo = {
     url,
     type,
@@ -355,42 +193,30 @@ async function addCapturedVideo(tabId, url, type, initiator) {
     status: 'captured',
     encrypted: false,
     keyUrl: null,
-    keyIV: null,
-    isMasterPlaylist: isMaster
+    keyIV: null
   };
 
   // If it's HLS, immediately parse to get all segments
   if (type === 'hls') {
     videoInfo.status = 'parsing';
+    const { segments, error, encrypted, keyUrl, keyIV } = await parseM3u8ForSegments(url);
 
-    if (isMaster) {
-      // For master playlists, just mark as ready - we'll parse during download
-      // This allows proper codec selection at download time
-      console.log('✓ Captured YouTube MASTER playlist (will select codec at download time)');
+    if (segments.length > 0) {
+      videoInfo.segments = segments;
+      videoInfo.segmentCount = segments.length;
+      videoInfo.encrypted = encrypted;
+      videoInfo.keyUrl = keyUrl;
+      videoInfo.keyIV = keyIV;
       videoInfo.status = 'ready';
-      videoInfo.segmentCount = -1; // Indicate master playlist
+      console.log(`HLS ready: ${segments.length} segments, encrypted: ${encrypted}`);
     } else {
-      // For media playlists, parse to get segments
-      const { segments, error, encrypted, keyUrl, keyIV, initUrl } = await parseM3u8ForSegments(url);
-
-      if (segments.length > 0) {
-        videoInfo.segments = segments;
-        videoInfo.segmentCount = segments.length;
-        videoInfo.encrypted = encrypted;
-        videoInfo.keyUrl = keyUrl;
-        videoInfo.keyIV = keyIV;
-        videoInfo.initUrl = initUrl; // Store initialization segment URL
-        videoInfo.status = 'ready';
-        console.log(`HLS media playlist: ${segments.length} segments, encrypted: ${encrypted}, hasInit: ${!!initUrl}`);
-      } else {
-        videoInfo.status = error === 'auth' ? 'auth_error' : 'parse_error';
-        console.log('HLS parse failed:', error);
-      }
+      videoInfo.status = error === 'auth' ? 'auth_error' : 'parse_error';
+      console.log('HLS parse failed:', error);
     }
   }
 
   videos.push(videoInfo);
-  console.log(`Captured ${type} (${isMaster ? 'MASTER' : 'media'}):`, url.substring(0, 100));
+  console.log(`Captured ${type}:`, url.substring(0, 100));
 }
 
 // Listen for network requests
@@ -497,8 +323,8 @@ function generateIV(index, explicitIV) {
   return iv;
 }
 
-// Download segments (with optional decryption and initialization segment)
-async function downloadSegments(segments, onProgress, encryptionInfo = null, progressCallback = null, initUrl = null) {
+// Download segments (with optional decryption)
+async function downloadSegments(segments, onProgress, encryptionInfo = null, progressCallback = null) {
   console.log('Downloading', segments.length, 'segments');
 
   let key = null;
@@ -509,25 +335,6 @@ async function downloadSegments(segments, onProgress, encryptionInfo = null, pro
 
   const chunks = [];
   let failed = 0;
-  let totalBytes = 0;
-
-  // Download initialization segment first if present (fMP4 format)
-  if (initUrl) {
-    console.log('Downloading initialization segment (fMP4)...');
-    try {
-      const initResponse = await fetch(initUrl);
-      if (initResponse.ok) {
-        const initData = new Uint8Array(await initResponse.arrayBuffer());
-        chunks.push(initData);
-        totalBytes += initData.length;
-        console.log(`Init segment: ${initData.length} bytes, first 4 bytes: ${Array.from(initData.slice(0, 4)).map(b => b.toString(16).padStart(2, '0')).join(' ')}`);
-      } else {
-        console.error('Failed to download init segment:', initResponse.status);
-      }
-    } catch (e) {
-      console.error('Init segment error:', e.message);
-    }
-  }
 
   // Download in batches to avoid memory issues
   const BATCH_SIZE = 10;
@@ -544,15 +351,9 @@ async function downloadSegments(segments, onProgress, encryptionInfo = null, pro
         let buffer = await response.arrayBuffer();
         let data = new Uint8Array(buffer);
 
-        // Log first segment details for debugging
-        if (i === 0) {
-          console.log(`First segment: ${data.length} bytes, first 4 bytes: ${Array.from(data.slice(0, 4)).map(b => b.toString(16).padStart(2, '0')).join(' ')}`);
-          // 0x47 = MPEG-TS, 0x00000001 or ftyp/moof = fMP4
-          if (data[0] === 0x47) {
-            console.log('Segment format: MPEG-TS');
-          } else {
-            console.log('Segment format: fMP4 or other');
-          }
+        // Check if this looks like video data (TS sync byte is 0x47)
+        if (data.length > 0 && data[0] !== 0x47 && !key) {
+          console.log(`Segment ${i + 1}: First byte is ${data[0].toString(16)}, not 0x47 (may be encrypted)`);
         }
 
         // Decrypt if we have a key
@@ -560,8 +361,9 @@ async function downloadSegments(segments, onProgress, encryptionInfo = null, pro
           const iv = generateIV(i, encryptionInfo.keyIV);
           try {
             data = await decryptSegment(buffer, key, iv);
+            // Verify decryption worked (check for TS sync byte)
             if (i % 50 === 0) {
-              console.log(`Segment ${i + 1}/${segments.length}: Decrypted, size: ${data.length}`);
+              console.log(`Segment ${i + 1}/${segments.length}: Decrypted`);
             }
           } catch (e) {
             console.error(`Segment ${i + 1}: Decryption failed, using raw data`);
@@ -569,13 +371,7 @@ async function downloadSegments(segments, onProgress, encryptionInfo = null, pro
           }
         }
 
-        totalBytes += data.length;
         chunks.push(data);
-
-        // Log progress every 50 segments
-        if (i % 50 === 0) {
-          console.log(`Progress: ${i + 1}/${segments.length} segments, ${(totalBytes / 1024 / 1024).toFixed(1)} MB`);
-        }
       } else {
         failed++;
         console.log(`Segment ${i + 1} failed: ${response.status}`);
@@ -591,7 +387,7 @@ async function downloadSegments(segments, onProgress, encryptionInfo = null, pro
     }
   }
 
-  console.log(`Downloaded ${chunks.length}/${segments.length + (initUrl ? 1 : 0)} segments (${failed} failed)`);
+  console.log(`Downloaded ${chunks.length}/${segments.length} segments (${failed} failed)`);
 
   if (chunks.length === 0) {
     throw new Error('セグメントをダウンロードできませんでした');
@@ -636,12 +432,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     const videos = capturedVideos.get(tabId) || [];
 
     console.log(`getCapturedVideos for tab ${tabId}: found ${videos.length} videos`);
+    console.log('All tabs with videos:', Array.from(capturedVideos.keys()));
 
     // Filter to show useful videos
     const filteredVideos = videos.filter(v =>
       v.type === 'hls' || v.type === 'mp4' || v.type === 'webm' || v.type === 'video'
     );
 
+    console.log(`Returning ${filteredVideos.length} filtered videos`);
     sendResponse({ videos: filteredVideos });
     return true;
   }
@@ -656,6 +454,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // Progress callback - send updates to popup
         const progressCallback = (current, total) => {
           const percent = Math.round((current / total) * 100);
+          // Send progress to all extension pages
           chrome.runtime.sendMessage({
             action: 'downloadProgress',
             current,
@@ -664,63 +463,53 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }).catch(() => {}); // Ignore errors if popup is closed
         };
 
-        let isFmp4 = false;
-
         if (type === 'hls') {
-          // ALWAYS re-parse m3u8 to get fresh segment URLs (they expire!)
-          console.log('Parsing m3u8 for fresh segment URLs...');
-          const { segments, error, encrypted, keyUrl, keyIV, initUrl } = await parseM3u8ForSegments(url);
+          // Find the video info with segments
+          const videos = capturedVideos.get(tabId) || [];
+          const videoInfo = videos.find(v => v.url === url);
 
-          if (segments.length > 0) {
-            console.log(`Got ${segments.length} fresh segments`);
-            const encryptionInfo = encrypted ? { keyUrl, keyIV } : null;
+          if (videoInfo && videoInfo.segments && videoInfo.segments.length > 0) {
+            console.log(`Using ${videoInfo.segments.length} pre-parsed segments`);
+            const encryptionInfo = videoInfo.encrypted ? {
+              keyUrl: videoInfo.keyUrl,
+              keyIV: videoInfo.keyIV
+            } : null;
             if (encryptionInfo) {
               console.log('Stream is encrypted, will decrypt segments');
             }
-            if (initUrl) {
-              console.log('Stream has initialization segment (fMP4 format)');
-              isFmp4 = true;
-            }
-            data = await downloadSegments(segments, null, encryptionInfo, progressCallback, initUrl);
+            data = await downloadSegments(videoInfo.segments, null, encryptionInfo, progressCallback);
           } else {
-            throw new Error(error || 'セグメントが見つかりません');
+            // Try to parse again
+            console.log('Re-parsing m3u8...');
+            const { segments, error, encrypted, keyUrl, keyIV } = await parseM3u8ForSegments(url);
+            if (segments.length > 0) {
+              const encryptionInfo = encrypted ? { keyUrl, keyIV } : null;
+              data = await downloadSegments(segments, null, encryptionInfo, progressCallback);
+            } else {
+              throw new Error(error || 'セグメントが見つかりません');
+            }
           }
         } else {
           data = await downloadDirect(url);
         }
 
-        console.log('Download complete!');
+        console.log('Download complete, storing in IndexedDB...');
         console.log(`Data size: ${(data.length / 1024 / 1024).toFixed(2)} MB`);
 
-        // Determine MIME type
-        const mimeType = (type === 'hls' && !isFmp4) ? 'video/mp2t' : 'video/mp4';
+        // Store in IndexedDB (avoids message size limits)
+        const dataId = 'video_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        const mimeType = type === 'hls' ? 'video/mp2t' : 'video/mp4';
 
-        // Create blob directly in background and download
-        const blob = new Blob([data], { type: mimeType });
-        const blobUrl = URL.createObjectURL(blob);
+        // Store ArrayBuffer directly (NOT Array.from which fails for large data)
+        await storeVideoData(dataId, data.buffer, mimeType);
+        console.log('Stored in IndexedDB with ID:', dataId);
 
-        // Use the filename from the request, or generate one
-        const downloadFilename = filename || `video_${Date.now()}.mp4`;
-
-        // Register the filename
-        pendingDownloads.set(blobUrl, downloadFilename);
-        console.log('[VIDEO HACKER] Starting download:', downloadFilename);
-
-        // Trigger download directly from background
-        chrome.downloads.download({
-          url: blobUrl,
-          filename: downloadFilename,
-          saveAs: false
-        }, (downloadId) => {
-          if (chrome.runtime.lastError) {
-            console.error('[VIDEO HACKER] Download error:', chrome.runtime.lastError);
-            sendResponse({ success: false, error: chrome.runtime.lastError.message });
-          } else {
-            console.log('[VIDEO HACKER] Download started, ID:', downloadId);
-            // Clean up blob URL after a delay
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-            sendResponse({ success: true, downloadId: downloadId, size: data.length });
-          }
+        // Send just the reference ID to popup
+        sendResponse({
+          success: true,
+          dataId: dataId,
+          mimeType: mimeType,
+          size: data.length
         });
 
       } catch (err) {
@@ -781,4 +570,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-console.log('Video Downloader v5.3 - Direct download from background (no popup dependency)');
+console.log('Video Downloader v4.2 - Direct download (no base64)');

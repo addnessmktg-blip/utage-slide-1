@@ -66,74 +66,27 @@ function filterVideos(videos) {
     return videos.filter(v => v.type === 'mp4');
   }
 
-  // For HLS: keep only one per source
-  // Priority:
-  // 1. Master playlists (isMasterPlaylist = true) - allows codec selection
-  // 2. hls_variant URLs (fallback for master detection)
-  // 3. Videos with initUrl (fMP4 format = higher quality)
-  // 4. Higher segment count
-  const bySource = new Map();
-
-  videos.forEach(v => {
-    let sourceKey = v.url;
-
-    // For googlevideo URLs, group all as one source
+  // For HLS: deduplicate similar URLs (hls_variant vs hls_playlist from same source)
+  const seen = new Set();
+  const deduplicated = videos.filter(v => {
+    // Extract base identifier from URL (remove hls_variant/hls_playlist differences)
+    let key = v.url;
+    // For googlevideo URLs, use a simplified key
     if (v.url.includes('googlevideo.com')) {
-      sourceKey = 'googlevideo';
+      // Just keep one per domain+segment count combo
+      key = 'googlevideo_' + (v.segmentCount || 0);
     }
-
-    const existing = bySource.get(sourceKey);
-    if (!existing) {
-      bySource.set(sourceKey, v);
-    } else {
-      // Check if either is a master playlist
-      const isMaster = v.isMasterPlaylist || (v.url.includes('hls_variant') && !v.url.includes('/itag/'));
-      const existingIsMaster = existing.isMasterPlaylist || (existing.url.includes('hls_variant') && !existing.url.includes('/itag/'));
-
-      // ALWAYS prefer master playlist - it allows codec selection for muxed streams
-      if (isMaster && !existingIsMaster) {
-        console.log('✓ Preferring MASTER playlist over media playlist');
-        bySource.set(sourceKey, v);
-      } else if (!isMaster && existingIsMaster) {
-        // Keep existing (it's master)
-        console.log('Keeping existing master playlist');
-      } else {
-        // Neither or both are master - use other criteria
-        // Prefer videos with initUrl (fMP4 = higher quality format)
-        const hasInit = !!v.initUrl;
-        const existingHasInit = !!existing.initUrl;
-
-        if (hasInit && !existingHasInit) {
-          bySource.set(sourceKey, v);
-        } else if (!hasInit && existingHasInit) {
-          // Keep existing (it has init)
-        } else if ((v.segmentCount || 0) > (existing.segmentCount || 0)) {
-          bySource.set(sourceKey, v);
-        }
-      }
+    if (seen.has(key)) {
+      return false;
     }
-  });
-
-  const deduplicated = Array.from(bySource.values());
-
-  // Log which video was selected
-  deduplicated.forEach(v => {
-    const isMaster = v.isMasterPlaylist || (v.url.includes('hls_variant') && !v.url.includes('/itag/'));
-    console.log(`Selected video: ${isMaster ? 'MASTER' : 'media'} playlist, segments: ${v.segmentCount}, hasInit: ${!!v.initUrl}`);
+    seen.add(key);
+    return true;
   });
 
   return deduplicated.sort((a, b) => {
     if (a.type !== 'hls' && b.type === 'hls') return -1;
     if (a.type === 'hls' && b.type !== 'hls') return 1;
-    // Prefer master playlists
-    const aIsMaster = a.isMasterPlaylist || (a.url.includes('hls_variant') && !a.url.includes('/itag/'));
-    const bIsMaster = b.isMasterPlaylist || (b.url.includes('hls_variant') && !b.url.includes('/itag/'));
-    if (aIsMaster && !bIsMaster) return -1;
-    if (!aIsMaster && bIsMaster) return 1;
-    // Prefer videos with initUrl
-    if (a.initUrl && !b.initUrl) return -1;
-    if (!a.initUrl && b.initUrl) return 1;
-    return (b.segmentCount || 0) - (a.segmentCount || 0);
+    return (a.segmentCount || 0) - (b.segmentCount || 0);
   });
 }
 
@@ -177,35 +130,71 @@ async function downloadVideo(video, customFilename = null) {
   // Sanitize filename
   filename = filename.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').replace(/\.+$/g, '');
 
-  // Always use .mp4 extension (most players can handle it)
-  const ext = '.mp4';
+  const isHls = video.type === 'hls';
+  const ext = isHls ? '.ts' : '.mp4';
   const fullPath = folder + '/' + filename + ext;
 
   showProgress('ダウンロード開始...', 1);
 
   try {
-    // Send download request to background - it will handle everything
-    // including creating the blob and triggering the download
-    console.log('Sending download request for:', fullPath);
+    // Step 1: Download segments (stored in IndexedDB)
     const response = await chrome.runtime.sendMessage({
       action: 'download',
       url: video.url,
       type: video.type,
-      tabId: currentTabId,
-      filename: fullPath  // Pass filename to background
+      tabId: currentTabId
     });
 
     if (!response.success) {
       throw new Error(response.error || 'ダウンロード失敗');
     }
 
-    // Download was handled by background script
-    console.log('Download completed! Size:', (response.size / 1024 / 1024).toFixed(2), 'MB');
-    showProgress('完了！', 100);
-    setTimeout(hideProgress, 2000);
+    console.log('Data stored in IndexedDB, ID:', response.dataId);
+    console.log('Size:', (response.size / 1024 / 1024).toFixed(2), 'MB');
+
+    showProgress('データ取得中...', 92);
+
+    // Step 2: Read directly from IndexedDB (avoids message size limits!)
+    const record = await getVideoDataDirect(response.dataId);
+
+    if (!record) {
+      throw new Error('データ取得失敗');
+    }
+
+    showProgress('ファイル作成中...', 95);
+
+    // Step 3: Create blob and download (data is ArrayBuffer)
+    const blob = new Blob([record.data], { type: record.mimeType });
+    const blobUrl = URL.createObjectURL(blob);
+
+    // Register filename with background script
+    await chrome.runtime.sendMessage({
+      action: 'registerDownload',
+      blobUrl: blobUrl,
+      filename: fullPath
+    });
+
+    // Download
+    chrome.downloads.download({
+      url: blobUrl,
+      filename: fullPath,
+      saveAs: false
+    }, (downloadId) => {
+      if (chrome.runtime.lastError) {
+        console.error('Download error:', chrome.runtime.lastError);
+        alert('エラー: ' + chrome.runtime.lastError.message);
+        hideProgress();
+      } else {
+        console.log('Download started:', downloadId);
+        showProgress('完了！', 100);
+        setTimeout(() => {
+          URL.revokeObjectURL(blobUrl);
+          hideProgress();
+        }, 2000);
+      }
+    });
 
   } catch (err) {
-    console.error('Download error:', err);
     alert('エラー: ' + err.message);
     hideProgress();
   }
@@ -214,9 +203,6 @@ async function downloadVideo(video, customFilename = null) {
 // Get status text
 function getStatusText(video) {
   if (video.status === 'ready') {
-    if (video.isMasterPlaylist || video.segmentCount === -1) {
-      return '高画質モード準備完了';
-    }
     return `${video.segmentCount}パート準備完了`;
   } else if (video.status === 'parsing') {
     return '解析中...';
@@ -291,28 +277,18 @@ async function loadCapturedVideos() {
     } else {
       statusEl.textContent = `${filteredVideos.length}個の動画が見つかりました`;
 
-      // Try to capture thumbnails from the page
-      let thumbnails = [];
-      try {
-        const thumbResponse = await chrome.tabs.sendMessage(tab.id, { action: 'captureThumbnails' });
-        thumbnails = thumbResponse.thumbnails || [];
-        console.log('Captured thumbnails:', thumbnails.length);
-      } catch (e) {
-        console.log('Could not capture thumbnails:', e);
-      }
-
       filteredVideos.forEach((video, index) => {
         const item = document.createElement('div');
         item.className = 'video-item';
 
-        // Find matching thumbnail (if any)
-        const thumb = thumbnails[index] || thumbnails[0];
-        const thumbnailHtml = thumb
-          ? `<img class="video-thumbnail" src="${thumb.thumbnail}" alt="thumbnail">`
-          : `<div class="video-thumbnail-placeholder">🎬</div>`;
+        const statusColor = video.status === 'ready' || video.status === 'captured' ? '#22c55e' : '#eab308';
 
         item.innerHTML = `
-          ${thumbnailHtml}
+          <div class="video-header">
+            <span class="type-badge">${video.type.toUpperCase()}</span>
+            <span class="status" style="color: ${statusColor}">${getStatusText(video)}</span>
+          </div>
+          <div class="url">${video.url.substring(0, 60)}...</div>
           <div class="video-filename-row">
             <input type="text" class="video-filename-input" id="videoFilename${index}" placeholder="ファイル名を入力">
             <button class="video-download-btn" data-index="${index}">保存</button>
