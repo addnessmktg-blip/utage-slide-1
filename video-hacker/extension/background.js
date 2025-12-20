@@ -102,6 +102,7 @@ function initTab(tabId) {
 
 // Parse m3u8 and get ALL segment URLs with encryption info
 // Supports both MPEG-TS and fMP4 (with initialization segment)
+// Prefers H.264 (avc1) codec for QuickTime compatibility
 async function parseM3u8ForSegments(url) {
   try {
     console.log('Parsing m3u8:', url);
@@ -132,14 +133,81 @@ async function parseM3u8ForSegments(url) {
     const m3u8Lines = lines.filter(l => l.trim().endsWith('.m3u8') && !l.startsWith('#'));
 
     // If this is a master playlist (has .m3u8 references but we need to pick one)
-    // AND we don't have segments yet, recurse to the highest quality sub-playlist
+    // AND we don't have segments yet, recurse to the best quality sub-playlist
     if (m3u8Lines.length > 0 && segmentLines.length === 0) {
-      // YouTube lists qualities from LOW to HIGH, so pick LAST one (highest quality)
+      // Parse EXT-X-STREAM-INF to get codec info for each stream
+      const streams = [];
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line.startsWith('#EXT-X-STREAM-INF')) {
+          // Parse attributes
+          const codecsMatch = line.match(/CODECS="([^"]+)"/);
+          const bandwidthMatch = line.match(/BANDWIDTH=(\d+)/);
+          const resolutionMatch = line.match(/RESOLUTION=(\d+x\d+)/);
+
+          // Find the URL on the next line
+          let streamUrl = null;
+          for (let j = i + 1; j < lines.length; j++) {
+            const nextLine = lines[j].trim();
+            if (nextLine && !nextLine.startsWith('#')) {
+              streamUrl = nextLine;
+              break;
+            }
+          }
+
+          if (streamUrl) {
+            const codecs = codecsMatch ? codecsMatch[1] : '';
+            const bandwidth = bandwidthMatch ? parseInt(bandwidthMatch[1]) : 0;
+            const resolution = resolutionMatch ? resolutionMatch[1] : '';
+
+            // Determine codec type
+            const isH264 = codecs.includes('avc1');
+            const isVP9 = codecs.includes('vp09') || codecs.includes('vp9');
+
+            streams.push({
+              url: streamUrl.startsWith('http') ? streamUrl : baseUrl + streamUrl,
+              codecs,
+              bandwidth,
+              resolution,
+              isH264,
+              isVP9
+            });
+          }
+        }
+      }
+
+      // If we parsed stream info, prefer H.264 for QuickTime compatibility
+      if (streams.length > 0) {
+        console.log(`Found ${streams.length} streams with codec info:`);
+        streams.forEach((s, i) => {
+          console.log(`  ${i + 1}. ${s.resolution || 'N/A'} - ${s.isH264 ? 'H.264' : s.isVP9 ? 'VP9' : 'unknown'} - ${s.codecs} - ${(s.bandwidth / 1000000).toFixed(1)} Mbps`);
+        });
+
+        // Filter H.264 streams
+        const h264Streams = streams.filter(s => s.isH264);
+
+        if (h264Streams.length > 0) {
+          // Pick highest bandwidth H.264 stream
+          h264Streams.sort((a, b) => b.bandwidth - a.bandwidth);
+          const selected = h264Streams[0];
+          console.log(`✓ Selected H.264 stream: ${selected.resolution} (${selected.codecs}) - QuickTime compatible`);
+          return parseM3u8ForSegments(selected.url);
+        } else {
+          // No H.264, fall back to highest bandwidth VP9
+          console.log('⚠ No H.264 streams found, falling back to VP9 (may not play in QuickTime)');
+          streams.sort((a, b) => b.bandwidth - a.bandwidth);
+          const selected = streams[0];
+          console.log(`Selected: ${selected.resolution} (${selected.codecs})`);
+          return parseM3u8ForSegments(selected.url);
+        }
+      }
+
+      // Fallback: no stream info parsed, use last playlist (highest quality)
       let streamUrl = m3u8Lines[m3u8Lines.length - 1].trim();
       if (!streamUrl.startsWith('http')) {
         streamUrl = baseUrl + streamUrl;
       }
-      console.log(`Found ${m3u8Lines.length} sub-playlists, picking LAST (highest quality):`, streamUrl);
+      console.log(`Found ${m3u8Lines.length} sub-playlists (no codec info), picking LAST:`, streamUrl);
       return parseM3u8ForSegments(streamUrl);
     }
 
@@ -631,4 +699,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-console.log('Video Downloader v4.9 - Prefer fMP4/hls_variant for highest quality');
+console.log('Video Downloader v5.0 - Prefer H.264 codec for QuickTime compatibility');
