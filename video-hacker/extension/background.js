@@ -631,4 +631,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-console.log('Video Downloader v4.8 - fMP4 init segment support + detailed logging');
+console.log('Video Downloader v4.9 - Prefer fMP4/hls_variant for highest quality');
