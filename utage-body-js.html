@@ -19,6 +19,13 @@
         }
     }
 
+    // SKIPボタンのセットアップ（DOM準備完了時）
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupSkipButton);
+    } else {
+        setupSkipButton();
+    }
+
     // レイアウト調整のメイン関数
     function adjustLayout() {
 
@@ -85,7 +92,8 @@
                     if (!el.closest('.break-out-container') &&
                         !el.closest('.floating-bg-container') &&
                         !el.classList.contains('neon-card') &&
-                        !el.classList.contains('neon-frame')) {
+                        !el.classList.contains('neon-frame') &&
+                        !el.classList.contains('cta-wrapper')) {
                         el.style.backgroundImage = 'none';
                     }
                 }
@@ -222,11 +230,7 @@
     }
 
     // 実行トリガー
-    window.addEventListener('load', function() {
-        adjustLayout();
-        setupSkipButton();
-    });
-
+    window.addEventListener('load', adjustLayout);
     var checkCount = 0;
     var intervalId = setInterval(function() {
         adjustLayout();
@@ -234,13 +238,6 @@
         if (checkCount > 20) clearInterval(intervalId); // 回数を増やして確実に消す
     }, 100);
     adjustLayout();
-
-    // SKIPボタンのセットアップ（DOM準備完了時）
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', setupSkipButton);
-    } else {
-        setupSkipButton();
-    }
 
     // DOMの変更を監視して、後から追加される要素も消す
     var observer = new MutationObserver(function(mutations) {
