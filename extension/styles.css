@@ -1,0 +1,60 @@
+.utage-downloader-wrapper {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  z-index: 2147483647;
+}
+
+.utage-downloader-button {
+  background: linear-gradient(135deg, #111827, #1f2937);
+  color: #f9fafb;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+
+.utage-downloader-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.24);
+  background: linear-gradient(135deg, #0b3cc1, #1f2937);
+}
+
+.utage-downloader-button:active {
+  transform: translateY(0);
+}
+
+.utage-downloader-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translate(-50%, 20px);
+  background: #111827;
+  color: #f9fafb;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  transition: opacity 160ms ease, transform 160ms ease;
+  z-index: 2147483647;
+  max-width: 320px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.utage-downloader-toast.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.utage-downloader-toast-success {
+  background: #065f46;
+}
+
+.utage-downloader-toast-error {
+  background: #b91c1c;
+}

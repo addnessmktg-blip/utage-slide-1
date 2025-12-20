@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "UTAGE & YouTube Video Downloader",
+  "version": "0.1.0",
+  "description": "Adds a download button to embedded videos on UTAGE pages and YouTube to save playable sources when available.",
+  "permissions": ["downloads"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content-script.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
