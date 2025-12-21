@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Tool Recipes - Neon Edition</title>
+<style>
+    /* --- 全体設定 --- */
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        background-color: #050505 !important;
+    }
+
+    /* --- 3D浮遊背景 --- */
+    .floating-bg-container {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        overflow: hidden;
+        perspective: 1200px;
+        pointer-events: none;
+        z-index: 9990 !important;
+        background-color: #050505 !important;
+    }
+    .floating-layer {
+        position: absolute; width: 100%; height: 100%;
+        transform-style: preserve-3d;
+    }
+    .floating-tile {
+        position: absolute;
+        border-radius: 24px;
+        background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.02) 50%, transparent 100%);
+        border: 2px solid var(--tile-color);
+        opacity: 0;
+        transform-style: preserve-3d;
+        animation:
+            tile-sweep 4.5s var(--intro-delay) cubic-bezier(0.22, 1, 0.36, 1) forwards,
+            tile-breathe 3s calc(4.5s + var(--intro-delay)) ease-in-out infinite,
+            tile-float var(--float-duration) calc(4.5s + var(--intro-delay)) ease-in-out infinite;
+    }
+
+    @keyframes tile-sweep {
+        0% {
+            opacity: 0;
+            transform: var(--start-transform);
+            box-shadow:
+                0 0 60px var(--tile-color),
+                0 0 120px var(--tile-color),
+                inset 0 0 30px rgba(255,255,255,0.1);
+        }
+        60% {
+            box-shadow:
+                0 0 80px var(--tile-color),
+                0 0 160px var(--tile-color),
+                inset 0 0 40px rgba(255,255,255,0.15);
+        }
+        100% {
+            opacity: var(--end-opacity);
+            transform: var(--end-transform);
+            box-shadow:
+                0 0 30px var(--tile-color),
+                0 0 60px rgba(255,255,255,0.05),
+                inset 0 0 20px rgba(255,255,255,0.05);
+        }
+    }
+
+    @keyframes tile-breathe {
+        0%, 100% {
+            box-shadow:
+                0 0 30px var(--tile-color),
+                0 0 60px rgba(255,255,255,0.05),
+                inset 0 0 20px rgba(255,255,255,0.05);
+        }
+        50% {
+            box-shadow:
+                0 0 50px var(--tile-color),
+                0 0 100px var(--tile-color),
+                inset 0 0 30px rgba(255,255,255,0.1);
+        }
+    }
+
+    @keyframes tile-float {
+        0%, 100% { translate: 0 0; }
+        50% { translate: 0 var(--float-distance); }
+    }
+
+    /* 各タイルの配置 */
+    .tile-1 {
+        --tile-color: #00ff9d; --intro-delay: 0s; --float-duration: 4s; --float-distance: -25px;
+        width: 216px; height: 216px; top: 3%; left: 3%;
+        --start-transform: translate3d(-200vw, -80vh, 600px) scale(2.5) rotateY(60deg);
+        --end-transform: translate3d(0, 0, 30px) rotateY(-10deg) rotateX(5deg);
+        --end-opacity: 0.16;
+    }
+    .tile-2 {
+        --tile-color: #d946ef; --intro-delay: 0.12s; --float-duration: 5s; --float-distance: -30px;
+        width: 198px; height: 198px; top: 5%; left: 50%; transform: translateX(-50%);
+        --start-transform: translate3d(0, -250vh, 500px) scale(2.5) rotateX(-90deg);
+        --end-transform: translate3d(0, 0, 20px) rotateX(8deg) rotateY(5deg);
+        --end-opacity: 0.14;
+    }
+    .tile-3 {
+        --tile-color: #ff00cc; --intro-delay: 0.08s; --float-duration: 4.5s; --float-distance: -22px;
+        width: 207px; height: 207px; top: 2%; right: 5%;
+        --start-transform: translate3d(200vw, -100vh, 550px) scale(2.5) rotateY(-70deg);
+        --end-transform: translate3d(0, 0, 25px) rotateY(12deg) rotateX(-3deg);
+        --end-opacity: 0.15;
+    }
+    .tile-4 {
+        --tile-color: #ff3333; --intro-delay: 0.18s; --float-duration: 5.5s; --float-distance: -28px;
+        width: 180px; height: 180px; top: 38%; left: 2%;
+        --start-transform: translate3d(-250vw, 50vh, 450px) scale(2.5) rotateY(80deg);
+        --end-transform: translate3d(0, 0, 15px) rotateY(-15deg) rotateX(8deg);
+        --end-opacity: 0.14;
+    }
+    .tile-5 {
+        --tile-color: #00ccff; --intro-delay: 0.25s; --float-duration: 6s; --float-distance: -35px;
+        width: 252px; height: 252px; top: 50%; left: 50%;
+        --start-transform: translate(-50%, -50%) translate3d(0, 0, 1000px) scale(3) rotateX(45deg) rotateY(45deg);
+        --end-transform: translate(-50%, -50%) translate3d(0, 0, -30px) rotateX(10deg) rotateY(10deg);
+        --end-opacity: 0.25;
+        display: flex; align-items: center; justify-content: center;
+        animation:
+            logo-sweep 4.5s 0s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+            logo-settle 1.5s 4.5s ease-out forwards,
+            tile-float 6s 4.5s ease-in-out infinite;
+    }
+
+    @keyframes logo-sweep {
+        0% {
+            opacity: 0.7;
+            transform: translate(-50%, -50%) translate3d(0, 0, 1000px) scale(3) rotateX(45deg) rotateY(45deg);
+            box-shadow:
+                0 0 100px #00ccff,
+                0 0 200px #00ccff,
+                0 0 300px rgba(0,204,255,0.8),
+                inset 0 0 50px rgba(255,255,255,0.3);
+        }
+        30% {
+            opacity: 0.9;
+        }
+        70% {
+            opacity: 1;
+            box-shadow:
+                0 0 150px #00ccff,
+                0 0 300px #00ccff,
+                0 0 400px rgba(0,204,255,0.9),
+                inset 0 0 60px rgba(255,255,255,0.4);
+        }
+        100% {
+            opacity: 1;
+            transform: translate(-50%, -50%) translate3d(0, 0, -30px) rotateX(10deg) rotateY(10deg);
+            box-shadow:
+                0 0 150px #00ccff,
+                0 0 300px #00ccff,
+                0 0 400px rgba(0,204,255,0.9),
+                inset 0 0 60px rgba(255,255,255,0.4);
+        }
+    }
+
+    @keyframes logo-settle {
+        0% {
+            opacity: 1;
+            box-shadow:
+                0 0 150px #00ccff,
+                0 0 300px #00ccff,
+                0 0 400px rgba(0,204,255,0.9),
+                inset 0 0 60px rgba(255,255,255,0.4);
+        }
+        100% {
+            opacity: 0.2;
+            box-shadow:
+                0 0 25px var(--tile-color),
+                0 0 50px rgba(0,204,255,0.3),
+                inset 0 0 15px rgba(255,255,255,0.05);
+        }
+    }
+
+    .tile-5 .tile-logo {
+        width: 95%; height: auto; max-width: 280px;
+        animation: logo-glow 4.5s 0s forwards, logo-glow-settle 1.5s 4.5s ease-out forwards;
+    }
+
+    @keyframes logo-glow {
+        0% {
+            filter:
+                drop-shadow(0 0 40px #00ccff)
+                drop-shadow(0 0 80px #00ccff)
+                drop-shadow(0 0 120px #00ccff)
+                drop-shadow(0 0 160px rgba(0,204,255,0.8));
+        }
+        70%, 100% {
+            filter:
+                drop-shadow(0 0 60px #ffffff)
+                drop-shadow(0 0 120px #00ccff)
+                drop-shadow(0 0 180px #00ccff)
+                drop-shadow(0 0 240px rgba(0,204,255,0.9));
+        }
+    }
+
+    @keyframes logo-glow-settle {
+        0% {
+            filter:
+                drop-shadow(0 0 60px #ffffff)
+                drop-shadow(0 0 120px #00ccff)
+                drop-shadow(0 0 180px #00ccff)
+                drop-shadow(0 0 240px rgba(0,204,255,0.9));
+        }
+        100% {
+            filter:
+                drop-shadow(0 0 15px #00ccff)
+                drop-shadow(0 0 30px #00ccff)
+                drop-shadow(0 0 45px rgba(0,204,255,0.4));
+        }
+    }
+    .tile-6 {
+        --tile-color: #4da6ff; --intro-delay: 0.15s; --float-duration: 4.8s; --float-distance: -24px;
+        width: 189px; height: 189px; top: 40%; right: 3%;
+        --start-transform: translate3d(220vw, -30vh, 480px) scale(2.5) rotateY(-65deg);
+        --end-transform: translate3d(0, 0, 20px) rotateY(10deg) rotateX(-5deg);
+        --end-opacity: 0.13;
+    }
+    .tile-7 {
+        --tile-color: #ff66b2; --intro-delay: 0.05s; --float-duration: 5.2s; --float-distance: -26px;
+        width: 207px; height: 207px; bottom: 8%; left: 4%;
+        --start-transform: translate3d(-180vw, 150vh, 520px) scale(2.5) rotateY(55deg) rotateX(-30deg);
+        --end-transform: translate3d(0, 0, 25px) rotateY(-12deg) rotateX(6deg);
+        --end-opacity: 0.15;
+    }
+    .tile-8 {
+        --tile-color: #ffdd00; --intro-delay: 0.22s; --float-duration: 4.3s; --float-distance: -32px;
+        width: 194px; height: 194px; bottom: 5%; left: 50%; transform: translateX(-50%);
+        --start-transform: translate3d(80vw, 200vh, 400px) scale(2.5) rotateX(60deg);
+        --end-transform: translate3d(0, 0, 10px) rotateX(-8deg) rotateY(-4deg);
+        --end-opacity: 0.13;
+    }
+    .tile-9 {
+        --tile-color: #ff8800; --intro-delay: 0.1s; --float-duration: 5.8s; --float-distance: -25px;
+        width: 212px; height: 212px; bottom: 6%; right: 2%;
+        --start-transform: translate3d(200vw, 120vh, 580px) scale(2.5) rotateY(-75deg) rotateX(20deg);
+        --end-transform: translate3d(0, 0, 30px) rotateY(14deg) rotateX(-4deg);
+        --end-opacity: 0.14;
+    }
+
+    /* --- コンテナ --- */
+    .break-out-container {
+        position: absolute !important;
+        top: 0;
+        left: 0;
+        width: 100%;
+        min-height: 100vh;
+        z-index: 9999 !important;
+        background-color: transparent;
+        padding: 60px 0;
+        box-sizing: border-box;
+        display: block;
+    }
+
+    /* --- デザイン設定 --- */
+    .inner-content {
+        width: 90%;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding-bottom: 100px;
+    }
+
+    /* コンテンツ登場アニメーション */
+    @keyframes content-appear {
+        0% { opacity: 0; transform: translateY(30px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes card-appear {
+        0% { opacity: 0; transform: translateY(30px) scale(0.95); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .neon-header-wrapper {
+        text-align: center;
+        margin-bottom: 80px;
+        padding: 20px;
+        opacity: 0;
+        transform: translateY(30px);
+        animation: content-appear 1.2s 4.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .grid-wrapper {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 30px;
+        opacity: 0;
+        transform: translateY(40px);
+        animation: content-appear 1s 4.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .neon-frame {
+        position: relative;
+        display: inline-block;
+        padding: 40px 80px;
+        background-color: rgba(0, 20, 20, 0.8);
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(0, 255, 255, 0.3);
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+        overflow: hidden;
+        border-radius: 4px;
+    }
+
+    .neon-frame span { position: absolute; display: block; }
+    .neon-frame span:nth-child(1) { top: 0; left: -100%; width: 100%; height: 4px; background: linear-gradient(90deg, transparent, #00ffff); animation: btn-anim1 2s linear infinite; }
+    @keyframes btn-anim1 { 0% { left: -100%; } 50%,100% { left: 100%; } }
+    .neon-frame span:nth-child(2) { top: -100%; right: 0; width: 4px; height: 100%; background: linear-gradient(180deg, transparent, #00ffff); animation: btn-anim2 2s linear infinite; animation-delay: 0.5s; }
+    @keyframes btn-anim2 { 0% { top: -100%; } 50%,100% { top: 100%; } }
+    .neon-frame span:nth-child(3) { bottom: 0; right: -100%; width: 100%; height: 4px; background: linear-gradient(270deg, transparent, #00ffff); animation: btn-anim3 2s linear infinite; animation-delay: 1s; }
+    @keyframes btn-anim3 { 0% { right: -100%; } 50%,100% { right: 100%; } }
+    .neon-frame span:nth-child(4) { bottom: -100%; left: 0; width: 4px; height: 100%; background: linear-gradient(360deg, transparent, #00ffff); animation: btn-anim4 2s linear infinite; animation-delay: 1.5s; }
+    @keyframes btn-anim4 { 0% { bottom: -100%; } 50%,100% { bottom: 100%; } }
+
+    .neon-title-main {
+        font-weight: 900;
+        font-size: clamp(32px, 5vw, 64px);
+        margin: 0 0 10px 0;
+        color: #fff;
+        letter-spacing: 2px;
+        text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 40px #ff00ff;
+        z-index: 10; position: relative;
+        line-height: 1.2;
+    }
+
+    .neon-title-sub {
+        font-weight: 700;
+        font-size: clamp(14px, 2vw, 20px);
+        color: #ccffff;
+        margin: 0;
+        letter-spacing: 1px;
+        text-shadow: 0 0 10px #00ffff;
+        z-index: 10; position: relative;
+    }
+
+    .neon-card {
+        background: #111;
+        border-radius: 24px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        text-decoration: none !important;
+        overflow: hidden;
+        aspect-ratio: 1 / 1;
+        width: 100%;
+        transition: all 0.3s ease;
+        --theme-color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+        animation: card-appear 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .neon-card:nth-child(1) { animation-delay: 4.8s; }
+    .neon-card:nth-child(2) { animation-delay: 4.9s; }
+    .neon-card:nth-child(3) { animation-delay: 5.0s; }
+    .neon-card:nth-child(4) { animation-delay: 5.1s; }
+    .neon-card:nth-child(5) { animation-delay: 5.2s; }
+    .neon-card:nth-child(6) { animation-delay: 5.3s; }
+    .neon-card:nth-child(7) { animation-delay: 5.4s; }
+    .neon-card:nth-child(8) { animation-delay: 5.5s; }
+    .neon-card:nth-child(9) { animation-delay: 5.6s; }
+
+    .neon-card:hover {
+        transform: translateY(-8px);
+        border-color: var(--theme-color);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 20px var(--theme-color);
+    }
+
+    .card-image-area {
+        height: 40%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(to bottom, rgba(255,255,255,0.03), transparent);
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .tool-badge {
+        font-weight: 800;
+        font-size: clamp(20px, 2.5vw, 32px);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-transform: uppercase;
+        color: #fff;
+        text-shadow: 0 0 15px var(--theme-color);
+    }
+
+    .card-content {
+        padding: 24px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        justify-content: space-between;
+    }
+
+    .problem-tag {
+        color: var(--theme-color);
+        font-weight: bold;
+        font-size: clamp(11px, 1.1vw, 13px);
+        letter-spacing: 1px;
+        margin-bottom: 5px;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 4px 12px;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .card-title {
+        color: #fff;
+        font-size: clamp(14px, 1.5vw, 18px);
+        font-weight: bold;
+        line-height: 1.6;
+        margin: 0;
+        width: 100%;
+    }
+
+    /* ===== ホバーインサイトコピー ===== */
+    .card-text-wrapper {
+        position: relative;
+        width: 100%;
+        min-height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .card-problem {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: clamp(13px, 1.4vw, 16px);
+        font-weight: 500;
+        line-height: 1.6;
+        margin: 0;
+        width: 100%;
+        text-align: center;
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    .card-solution {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        color: var(--theme-color);
+        font-size: clamp(15px, 1.6vw, 19px);
+        font-weight: 800;
+        line-height: 1.5;
+        margin: 0;
+        width: 100%;
+        text-align: center;
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        opacity: 0;
+        transform: translateY(20px) scale(0.9);
+        text-shadow:
+            0 0 10px var(--theme-color),
+            0 0 20px var(--theme-color),
+            0 0 40px var(--theme-color);
+    }
+
+    .neon-card:hover .card-problem {
+        opacity: 0;
+        transform: translateY(-15px) scale(0.9);
+    }
+
+    .neon-card:hover .card-solution {
+        opacity: 1;
+        transform: translateY(-50%) scale(1);
+    }
+
+    /* スマホ用タップ状態 */
+    .neon-card.tapped .card-problem {
+        opacity: 0;
+        transform: translateY(-15px) scale(0.9);
+    }
+
+    .neon-card.tapped .card-solution {
+        opacity: 1;
+        transform: translateY(-50%) scale(1);
+    }
+
+    .neon-btn {
+        width: 100%;
+        padding: 12px 0;
+        border-radius: 50px;
+        font-weight: bold;
+        font-size: 14px;
+        text-align: center;
+        transition: all 0.3s;
+        margin-top: auto;
+        background-color: transparent;
+        color: var(--theme-color);
+        border: 2px solid var(--theme-color);
+        box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        text-shadow: 0 0 5px rgba(0,0,0,0.8);
+    }
+
+    .neon-card:hover .neon-btn {
+        background-color: var(--theme-color);
+        color: #000;
+        box-shadow: 0 0 20px var(--theme-color);
+        border-color: var(--theme-color);
+        text-shadow: none;
+    }
+
+    /* --- スキップボタン --- */
+    .skip-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        z-index: 10001;
+        padding: 12px 24px;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 30px;
+        color: #fff;
+        font-size: 14px;
+        cursor: pointer;
+        backdrop-filter: blur(10px);
+        transition: all 0.3s;
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .skip-btn:hover {
+        background: rgba(255,255,255,0.2);
+        transform: scale(1.05);
+    }
+    .skip-btn.hidden {
+        animation: skip-btn-fadeout 1s ease-out forwards;
+        pointer-events: none;
+    }
+    @keyframes skip-btn-fadeout {
+        0% {
+            opacity: 1;
+            box-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+        30% {
+            opacity: 0.8;
+            box-shadow: 0 0 20px rgba(255,255,255,0.5), 0 0 40px rgba(0,204,255,0.3);
+        }
+        100% {
+            opacity: 0;
+            box-shadow: 0 0 0 transparent;
+        }
+    }
+
+    /* スキップ時のアニメーション無効化 */
+    .skip-animation * {
+        animation-duration: 0s !important;
+        animation-delay: 0s !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+    .skip-animation .floating-tile {
+        opacity: var(--end-opacity) !important;
+        transform: var(--end-transform) !important;
+    }
+    .skip-animation .tile-5 {
+        opacity: 0.2 !important;
+        box-shadow: 0 0 25px #00ccff, 0 0 50px rgba(0,204,255,0.3) !important;
+    }
+    .skip-animation .tile-5 .tile-logo {
+        filter: drop-shadow(0 0 15px #00ccff) drop-shadow(0 0 30px #00ccff) !important;
+    }
+    .skip-animation .neon-card {
+        transform: translateY(0) scale(1) !important;
+    }
+
+    .sp-only { display: none; }
+    .pc-only { display: inline; }
+
+    @media (max-width: 768px) {
+        .skip-btn { bottom: 20px; right: 20px; padding: 10px 20px; font-size: 12px; }
+        .sp-only { display: inline; }
+        .pc-only { display: none; }
+
+        .floating-tile {
+            width: 80px !important;
+            height: 80px !important;
+        }
+        .break-out-container {
+            padding: 40px 0;
+        }
+        .neon-frame {
+            padding: 20px 10px;
+            width: 90%;
+        }
+        .grid-wrapper {
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+        .neon-card {
+            aspect-ratio: auto;
+            min-height: auto;
+            height: auto;
+            padding-bottom: 24px;
+        }
+        .card-image-area {
+            height: 140px;
+        }
+        .tool-badge {
+            font-size: 26px;
+        }
+        .card-content {
+            padding: 20px 20px 0 20px;
+            gap: 15px;
+        }
+        .problem-tag {
+            font-size: 12px;
+            margin-bottom: 0;
+        }
+        .card-title {
+            font-size: 17px;
+            margin-bottom: 10px;
+        }
+        .card-text-wrapper {
+            min-height: 70px;
+        }
+        .card-problem {
+            font-size: 14px;
+        }
+        .card-solution {
+            font-size: 16px;
+        }
+        .neon-btn {
+            width: 100%;
+            margin-top: 10px;
+        }
+    }
+
+    /* ===== UTAGE UI非表示 & 全画面化 ===== */
+
+    /* サイドバー非表示 */
+    #bd-docs-nav,
+    .sidebar,
+    nav.bg-light.sidebar {
+      display: none !important;
+    }
+
+    /* ナビゲーションバー非表示 */
+    .navbar.navbar-expand-md.navbar-dark.fixed-top {
+      display: none !important;
+    }
+
+    /* フッター非表示 */
+    footer.footer {
+      display: none !important;
+    }
+
+    /* パンくずリスト・ボタン類非表示 */
+    nav[aria-label="breadcrumb"],
+    .btn-toolbar,
+    #next_btn,
+    h4.mb-4 {
+      display: none !important;
+    }
+
+    /* メインコンテンツを全幅に */
+    main,
+    main > .container-fluid,
+    main > .container-fluid > .row,
+    main > .container-fluid > .row > [class*="col-"] {
+      max-width: 100% !important;
+      width: 100% !important;
+      flex: 0 0 100% !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    /* bodyのパディング調整（fixed-topナビバー用の余白を削除） */
+    body {
+      padding-top: 0 !important;
+    }
+</style>
+</head>
+<body>
+
+<button id="skipBtn" class="skip-btn">Skip</button>
+
+<div class="floating-bg-container">
+    <div class="floating-layer">
+        <div class="floating-tile tile-1"></div>
+        <div class="floating-tile tile-2"></div>
+        <div class="floating-tile tile-3"></div>
+        <div class="floating-tile tile-4"></div>
+        <div class="floating-tile tile-5">
+            <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/vlOOFeKneeCu0XmCTZN3DdAahKltkGdNWx33Z5Mh.png" alt="AddNeSS" class="tile-logo">
+        </div>
+        <div class="floating-tile tile-6"></div>
+        <div class="floating-tile tile-7"></div>
+        <div class="floating-tile tile-8"></div>
+        <div class="floating-tile tile-9"></div>
+    </div>
+</div>
+
+<div class="break-out-container">
+    <div class="inner-content">
+        <div class="neon-header-wrapper">
+            <div class="neon-frame">
+                <span></span><span></span><span></span><span></span>
+                <h1 class="neon-title-main">
+                    AIツール<br class="sp-only">活用レシピ 9選
+                </h1>
+                <p class="neon-title-sub">初心者でも今すぐ使える<br class="sp-only">実践テクニック</p>
+            </div>
+        </div>
+
+        <div class="grid-wrapper">
+            <!-- Card 1: PERPLEXITY -->
+            <a href="https://school.addness.co.jp/members/PRxxWTx3aAM8/course/9Vf0Mu8m8fA1/lesson/HClzwg4RS2WJ" class="neon-card" style="--theme-color: #00ff9d;">
+                <div class="card-image-area">
+                    <div class="tool-badge">PERPLEXITY</div>
+                </div>
+                <div class="card-content">
+                    <div class="problem-tag">なぜ伸びないか分からない</div>
+                    <div class="card-text-wrapper">
+                        <p class="card-problem">💭 伸びない原因が分かったらなぁ...</p>
+                        <h3 class="card-solution">🎉 伸びない原因が分かる！</h3>
+                    </div>
+                    <div class="neon-btn">レシピを見る →</div>
+                </div>
+            </a>
+
+            <!-- Card 2: TL;DV -->
+            <a href="https://school.addness.co.jp/members/PRxxWTx3aAM8/course/9Vf0Mu8m8fA1/lesson/5cRMDzO6l6uO" class="neon-card" style="--theme-color: #d946ef;">
+                <div class="card-image-area">
+                    <div class="tool-badge">TL;DV</div>
+                </div>
+                <div class="card-content">
+                    <div class="problem-tag">メモを取るのが大変</div>
+                    <div class="card-text-wrapper">
+                        <p class="card-problem">💭 メモ取りを自動化できたらなぁ...</p>
+                        <h3 class="card-solution">🎉 メモ取りを自動化できる！</h3>
+                    </div>
+                    <div class="neon-btn">レシピを見る →</div>
+                </div>
+            </a>
+
+            <!-- Card 3: NOTEBOOKLM (投稿分析) -->
+            <a href="https://school.addness.co.jp/members/PRxxWTx3aAM8/course/9Vf0Mu8m8fA1/lesson/0aqGIQkgvqnT" class="neon-card" style="--theme-color: #ff00cc;">
+                <div class="card-image-area">
+                    <div class="tool-badge">NOTEBOOKLM</div>
+                </div>
+                <div class="card-content">
+                    <div class="problem-tag">投稿の共通点が見えない</div>
+                    <div class="card-text-wrapper">
+                        <p class="card-problem">💭 伸びる投稿の法則が分かったらなぁ...</p>
+                        <h3 class="card-solution">🎉 伸びる投稿の法則が分かる！</h3>
+                    </div>
+                    <div class="neon-btn">レシピを見る →</div>
+                </div>
+            </a>
+
+            <!-- Card 4: NOTEBOOKLM (動画要約) -->
+            <a href="https://school.addness.co.jp/members/PRxxWTx3aAM8/course/9Vf0Mu8m8fA1/lesson/WFvrhjcVSROI" class="neon-card" style="--theme-color: #ff3333;">
+                <div class="card-image-area">
+                    <div class="tool-badge">NOTEBOOKLM</div>
+                </div>
+                <div class="card-content">
+                    <div class="problem-tag">動画を見る暇がない</div>
+                    <div class="card-text-wrapper">
+                        <p class="card-problem">💭 動画を一瞬で要約できたらなぁ...</p>
+                        <h3 class="card-solution">🎉 動画を一瞬で要約できる！</h3>
+                    </div>
+                    <div class="neon-btn">レシピを見る →</div>
+                </div>
+            </a>
+
+            <!-- Card 5: GEMINI -->
+            <a href="https://school.addness.co.jp/members/PRxxWTx3aAM8/course/9Vf0Mu8m8fA1/lesson/FQA5tZnZCe8j" class="neon-card" style="--theme-color: #00ccff;">
+                <div class="card-image-area">
+                    <div class="tool-badge">GEMINI</div>
+                </div>
+                <div class="card-content">
+                    <div class="problem-tag">毎回指示するのが面倒</div>
+                    <div class="card-text-wrapper">
+                        <p class="card-problem">💭 自分専用のAIが作れたらなぁ...</p>
+                        <h3 class="card-solution">🎉 自分専用のAIが作れる！</h3>
+                    </div>
+                    <div class="neon-btn">レシピを見る →</div>
+                </div>
+            </a>
+
+            <!-- Card 6: SORA -->
+            <a href="https://school.addness.co.jp/members/PRxxWTx3aAM8/course/9Vf0Mu8m8fA1/lesson/EONytXvoSSMA" class="neon-card" style="--theme-color: #4da6ff;">
+                <div class="card-image-area">
+                    <div class="tool-badge">SORA</div>
+                </div>
+                <div class="card-content">
+                    <div class="problem-tag">撮影機材がない</div>
+                    <div class="card-text-wrapper">
+                        <p class="card-problem">💭 撮影なしで動画が作れたらなぁ...</p>
+                        <h3 class="card-solution">🎉 撮影なしで動画が作れる！</h3>
+                    </div>
+                    <div class="neon-btn">レシピを見る →</div>
+                </div>
+            </a>
+
+            <!-- Card 7: VREW -->
+            <a href="https://school.addness.co.jp/members/PRxxWTx3aAM8/course/9Vf0Mu8m8fA1/lesson/XO1Qvk5gCec6" class="neon-card" style="--theme-color: #ff66b2;">
+                <div class="card-image-area">
+                    <div class="tool-badge">VREW</div>
+                </div>
+                <div class="card-content">
+                    <div class="problem-tag">編集作業が終わらない</div>
+                    <div class="card-text-wrapper">
+                        <p class="card-problem">💭 編集が全自動になったらなぁ...</p>
+                        <h3 class="card-solution">🎉 編集が全自動になる！</h3>
+                    </div>
+                    <div class="neon-btn">レシピを見る →</div>
+                </div>
+            </a>
+
+            <!-- Card 8: nanoBANANA -->
+            <a href="https://school.addness.co.jp/members/PRxxWTx3aAM8/course/9Vf0Mu8m8fA1/lesson/G7EriI8lsJco" class="neon-card" style="--theme-color: #ffdd00;">
+                <div class="card-image-area">
+                    <div class="tool-badge">nanoBANANA</div>
+                </div>
+                <div class="card-content">
+                    <div class="problem-tag">毎日投稿が続かない</div>
+                    <div class="card-text-wrapper">
+                        <p class="card-problem">💭 無限に投稿を量産できたらなぁ...</p>
+                        <h3 class="card-solution">🎉 無限に投稿を量産できる！</h3>
+                    </div>
+                    <div class="neon-btn">レシピを見る →</div>
+                </div>
+            </a>
+
+            <!-- Card 9: CLAUDE -->
+            <a href="https://school.addness.co.jp/members/PRxxWTx3aAM8/course/9Vf0Mu8m8fA1/lesson/ry2fsSoGs6Jg" class="neon-card" style="--theme-color: #ff8800;">
+                <div class="card-image-area">
+                    <div class="tool-badge">CLAUDE</div>
+                </div>
+                <div class="card-content">
+                    <div class="problem-tag">センスの良いタグが不明</div>
+                    <div class="card-text-wrapper">
+                        <p class="card-problem">💭 最適なタグが分かったらなぁ...</p>
+                        <h3 class="card-solution">🎉 最適なタグが分かる！</h3>
+                    </div>
+                    <div class="neon-btn">レシピを見る →</div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    // UTAGE標準UI非表示
+    var style = document.createElement('style');
+    style.innerHTML = '\
+        .btn-toolbar.py-4 { display: none !important; }\
+        #next_btn { display: none !important; }\
+        button.btn.btn-primary { display: none !important; }\
+    ';
+    document.head.appendChild(style);
+
+    setInterval(function() {
+        var nextGroup = document.getElementById('next_btn');
+        if (nextGroup) {
+            var toolbar = nextGroup.closest('.btn-toolbar');
+            if (toolbar) toolbar.style.setProperty('display', 'none', 'important');
+        }
+    }, 500);
+
+    // スキップボタン
+    var skipBtn = document.getElementById('skipBtn');
+    if (skipBtn) {
+        skipBtn.addEventListener('click', function() {
+            document.body.classList.add('skip-animation');
+            skipBtn.classList.add('hidden');
+        });
+
+        // ロゴと同じタイミングでスキップボタン非表示（4.5秒）
+        setTimeout(function() {
+            skipBtn.classList.add('hidden');
+        }, 4500);
+    }
+
+    // スマホ用タップエフェクト
+    var currentTapped = null;
+    document.addEventListener('touchstart', function(e) {
+        var card = e.target.closest('.neon-card');
+        if (currentTapped && currentTapped !== card) {
+            currentTapped.classList.remove('tapped');
+        }
+        if (card) {
+            card.classList.add('tapped');
+            currentTapped = card;
+        }
+    }, { passive: true });
+
+    document.addEventListener('touchend', function() {
+        if (currentTapped) {
+            currentTapped.classList.remove('tapped');
+            currentTapped = null;
+        }
+    }, { passive: true });
+
+    // レイアウト調整のメイン関数
+    function adjustLayout() {
+        var neonContainer = document.querySelector('.break-out-container');
+
+        if (neonContainer) {
+            document.body.style.overflow = 'auto';
+            document.documentElement.style.overflow = 'auto';
+            document.body.style.backgroundColor = '#050505';
+
+            var headers = document.querySelectorAll('header, footer, .navbar, nav');
+            headers.forEach(function(el) { el.style.display = 'none'; });
+
+            var bgElements = document.querySelectorAll([
+                '[class*="background"]',
+                '[class*="bg-"]',
+                '[class*="backdrop"]',
+                '[class*="overlay"]',
+                '[class*="decoration"]',
+                '[class*="pattern"]',
+                '.floating-bg-container ~ *:not(.break-out-container)',
+                'body > div:not(.floating-bg-container):not(.break-out-container)'
+            ].join(','));
+
+            bgElements.forEach(function(el) {
+                if (!el.closest('.break-out-container') &&
+                    !el.classList.contains('break-out-container') &&
+                    !el.classList.contains('floating-bg-container') &&
+                    !el.closest('.floating-bg-container')) {
+                    el.style.background = 'transparent';
+                    el.style.backgroundImage = 'none';
+                }
+            });
+
+            var bodyChildren = document.body.children;
+            for (var i = 0; i < bodyChildren.length; i++) {
+                var child = bodyChildren[i];
+                if (child.tagName === 'DIV' &&
+                    !child.classList.contains('floating-bg-container') &&
+                    !child.classList.contains('break-out-container') &&
+                    !child.querySelector('.break-out-container') &&
+                    !child.querySelector('.floating-bg-container')) {
+                    if (child.tagName !== 'STYLE' && child.tagName !== 'SCRIPT') {
+                        child.style.display = 'none';
+                    }
+                }
+            }
+
+            var allElements = document.querySelectorAll('*');
+            allElements.forEach(function(el) {
+                if (el.style.backgroundImage && el.style.backgroundImage !== 'none') {
+                    if (!el.closest('.break-out-container') &&
+                        !el.closest('.floating-bg-container') &&
+                        !el.classList.contains('neon-card') &&
+                        !el.classList.contains('neon-frame')) {
+                        el.style.backgroundImage = 'none';
+                    }
+                }
+            });
+
+            if (!document.getElementById('neon-top-cleanup-style')) {
+                var cleanupStyle = document.createElement('style');
+                cleanupStyle.id = 'neon-top-cleanup-style';
+                cleanupStyle.innerHTML = '\
+                    body > div:not(.floating-bg-container):not(.break-out-container):not([class*="floating"]):not([class*="neon"]) {\
+                        background: transparent !important;\
+                        background-image: none !important;\
+                    }\
+                    [class*="background"]:not(.floating-bg-container),\
+                    [class*="bg-image"],\
+                    [class*="backdrop"],\
+                    [class*="hero-bg"],\
+                    [class*="section-bg"],\
+                    [class*="page-bg"] {\
+                        background: transparent !important;\
+                        background-image: none !important;\
+                        opacity: 0 !important;\
+                        visibility: hidden !important;\
+                    }\
+                    body > div[style*="position: fixed"]:not(.floating-bg-container),\
+                    body > div[style*="position:fixed"]:not(.floating-bg-container) {\
+                        display: none !important;\
+                    }\
+                    body > div[style*="z-index"]:not(.floating-bg-container):not(.break-out-container) {\
+                        display: none !important;\
+                    }\
+                ';
+                document.head.appendChild(cleanupStyle);
+            }
+        }
+    }
+
+    window.addEventListener('load', adjustLayout);
+    var checkCount = 0;
+    var intervalId = setInterval(function() {
+        adjustLayout();
+        checkCount++;
+        if (checkCount > 20) clearInterval(intervalId);
+    }, 100);
+    adjustLayout();
+
+    var observer = new MutationObserver(function(mutations) {
+        adjustLayout();
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+})();
+
+(function() {
+  // 編集モードでは実行しない
+  var isEditMode = (
+    window.location.href.indexOf('/edit') !== -1 ||
+    window.location.href.indexOf('/admin') !== -1 ||
+    window.parent !== window
+  );
+
+  if (isEditMode) return;
+
+  // 非表示にする要素
+  var hideSelectors = [
+    '.sidebar-sticky',
+    '.navbar.fixed-top',
+    'footer.footer',
+    '.col-md-3', '.col-3', '.col-lg-3',
+    '#sidebar', '.sidebar'
+  ];
+
+  function hideElements() {
+    hideSelectors.forEach(function(sel) {
+      document.querySelectorAll(sel).forEach(function(el) {
+        el.style.display = 'none';
+      });
+    });
+  }
+
+  hideElements();
+  setInterval(hideElements, 500);
+})();
+</script>
+
+</body>
+</html>
