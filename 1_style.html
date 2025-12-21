@@ -568,6 +568,23 @@
         opacity: 1 !important;
         transform: translateY(0) scale(1) !important;
     }
+    /* スキップ後もホバーを有効に */
+    .skip-animation .neon-card:hover .card-problem {
+        opacity: 0 !important;
+        transform: translateY(-15px) scale(0.9) !important;
+    }
+    .skip-animation .neon-card:hover .card-solution {
+        opacity: 1 !important;
+        transform: translateY(-50%) scale(1) !important;
+    }
+    .skip-animation .neon-card.tapped .card-problem {
+        opacity: 0 !important;
+        transform: translateY(-15px) scale(0.9) !important;
+    }
+    .skip-animation .neon-card.tapped .card-solution {
+        opacity: 1 !important;
+        transform: translateY(-50%) scale(1) !important;
+    }
 
     .sp-only { display: none; }
     .pc-only { display: inline; }
