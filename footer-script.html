@@ -434,6 +434,26 @@
         width: 100%;
     }
 
+    .card-problem {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: clamp(12px, 1.2vw, 14px);
+        margin: 0 0 5px 0;
+        width: 100%;
+    }
+
+    .card-arrow {
+        color: var(--theme-color);
+        font-size: 18px;
+        margin: 5px 0;
+        text-shadow: 0 0 10px var(--theme-color);
+        animation: arrow-bounce 1s ease-in-out infinite;
+    }
+
+    @keyframes arrow-bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(3px); }
+    }
+
     .neon-btn {
         width: 100%;
         padding: 12px 0;
@@ -564,6 +584,12 @@
             font-size: 17px;
             margin-bottom: 10px;
         }
+        .card-problem {
+            font-size: 14px;
+        }
+        .card-arrow {
+            font-size: 16px;
+        }
         .neon-btn {
             width: 100%;
             margin-top: 10px;
@@ -574,7 +600,7 @@
 <script>
 (function() {
     const skipBtn = document.getElementById('skipBtn');
-    const ANIMATION_END_TIME = 5000; // 5秒後にSkipボタンを非表示
+    const ANIMATION_END_TIME = 4500; // 4.5秒後にSkipボタンを非表示
 
     // Skipボタンクリック時の処理
     skipBtn.addEventListener('click', function() {
