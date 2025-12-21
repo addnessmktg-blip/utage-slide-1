@@ -1,0 +1,192 @@
+(function() {
+    // UTAGE標準UI非表示
+    var style = document.createElement('style');
+    style.innerHTML = '\
+        .btn-toolbar.py-4 { display: none !important; }\
+        #next_btn { display: none !important; }\
+        button.btn.btn-primary { display: none !important; }\
+    ';
+    document.head.appendChild(style);
+
+    setInterval(function() {
+        var nextGroup = document.getElementById('next_btn');
+        if (nextGroup) {
+            var toolbar = nextGroup.closest('.btn-toolbar');
+            if (toolbar) toolbar.style.setProperty('display', 'none', 'important');
+        }
+    }, 500);
+
+    // スキップボタン
+    var skipBtn = document.getElementById('skipBtn');
+    if (skipBtn) {
+        skipBtn.addEventListener('click', function() {
+            document.body.classList.add('skip-animation');
+            skipBtn.classList.add('hidden');
+        });
+
+        // ロゴと同じタイミングでスキップボタン非表示（4.5秒）
+        setTimeout(function() {
+            skipBtn.classList.add('hidden');
+        }, 4500);
+    }
+
+    // スマホ用タップエフェクト
+    var currentTapped = null;
+    document.addEventListener('touchstart', function(e) {
+        var card = e.target.closest('.neon-card');
+        if (currentTapped && currentTapped !== card) {
+            currentTapped.classList.remove('tapped');
+        }
+        if (card) {
+            card.classList.add('tapped');
+            currentTapped = card;
+        }
+    }, { passive: true });
+
+    document.addEventListener('touchend', function() {
+        if (currentTapped) {
+            currentTapped.classList.remove('tapped');
+            currentTapped = null;
+        }
+    }, { passive: true });
+
+    // レイアウト調整のメイン関数
+    function adjustLayout() {
+        var neonContainer = document.querySelector('.break-out-container');
+
+        if (neonContainer) {
+            document.body.style.overflow = 'auto';
+            document.documentElement.style.overflow = 'auto';
+            document.body.style.backgroundColor = '#050505';
+
+            var headers = document.querySelectorAll('header, footer, .navbar, nav');
+            headers.forEach(function(el) { el.style.display = 'none'; });
+
+            var bgElements = document.querySelectorAll([
+                '[class*="background"]',
+                '[class*="bg-"]',
+                '[class*="backdrop"]',
+                '[class*="overlay"]',
+                '[class*="decoration"]',
+                '[class*="pattern"]',
+                '.floating-bg-container ~ *:not(.break-out-container)',
+                'body > div:not(.floating-bg-container):not(.break-out-container)'
+            ].join(','));
+
+            bgElements.forEach(function(el) {
+                if (!el.closest('.break-out-container') &&
+                    !el.classList.contains('break-out-container') &&
+                    !el.classList.contains('floating-bg-container') &&
+                    !el.closest('.floating-bg-container')) {
+                    el.style.background = 'transparent';
+                    el.style.backgroundImage = 'none';
+                }
+            });
+
+            var bodyChildren = document.body.children;
+            for (var i = 0; i < bodyChildren.length; i++) {
+                var child = bodyChildren[i];
+                if (child.tagName === 'DIV' &&
+                    !child.classList.contains('floating-bg-container') &&
+                    !child.classList.contains('break-out-container') &&
+                    !child.querySelector('.break-out-container') &&
+                    !child.querySelector('.floating-bg-container')) {
+                    if (child.tagName !== 'STYLE' && child.tagName !== 'SCRIPT') {
+                        child.style.display = 'none';
+                    }
+                }
+            }
+
+            var allElements = document.querySelectorAll('*');
+            allElements.forEach(function(el) {
+                if (el.style.backgroundImage && el.style.backgroundImage !== 'none') {
+                    if (!el.closest('.break-out-container') &&
+                        !el.closest('.floating-bg-container') &&
+                        !el.classList.contains('neon-card') &&
+                        !el.classList.contains('neon-frame')) {
+                        el.style.backgroundImage = 'none';
+                    }
+                }
+            });
+
+            if (!document.getElementById('neon-top-cleanup-style')) {
+                var cleanupStyle = document.createElement('style');
+                cleanupStyle.id = 'neon-top-cleanup-style';
+                cleanupStyle.innerHTML = '\
+                    body > div:not(.floating-bg-container):not(.break-out-container):not([class*="floating"]):not([class*="neon"]) {\
+                        background: transparent !important;\
+                        background-image: none !important;\
+                    }\
+                    [class*="background"]:not(.floating-bg-container),\
+                    [class*="bg-image"],\
+                    [class*="backdrop"],\
+                    [class*="hero-bg"],\
+                    [class*="section-bg"],\
+                    [class*="page-bg"] {\
+                        background: transparent !important;\
+                        background-image: none !important;\
+                        opacity: 0 !important;\
+                        visibility: hidden !important;\
+                    }\
+                    body > div[style*="position: fixed"]:not(.floating-bg-container),\
+                    body > div[style*="position:fixed"]:not(.floating-bg-container) {\
+                        display: none !important;\
+                    }\
+                    body > div[style*="z-index"]:not(.floating-bg-container):not(.break-out-container) {\
+                        display: none !important;\
+                    }\
+                ';
+                document.head.appendChild(cleanupStyle);
+            }
+        }
+    }
+
+    window.addEventListener('load', adjustLayout);
+    var checkCount = 0;
+    var intervalId = setInterval(function() {
+        adjustLayout();
+        checkCount++;
+        if (checkCount > 20) clearInterval(intervalId);
+    }, 100);
+    adjustLayout();
+
+    var observer = new MutationObserver(function(mutations) {
+        adjustLayout();
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+})();
+
+(function() {
+  // 編集モードでは実行しない
+  var isEditMode = (
+    window.location.href.indexOf('/edit') !== -1 ||
+    window.location.href.indexOf('/admin') !== -1 ||
+    window.parent !== window
+  );
+
+  if (isEditMode) return;
+
+  // 非表示にする要素
+  var hideSelectors = [
+    '.sidebar-sticky',
+    '.navbar.fixed-top',
+    'footer.footer',
+    '.col-md-3', '.col-3', '.col-lg-3',
+    '#sidebar', '.sidebar'
+  ];
+
+  function hideElements() {
+    hideSelectors.forEach(function(sel) {
+      document.querySelectorAll(sel).forEach(function(el) {
+        el.style.display = 'none';
+      });
+    });
+  }
+
+  hideElements();
+  setInterval(hideElements, 500);
+})();
