@@ -434,24 +434,50 @@
         width: 100%;
     }
 
-    .card-problem {
-        color: rgba(255, 255, 255, 0.6);
-        font-size: clamp(12px, 1.2vw, 14px);
-        margin: 0 0 5px 0;
+    .card-text-wrapper {
+        position: relative;
+        flex-grow: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         width: 100%;
+        min-height: 80px;
     }
 
-    .card-arrow {
-        color: var(--theme-color);
-        font-size: 18px;
-        margin: 5px 0;
-        text-shadow: 0 0 10px var(--theme-color);
-        animation: arrow-bounce 1s ease-in-out infinite;
+    .card-problem {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: clamp(14px, 1.4vw, 17px);
+        font-weight: bold;
+        margin: 0;
+        width: 100%;
+        opacity: 1;
+        transition: opacity 0.4s ease, transform 0.4s ease;
     }
 
-    @keyframes arrow-bounce {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(3px); }
+    .card-solution {
+        color: #fff;
+        font-size: clamp(14px, 1.4vw, 17px);
+        font-weight: bold;
+        line-height: 1.5;
+        margin: 0;
+        width: 100%;
+        position: absolute;
+        top: 50%;
+        left: 0;
+        transform: translateY(-50%);
+        opacity: 0;
+        transition: opacity 0.4s ease, transform 0.4s ease;
+        text-shadow: 0 0 20px var(--theme-color);
+    }
+
+    .neon-card:hover .card-problem {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    .neon-card:hover .card-solution {
+        opacity: 1;
+        transform: translateY(-50%);
     }
 
     .neon-btn {
@@ -585,10 +611,13 @@
             margin-bottom: 10px;
         }
         .card-problem {
-            font-size: 14px;
+            font-size: 15px;
         }
-        .card-arrow {
-            font-size: 16px;
+        .card-solution {
+            font-size: 15px;
+        }
+        .card-text-wrapper {
+            min-height: 70px;
         }
         .neon-btn {
             width: 100%;
