@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI攻略のカンニングペーパー</title>
+</head>
+<body>
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: #000;
+  }
+
+  .treasure-section {
+    position: relative;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: #000;
+    overflow: hidden;
+  }
+
+  /* 文字（上部） */
+  .neon-text {
+    position: relative;
+    width: 85%;
+    max-width: 650px;
+    margin: 0 auto;
+    padding: 20px 0 0;
+    z-index: 10;
+    animation: neonGlow 2s ease-in-out infinite alternate;
+  }
+
+  .neon-text img {
+    width: 100%;
+    height: auto;
+  }
+
+  @keyframes neonGlow {
+    0% {
+      filter: drop-shadow(0 0 5px rgba(0, 255, 255, 0.6))
+              drop-shadow(0 0 10px rgba(0, 255, 255, 0.4));
+    }
+    100% {
+      filter: drop-shadow(0 0 15px rgba(0, 255, 255, 1))
+              drop-shadow(0 0 30px rgba(0, 255, 255, 0.8))
+              drop-shadow(0 0 45px rgba(0, 255, 255, 0.6));
+    }
+  }
+
+  /* 宝箱エリア（下部） */
+  .chest-area {
+    position: relative;
+    width: 100%;
+    margin-top: -32%;
+  }
+
+  .treasure-chest {
+    position: relative;
+    width: 95%;
+    max-width: 900px;
+    margin: 0 auto;
+    z-index: 5;
+    animation: chestFloat 3s ease-in-out infinite;
+  }
+
+  .treasure-chest img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  @keyframes chestFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  /* キラキラ */
+  .sparkle {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    z-index: 15;
+    animation: sparkleTwinkle 1.5s ease-in-out infinite;
+  }
+
+  .sparkle::before,
+  .sparkle::after {
+    content: '';
+    position: absolute;
+    background: linear-gradient(to bottom, transparent, #ffd700, transparent);
+    border-radius: 2px;
+  }
+
+  .sparkle::before {
+    width: 3px;
+    height: 100%;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .sparkle::after {
+    width: 100%;
+    height: 3px;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    background: linear-gradient(to right, transparent, #ffd700, transparent);
+  }
+
+  .sp-1 { top: 15%; left: 5%; animation-delay: 0s; }
+  .sp-2 { top: 20%; right: 5%; animation-delay: 0.3s; }
+  .sp-3 { top: 40%; left: 3%; animation-delay: 0.6s; }
+  .sp-4 { top: 35%; right: 3%; animation-delay: 0.9s; }
+  .sp-5 { top: 60%; left: 8%; animation-delay: 0.2s; }
+  .sp-6 { top: 55%; right: 8%; animation-delay: 0.5s; }
+  .sp-7 { top: 80%; left: 15%; animation-delay: 0.8s; }
+  .sp-8 { top: 75%; right: 15%; animation-delay: 0.4s; }
+
+  @keyframes sparkleTwinkle {
+    0%, 100% { opacity: 0.2; transform: scale(0.5); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+
+  /* ========== レスポンシブ（タブレット） ========== */
+  @media (max-width: 768px) {
+    .neon-text {
+      width: 92%;
+      padding: 15px 0 0;
+    }
+
+    .chest-area {
+      margin-top: -25%;
+    }
+
+    .treasure-chest {
+      width: 100%;
+    }
+
+    .sparkle {
+      width: 18px;
+      height: 18px;
+    }
+
+    .sparkle::before { width: 2px; }
+    .sparkle::after { height: 2px; }
+
+    .sp-1 { top: 12%; left: 3%; }
+    .sp-2 { top: 16%; right: 3%; }
+    .sp-3 { top: 35%; left: 2%; }
+    .sp-4 { top: 30%; right: 2%; }
+    .sp-5 { top: 55%; left: 5%; }
+    .sp-6 { top: 50%; right: 5%; }
+    .sp-7 { top: 75%; left: 10%; }
+    .sp-8 { top: 70%; right: 10%; }
+  }
+
+  /* ========== レスポンシブ（スマホ） ========== */
+  @media (max-width: 480px) {
+    .neon-text {
+      width: 95%;
+      padding: 10px 0 0;
+    }
+
+    .chest-area {
+      margin-top: -18%;
+    }
+
+    .treasure-chest {
+      width: 105%;
+      margin-left: -2.5%;
+    }
+
+    .sparkle {
+      width: 14px;
+      height: 14px;
+    }
+
+    .sparkle::before { width: 2px; }
+    .sparkle::after { height: 2px; }
+
+    .sp-1 { top: 10%; left: 2%; }
+    .sp-2 { top: 14%; right: 2%; }
+    .sp-3 { top: 32%; left: 1%; }
+    .sp-4 { top: 28%; right: 1%; }
+    .sp-5 { top: 52%; left: 3%; }
+    .sp-6 { top: 48%; right: 3%; }
+    .sp-7 { top: 72%; left: 8%; }
+    .sp-8 { top: 68%; right: 8%; }
+  }
+
+  /* ========== 横向きスマホ対応 ========== */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .neon-text {
+      width: 70%;
+      padding: 10px 0 0;
+    }
+
+    .chest-area {
+      margin-top: -35%;
+    }
+
+    .treasure-chest {
+      width: 85%;
+    }
+
+    .sparkle {
+      width: 16px;
+      height: 16px;
+    }
+  }
+</style>
+
+<div class="treasure-section">
+  <!-- 文字（上部） -->
+  <div class="neon-text">
+    <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/yjxFJbbLCnZUQ9i4c8upp2P6ZLPRdfZH22eMc0OY.png" alt="AI攻略のカンニングペーパーがここに！">
+  </div>
+
+  <!-- 宝箱エリア（下部） -->
+  <div class="chest-area">
+    <div class="treasure-chest">
+      <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/1bnLEZBb1sCB5P142VgOlwVL7uvIZBCA9sL3v9W7.png" alt="宝箱">
+    </div>
+
+    <!-- キラキラ -->
+    <div class="sparkle sp-1"></div>
+    <div class="sparkle sp-2"></div>
+    <div class="sparkle sp-3"></div>
+    <div class="sparkle sp-4"></div>
+    <div class="sparkle sp-5"></div>
+    <div class="sparkle sp-6"></div>
+    <div class="sparkle sp-7"></div>
+    <div class="sparkle sp-8"></div>
+  </div>
+</div>
+
+</body>
+</html>
