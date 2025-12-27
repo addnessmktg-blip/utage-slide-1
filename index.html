@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>生成AI スキル習得大全</title>
+</head>
+<body>
+
+<style>
+  /* ========== リセット & ベース ========== */
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: #1a1a1a;
+  }
+
+  /* ========== メインコンテナ ========== */
+  .retro-hero {
+    position: relative;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    background-color: #2a5a28;
+  }
+
+  /* ========== 背景（スクロールアニメーション） ========== */
+  .bg-map {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 120%;
+    height: 120%;
+    transform: translate(-50%, -50%);
+    background-image: url('https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/jd4LC24xi0rDcRxHnLIiW9ZkiWd2XTmCNrYKGGBK.png');
+    background-size: cover;
+    background-position: center;
+    animation: bgScroll 20s ease-in-out infinite;
+  }
+
+  @keyframes bgScroll {
+    0%, 100% { transform: translate(-50%, -50%) scale(1.1); }
+    25% { transform: translate(-48%, -52%) scale(1.1); }
+    50% { transform: translate(-52%, -50%) scale(1.1); }
+    75% { transform: translate(-50%, -48%) scale(1.1); }
+  }
+
+  /* ========== 茶色パネル ========== */
+  .panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 75%;
+    height: 80%;
+    background-image: url('https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/LDI4NM1PjYs41SJiSLpQ9vpMhKvhPKZdtcf3RAiG.png');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    opacity: 0;
+    animation: fadeIn 0.5s ease-out 0.3s forwards;
+  }
+
+  /* ========== 赤リボン ========== */
+  .ribbon {
+    position: absolute;
+    top: 3%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100%);
+    width: 70%;
+    max-width: 700px;
+    opacity: 0;
+    animation: dropIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s forwards;
+  }
+
+  .ribbon img {
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+  }
+
+  /* ========== 生成AI 文字 ========== */
+  .title-ai {
+    position: absolute;
+    top: 22%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 55%;
+    max-width: 500px;
+    opacity: 0;
+    animation: pixelAppear 0.4s steps(8) 1.3s forwards;
+  }
+
+  .title-ai img {
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(4px 4px 0 rgba(0,0,0,0.5));
+  }
+
+  /* ========== スキル習得大全 文字 ========== */
+  .title-skill {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50%;
+    max-width: 450px;
+    opacity: 0;
+    animation: pixelAppear 0.4s steps(8) 1.7s forwards;
+  }
+
+  .title-skill img {
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(3px 3px 0 rgba(0,0,0,0.5));
+  }
+
+  /* ========== 黒ボックス ========== */
+  .box-prompt {
+    position: absolute;
+    top: 62%;
+    left: 50%;
+    transform: translateX(-50%) scale(0.8);
+    width: 42%;
+    max-width: 400px;
+    opacity: 0;
+    animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 2.1s forwards;
+  }
+
+  .box-prompt img {
+    width: 100%;
+    height: auto;
+  }
+
+  /* ========== produced by ========== */
+  .produced-by {
+    position: absolute;
+    bottom: 12%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30%;
+    max-width: 280px;
+    opacity: 0;
+    animation: fadeIn 0.5s ease-out 2.5s forwards;
+  }
+
+  .produced-by img {
+    width: 100%;
+    height: auto;
+  }
+
+  /* ========== キャラクター ========== */
+  .character {
+    position: absolute;
+    bottom: 0;
+    right: -5%;
+    width: 35%;
+    max-width: 380px;
+    transform: translateX(100%);
+    opacity: 0;
+    animation: slideInRight 0.8s cubic-bezier(0.22, 1, 0.36, 1) 1.8s forwards,
+               float 3s ease-in-out 2.6s infinite;
+  }
+
+  .character img {
+    width: 100%;
+    height: auto;
+  }
+
+  /* ========== キラキラ ========== */
+  .sparkle {
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    background-image: url('https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/3POdtlhbHey2MvWc86zokLXn0b2Tc7pQae82afjF.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    opacity: 0;
+  }
+
+  .sparkle-1 {
+    top: 38%;
+    left: 18%;
+    animation: sparkle 1.5s ease-in-out 2.8s infinite;
+  }
+
+  .sparkle-2 {
+    top: 42%;
+    right: 20%;
+    animation: sparkle 1.5s ease-in-out 3.1s infinite;
+  }
+
+  .sparkle-3 {
+    top: 55%;
+    left: 22%;
+    animation: sparkle 1.5s ease-in-out 3.4s infinite;
+  }
+
+  .sparkle-4 {
+    top: 58%;
+    right: 24%;
+    animation: sparkle 1.5s ease-in-out 3.7s infinite;
+  }
+
+  /* ========== アニメーション定義 ========== */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes dropIn {
+    from {
+      transform: translateX(-50%) translateY(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes pixelAppear {
+    0% {
+      opacity: 0;
+      transform: translateX(-50%) scale(0.5);
+      filter: brightness(3);
+    }
+    50% {
+      opacity: 1;
+      filter: brightness(2);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+      filter: brightness(1) drop-shadow(4px 4px 0 rgba(0,0,0,0.5));
+    }
+  }
+
+  @keyframes popIn {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateX(0) translateY(0); }
+    50% { transform: translateX(0) translateY(-10px); }
+  }
+
+  @keyframes sparkle {
+    0%, 100% {
+      opacity: 0;
+      transform: scale(0.5) rotate(0deg);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1) rotate(180deg);
+    }
+  }
+
+  /* ========== レスポンシブ（タブレット） ========== */
+  @media (max-width: 768px) {
+    .retro-hero {
+      aspect-ratio: 3 / 4;
+    }
+
+    .panel {
+      width: 92%;
+      height: 70%;
+      top: 48%;
+    }
+
+    .ribbon {
+      width: 88%;
+      top: 4%;
+    }
+
+    .title-ai {
+      width: 65%;
+      top: 20%;
+    }
+
+    .title-skill {
+      width: 60%;
+      top: 35%;
+    }
+
+    .box-prompt {
+      width: 55%;
+      top: 50%;
+    }
+
+    .produced-by {
+      width: 40%;
+      bottom: 22%;
+      left: 30%;
+      transform: translateX(-50%);
+    }
+
+    .character {
+      width: 45%;
+      right: -3%;
+      bottom: 0;
+    }
+
+    .sparkle {
+      width: 18px;
+      height: 18px;
+    }
+
+    .sparkle-1 {
+      top: 32%;
+      left: 10%;
+    }
+
+    .sparkle-2 {
+      top: 36%;
+      right: 12%;
+    }
+
+    .sparkle-3 {
+      top: 48%;
+      left: 12%;
+    }
+
+    .sparkle-4 {
+      top: 52%;
+      right: 14%;
+    }
+  }
+
+  /* ========== レスポンシブ（スマホ） ========== */
+  @media (max-width: 480px) {
+    .retro-hero {
+      aspect-ratio: 9 / 16;
+    }
+
+    .panel {
+      width: 95%;
+      height: 60%;
+      top: 42%;
+    }
+
+    .ribbon {
+      width: 92%;
+      top: 3%;
+    }
+
+    .title-ai {
+      width: 72%;
+      top: 17%;
+    }
+
+    .title-skill {
+      width: 68%;
+      top: 30%;
+    }
+
+    .box-prompt {
+      width: 62%;
+      top: 43%;
+    }
+
+    .produced-by {
+      width: 45%;
+      bottom: 28%;
+      left: 28%;
+    }
+
+    .character {
+      width: 55%;
+      right: -5%;
+      bottom: 0;
+    }
+
+    .sparkle {
+      width: 14px;
+      height: 14px;
+    }
+
+    .sparkle-1 {
+      top: 28%;
+      left: 8%;
+    }
+
+    .sparkle-2 {
+      top: 32%;
+      right: 10%;
+    }
+
+    .sparkle-3 {
+      top: 42%;
+      left: 10%;
+    }
+
+    .sparkle-4 {
+      top: 46%;
+      right: 12%;
+    }
+  }
+
+  /* ========== 横向きスマホ対応 ========== */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .retro-hero {
+      aspect-ratio: 16 / 9;
+    }
+
+    .panel {
+      width: 80%;
+      height: 85%;
+      top: 50%;
+    }
+
+    .ribbon {
+      width: 65%;
+      top: 2%;
+    }
+
+    .title-ai {
+      width: 50%;
+      top: 20%;
+    }
+
+    .title-skill {
+      width: 45%;
+      top: 42%;
+    }
+
+    .box-prompt {
+      width: 38%;
+      top: 60%;
+    }
+
+    .produced-by {
+      width: 25%;
+      bottom: 8%;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .character {
+      width: 30%;
+      right: -2%;
+    }
+
+    .sparkle {
+      width: 15px;
+      height: 15px;
+    }
+  }
+</style>
+
+<div class="retro-hero">
+  <!-- 背景マップ -->
+  <div class="bg-map"></div>
+
+  <!-- 茶色パネル -->
+  <div class="panel"></div>
+
+  <!-- 赤リボン -->
+  <div class="ribbon">
+    <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/6NMwSF2NWbnDWOLttEUKaRoLgwoIesQynF3Aq8f6.png" alt="生成AIを確実にあなたの戦力に">
+  </div>
+
+  <!-- 生成AI 文字 -->
+  <div class="title-ai">
+    <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/BOxxRUJrusRLcnmAzpfY99lFYc5YqHlKTdBwepBs.png" alt="生成AI">
+  </div>
+
+  <!-- スキル習得大全 -->
+  <div class="title-skill">
+    <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/wIcKRa0lUDdl62WBQOS8TQpkVeVI0Muuc07uac8K.png" alt="スキル習得大全">
+  </div>
+
+  <!-- 黒ボックス -->
+  <div class="box-prompt">
+    <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/ADwAOpv6WLZVWsBeDOcNIt9jRHK6eshnGx76rdjY.png" alt="明日から使える9つのプロンプト">
+  </div>
+
+  <!-- produced by -->
+  <div class="produced-by">
+    <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/8PN69jmYuQrciUHFKb8VMlX69S98hRuyZ5WWb8jE.png" alt="produced by スキルプラス">
+  </div>
+
+  <!-- キャラクター -->
+  <div class="character">
+    <img src="https://utagesystem.s3.ap-northeast-1.amazonaws.com/GYbKT7Y9d0eR/anTyGCAFExpNqcqXAZuowAD2ItMiYgWBBAnA3P72.png" alt="キャラクター">
+  </div>
+
+  <!-- キラキラ -->
+  <div class="sparkle sparkle-1"></div>
+  <div class="sparkle sparkle-2"></div>
+  <div class="sparkle sparkle-3"></div>
+  <div class="sparkle sparkle-4"></div>
+</div>
+
+</body>
+</html>
